@@ -129,7 +129,7 @@ describe("Alert Component", () => {
     render(
       <Alert type="success" testId="alert-test">
         Success alert
-      </Alert>
+      </Alert>,
     );
     const alert = screen.getByTestId("alert-test");
     expect(alert).toHaveClass("alert-success");
@@ -141,7 +141,7 @@ describe("Card Component", () => {
     render(
       <Card className="custom" testId="card">
         <span>Content</span>
-      </Card>
+      </Card>,
     );
     const card = screen.getByTestId("card");
     expect(card).toHaveTextContent("Content");
@@ -152,7 +152,7 @@ describe("Card Component", () => {
     render(
       <CardBody centered>
         <span>Body</span>
-      </CardBody>
+      </CardBody>,
     );
     const body = screen.getByText("Body").parentElement;
     expect(body).toHaveClass("items-center");
@@ -170,7 +170,7 @@ describe("Divider Component", () => {
     render(<Divider />);
     expect(screen.getByRole("separator")).toHaveAttribute(
       "aria-orientation",
-      "horizontal"
+      "horizontal",
     );
   });
 
@@ -206,7 +206,7 @@ describe("FeatureCard Component", () => {
         href="https://react.dev"
         variant="primary"
         testId="feature-card"
-      />
+      />,
     );
     const card = screen.getByTestId("feature-card");
     expect(card).toHaveTextContent("React");
@@ -219,8 +219,8 @@ describe("Footer Component", () => {
     render(<Footer />);
     expect(
       screen.getByText(
-        "Template React + TypeScript + Vite + Tailwind CSS + daisyUI"
-      )
+        "Template React + TypeScript + Vite + Tailwind CSS + daisyUI",
+      ),
     ).toBeInTheDocument();
     const link = screen.getByText("ApenasGabs") as HTMLAnchorElement;
     expect(link.href).toContain("github.com/apenasgabs");
@@ -232,7 +232,7 @@ describe("Label Component", () => {
     render(
       <Label required size="lg">
         Nome
-      </Label>
+      </Label>,
     );
     const label = screen.getByText("Nome").closest("label");
     expect(label).toHaveClass("text-base");
@@ -264,7 +264,7 @@ describe("Navbar Component", () => {
     render(
       <Navbar title="Dashboard">
         <span>Child</span>
-      </Navbar>
+      </Navbar>,
     );
     expect(screen.getByTestId("navbar-title")).toHaveTextContent("Dashboard");
     expect(screen.getByText("Child")).toBeInTheDocument();

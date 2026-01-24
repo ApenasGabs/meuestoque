@@ -168,9 +168,10 @@ export const Component = (): React.ReactElement => {
 ## daisyUI Components - PRIORIZAR
 
 **ORDEM OBRIGATÓRIA**:
-1) Reutilizar componentes internos já existentes no projeto.
-2) Se não houver componente interno adequado, usar componente daisyUI equivalente.
-3) Só criar componente customizado se não existir solução interna nem daisyUI.
+
+1. Reutilizar componentes internos já existentes no projeto.
+2. Se não houver componente interno adequado, usar componente daisyUI equivalente.
+3. Só criar componente customizado se não existir solução interna nem daisyUI.
 
 **SEMPRE** usar componentes daisyUI quando disponíveis. Evitar criar componentes customizados que já existem na biblioteca.
 
@@ -321,6 +322,13 @@ Antes de considerar código finalizado:
 
 Seguir o padrão de commits semânticos de: https://github.com/iuricode/padroes-de-commits
 
+**⚠️ REGRA IMPORTANTE:** Após implementar as mudanças, **NUNCA fazer commit diretamente**. Sempre:
+
+1. Mostrar a mensagem de commit proposta
+2. Aguardar validação do usuário
+3. Perguntar: "Está ok commitar com essa mensagem?"
+4. Só fazer commit após aprovação explícita
+
 ### Tipos de Commits
 
 | Emoji | Tipo       | Descrição                                     |
@@ -349,6 +357,7 @@ Seguir o padrão de commits semânticos de: https://github.com/iuricode/padroes-
 **⚠️ IMPORTANTE:** Usar sempre verbos no imperativo (presente), descrevendo o que o commit **faz**, não o que **vai fazer** ou **fez**.
 
 Exemplos de uso correto:
+
 - ✅ "cria novo componente" (o commit cria)
 - ✅ "arruma validação" (o commit arruma)
 - ✅ "adiciona link do GitHub" (o commit adiciona)

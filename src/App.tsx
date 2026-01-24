@@ -57,6 +57,18 @@ const App = () => {
             Template com Tailwind CSS e daisyUI configurados
           </p>
 
+          <a
+            href="https://github.com/ApenasGabs/ApenasTemplate"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block mb-8"
+          >
+            <div className="badge badge-primary badge-lg gap-2 px-4 py-3 text-base font-semibold cursor-pointer hover:badge-accent transition-all">
+              <span className="text-xl">🐙</span>
+              GitHub: ApenasGabs/ApenasTemplate
+            </div>
+          </a>
+
           <CounterCard count={count} onIncrement={handleIncrement} />
 
           <div
@@ -129,24 +141,6 @@ const App = () => {
                 name="Playwright"
                 version={VERSIONS.playwright}
               />
-              <a
-                href="https://github.com/ApenasGabs/ApenasTemplate"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-4 p-4 bg-base-100 rounded-lg border border-base-300 hover:shadow-md transition-shadow md:col-span-2"
-              >
-                <span className="text-3xl shrink-0" aria-hidden="true">
-                  🐙
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-base-content text-base">
-                    GitHub
-                  </p>
-                  <p className="text-sm text-base-content/60">
-                    ApenasGabs/ApenasTemplate
-                  </p>
-                </div>
-              </a>
             </div>
           </div>
         </div>
