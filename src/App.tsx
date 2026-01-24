@@ -129,6 +129,24 @@ const App = () => {
                 name="Playwright"
                 version={VERSIONS.playwright}
               />
+              <a
+                href="https://github.com/ApenasGabs/ApenasTemplate"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-4 p-4 bg-base-100 rounded-lg border border-base-300 hover:shadow-md transition-shadow md:col-span-2"
+              >
+                <span className="text-3xl shrink-0" aria-hidden="true">
+                  🐙
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-base-content text-base">
+                    GitHub
+                  </p>
+                  <p className="text-sm text-base-content/60">
+                    ApenasGabs/ApenasTemplate
+                  </p>
+                </div>
+              </a>
             </div>
           </div>
         </div>
