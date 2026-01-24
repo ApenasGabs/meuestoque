@@ -1,8 +1,17 @@
 # 🚀 Apenas Template - React + TypeScript + Vite + Tailwind CSS + daisyUI
 
-Um template moderno, produtivo e completo para iniciar seus projetos React com tecnologias de ponta. Configurado com TypeScript, Vite, Tailwind CSS, daisyUI, testes e ferramentas de qualidade de código.
+Um template moderno, produtivo e completo para iniciar seus projetos React com tecnologias de ponta. Configurado com TypeScript, Vite, Tailwind CSS, daisyUI, testes, releases automáticas e ferramentas de qualidade de código.
 
 > **Feito com muito ❤️ e preguiça de fazer tudo do zero**
+
+[![GitHub release](https://img.shields.io/github/v/release/ApenasGabs/ApenasTemplate?style=flat-square)](https://github.com/ApenasGabs/ApenasTemplate/releases)
+[![License](https://img.shields.io/github/license/ApenasGabs/ApenasTemplate?style=flat-square)](./LICENSE)
+
+## 📚 Documentação
+
+- [🚀 Guia de Configuração](./docs/SETUP.md) - Como configurar o template
+- [📝 Sistema de Release](./docs/RELEASE.md) - Como funciona o versionamento automático
+- [💻 Estrutura do Projeto](#-estrutura-do-projeto) - Organização dos arquivos
 
 ## 🎯 Objetivos
 
@@ -14,6 +23,8 @@ Este template tem como objetivo fornecer uma base sólida e pronta para produç�
 - ✅ Testes unitários com Vitest
 - ✅ Testes end-to-end com Playwright
 - ✅ Linting e formatação de código com ESLint
+- ✅ **Releases automáticas com Semantic Release**
+- ✅ **Changelog gerado automaticamente**
 - ✅ Build otimizado para produção
 - ✅ Estrutura de projeto bem organizada e escalável
 
