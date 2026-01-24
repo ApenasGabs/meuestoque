@@ -90,7 +90,7 @@ const ThemeSelector = () => {
             Temas
           </label>
         </div>
-        <div className="drawer-side z-[1]">
+        <div className="drawer-side z-1">
           <label
             htmlFor="theme-drawer"
             className="drawer-overlay"

@@ -94,8 +94,10 @@ it('deve desabilitar botão quando loading', () => {
 
 ```typescript
 // ✅ Componente tipado
+import type { ReactElement, ReactNode } from "react";
+
 interface ButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick?: () => void;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
@@ -106,7 +108,7 @@ export const Button = ({
   onClick,
   variant = 'primary',
   disabled = false
-}: ButtonProps): JSX.Element => {
+}: ButtonProps): ReactElement => {
   return (
     <button
       onClick={onClick}
@@ -121,9 +123,31 @@ export const Button = ({
 };
 ```
 
-## Acessibilidade - OBRIGATÓRIO
+### Importações de Tipos
 
-- ✅ Elementos semânticos (`<button>`, `<nav>`, `<main>`)
+````typescript
+// ✅ CORRETO - Importar tipos diretos
+import type { ReactElement, ReactNode } from "react";
+
+interface Props {
+  children: ReactNode;
+  onClick?: () => void;
+}
+
+export const Component = ({ children, onClick }: Props): ReactElement => {
+  // implementação
+};
+
+// ❌ EVITAR - Usar namespace desnecessário
+export const Component = ({ children, onClick }: Props): React.ReactElement => {
+  // implementação
+};
+
+// ❌ EVITAR - Importar React sem necessidade
+import React from "react";
+export const Component = (): React.ReactElement => {
+  // implementação
+};
 - ✅ `aria-label` em elementos interativos sem texto
 - ✅ `alt` text em imagens
 - ✅ Navegação por teclado funcional
@@ -139,7 +163,7 @@ export const Button = ({
 <div onClick={handleClose}>
   <XIcon />
 </div>
-```
+````
 
 ## Performance
 
