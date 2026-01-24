@@ -100,7 +100,7 @@ test.describe("Responsiveness Tests", () => {
     await page.goto("/");
 
     // Verificar grid responsivo
-    const grid = page.locator(".grid");
+    const grid = page.getByTestId("feature-cards");
     await expect(grid).toBeVisible();
   });
 

@@ -13,13 +13,16 @@ interface NavbarProps {
  */
 export const Navbar = ({ title, children }: NavbarProps): ReactElement => {
   return (
-    <div className="navbar bg-base-100 shadow-lg">
+    <nav className="navbar flex items-center justify-between bg-base-100 shadow-lg px-6 py-4">
       <div className="flex-1">
-        <a className="btn btn-ghost text-xl" data-testid="navbar-title">
+        <a
+          className="text-xl font-bold text-base-content hover:text-primary transition-colors cursor-pointer"
+          data-testid="navbar-title"
+        >
           {title}
         </a>
       </div>
-      <div className="flex-none gap-4">{children}</div>
-    </div>
+      <div className="flex items-center gap-4">{children}</div>
+    </nav>
   );
 };

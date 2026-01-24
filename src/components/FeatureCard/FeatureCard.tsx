@@ -27,20 +27,26 @@ export const FeatureCard = ({
   variant,
   testId,
 }: FeatureCardProps): ReactElement => {
-  const colorClass = `bg-${variant} text-${variant}-content`;
+  const variantStyles: Record<string, string> = {
+    primary: "bg-primary text-primary-content",
+    secondary: "bg-secondary text-secondary-content",
+    accent: "bg-accent text-accent-content",
+  };
+
+  const colorClass = variantStyles[variant] || variantStyles.primary;
 
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={`card ${colorClass} hover:shadow-lg transition-shadow`}
+      className={`rounded-lg border-2 border-current p-6 ${colorClass} hover:shadow-lg transition-shadow cursor-pointer`}
       data-testid={testId}
     >
-      <div className="card-body items-center text-center">
-        <h2 className="card-title">{title}</h2>
-        <p>{description}</p>
-        <div className="divider my-2"></div>
+      <div className="flex flex-col items-center justify-center text-center">
+        <h2 className="text-xl font-bold mb-2">{title}</h2>
+        <p className="mb-3">{description}</p>
+        <div className="border-t border-current my-2 w-full"></div>
         <p className="text-sm opacity-90">v{version}</p>
       </div>
     </a>

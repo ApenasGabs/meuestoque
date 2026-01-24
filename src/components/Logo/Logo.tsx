@@ -27,10 +27,15 @@ export const Logo = ({
   const animationClass = animated ? "animate-spin-slow" : "";
 
   return (
-    <a href={href} target="_blank" rel="noreferrer">
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-block transition-transform hover:scale-110"
+    >
       <img
         src={src}
-        className={`h-24 hover:drop-shadow-[0_0_2em_#646cffaa] transition-all ${animationClass}`.trim()}
+        className={`h-24 w-24 object-contain transition-all ${animationClass}`.trim()}
         alt={alt}
         data-testid={testId}
       />

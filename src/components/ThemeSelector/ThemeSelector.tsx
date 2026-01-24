@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const DEFAULT_THEME = "light";
 
@@ -16,6 +17,17 @@ const ThemeSelector = () => {
     document.body.className = theme;
     localStorage.setItem("theme", theme);
   };
+
+  const toggleDrawer = useCallback((): void => {
+    const drawerToggle = document.getElementById(
+      "theme-drawer",
+    ) as HTMLInputElement | null;
+
+    if (!drawerToggle) return;
+
+    drawerToggle.checked = !drawerToggle.checked;
+    drawerToggle.dispatchEvent(new Event("change", { bubbles: true }));
+  }, []);
 
   useEffect(() => {
     applyTheme(currentTheme);
@@ -80,12 +92,22 @@ const ThemeSelector = () => {
           type="checkbox"
           className="drawer-toggle"
           data-testid="theme-drawer-toggle"
+          tabIndex={-1}
         />
         <div className="drawer-content">
           <label
             htmlFor="theme-drawer"
             className="btn btn-sm btn-ghost text-xl"
+            role="button"
+            aria-label="Temas"
             data-testid="theme-button"
+            tabIndex={0}
+            onKeyDown={(event: KeyboardEvent<HTMLLabelElement>) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleDrawer();
+              }
+            }}
           >
             Temas
           </label>

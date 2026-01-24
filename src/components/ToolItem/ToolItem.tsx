@@ -19,13 +19,13 @@ export const ToolItem = ({
   version,
 }: ToolItemProps): ReactElement => {
   return (
-    <div className="flex items-center gap-3 p-4 bg-base-100 rounded-lg">
-      <span className="text-2xl" aria-hidden="true">
+    <div className="flex items-center gap-4 p-4 bg-base-100 rounded-lg border border-base-300 hover:shadow-md transition-shadow">
+      <span className="text-3xl shrink-0" aria-hidden="true">
         {icon}
       </span>
-      <div>
-        <p className="font-semibold">{name}</p>
-        <p className="text-sm opacity-75">v{version}</p>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-base-content text-base">{name}</p>
+        <p className="text-sm text-base-content/60">v{version}</p>
       </div>
     </div>
   );

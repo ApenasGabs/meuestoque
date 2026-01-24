@@ -20,8 +20,21 @@ export const Button = ({
   className = "",
   ...props
 }: ButtonProps): ReactElement => {
-  const sizeClass = size === "sm" ? "btn-sm" : size === "lg" ? "btn-lg" : "";
-  const variantClass = `btn-${variant}`;
+  const sizeClasses: Record<string, string> = {
+    sm: "btn-sm",
+    md: "",
+    lg: "btn-lg",
+  };
+
+  const variantClasses: Record<string, string> = {
+    primary: "btn-primary",
+    secondary: "btn-secondary",
+    accent: "btn-accent",
+    ghost: "btn-ghost",
+  };
+
+  const sizeClass = sizeClasses[size] || sizeClasses.md;
+  const variantClass = variantClasses[variant] || variantClasses.primary;
 
   return (
     <button

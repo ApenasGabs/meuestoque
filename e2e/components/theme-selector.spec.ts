@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 test.describe("ThemeSelector - E2E Tests", () => {
@@ -161,7 +162,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
 
   test.describe("Temas específicos", () => {
     const testTheme = async (
-      page: any,
+      page: Page,
       themeName: string,
       themeValue: string,
     ) => {

@@ -15,15 +15,19 @@ interface ExternalLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 export const ExternalLink = ({
   href,
   children,
-  className = "link link-primary",
+  className = "",
   ...props
 }: ExternalLinkProps): ReactElement => {
+  const defaultClasses =
+    className ||
+    "text-primary hover:text-primary-focus underline transition-colors cursor-pointer";
+
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={className}
+      className={defaultClasses}
       {...props}
     >
       {children}
