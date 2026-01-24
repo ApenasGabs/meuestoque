@@ -20,7 +20,7 @@ export const Card = ({
 }: CardProps): ReactElement => {
   return (
     <div
-      className={`card bg-base-100 shadow-xl ${className}`.trim()}
+      className={`rounded-lg border border-base-300 bg-base-100 shadow-lg ${className}`.trim()}
       data-testid={testId}
     >
       {children}
@@ -45,13 +45,13 @@ export const CardBody = ({
   children,
   centered = false,
   className = "",
-}: CardBodyProps): React.JSX.Element => {
-  const centerClass = centered ? "items-center text-center" : "";
+}: CardBodyProps): ReactElement => {
+  const centerClass = centered
+    ? "flex flex-col items-center justify-center text-center"
+    : "";
 
   return (
-    <div className={`card-body ${centerClass} ${className}`.trim()}>
-      {children}
-    </div>
+    <div className={`p-6 ${centerClass} ${className}`.trim()}>{children}</div>
   );
 };
 
@@ -69,6 +69,10 @@ interface CardTitleProps {
 export const CardTitle = ({
   children,
   className = "",
-}: CardTitleProps): React.JSX.Element => {
-  return <h2 className={`card-title ${className}`.trim()}>{children}</h2>;
+}: CardTitleProps): ReactElement => {
+  return (
+    <h2 className={`text-2xl font-bold mb-4 ${className}`.trim()}>
+      {children}
+    </h2>
+  );
 };
