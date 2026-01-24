@@ -165,6 +165,67 @@ export const Component = (): React.ReactElement => {
 </div>
 ````
 
+## daisyUI Components - PRIORIZAR
+
+**SEMPRE** usar componentes daisyUI quando disponíveis. Evitar criar componentes customizados que já existem na biblioteca.
+
+### Componentes Disponíveis
+
+- `btn` - Botões em várias variantes
+- `card` - Containers com estilos
+- `badge` - Badges/labels
+- `alert` - Mensagens de alerta
+- `dropdown` - Menus dropdown
+- `menu` - Menus estruturados
+- `navbar` - Barras de navegação
+- `footer` - Rodapés
+- `input` - Campos de entrada
+- `select` - Selectors
+- `checkbox` - Checkboxes
+- `radio` - Radio buttons
+- `tabs` - Abas
+- `modal` - Modais/dialogs
+- `toast` - Notificações
+- `spinner` - Loading spinners
+- `skeleton` - Loading placeholders
+- `progress` - Barras de progresso
+
+Consultar [daisyUI Documentation](https://daisyui.com/) para todos os componentes disponíveis.
+
+```typescript
+// ✅ USAR DAISYUI
+import type { ReactElement, ReactNode } from "react";
+
+interface ButtonProps {
+  children: ReactNode;
+  onClick?: () => void;
+}
+
+export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
+  return (
+    <button 
+      className="btn btn-primary"
+      onClick={onClick}
+      data-testid="my-button"
+    >
+      {children}
+    </button>
+  );
+};
+
+// ❌ NÃO FAZER - Criar custom quando daisyUI tem solução
+export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
+  return (
+    <div 
+      className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  );
+};
+```
+
 ## Performance
 
 - ✅ `React.memo` para componentes pesados
