@@ -18,6 +18,14 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
+*.sln
+*.sw?
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 *.ntvs*
 *.njsproj
 *.sln
