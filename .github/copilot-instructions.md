@@ -167,6 +167,11 @@ export const Component = (): React.ReactElement => {
 
 ## daisyUI Components - PRIORIZAR
 
+**ORDEM OBRIGATÓRIA**:
+1) Reutilizar componentes internos já existentes no projeto.
+2) Se não houver componente interno adequado, usar componente daisyUI equivalente.
+3) Só criar componente customizado se não existir solução interna nem daisyUI.
+
 **SEMPRE** usar componentes daisyUI quando disponíveis. Evitar criar componentes customizados que já existem na biblioteca.
 
 ### Componentes Disponíveis
@@ -203,7 +208,7 @@ interface ButtonProps {
 
 export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
   return (
-    <button 
+    <button
       className="btn btn-primary"
       onClick={onClick}
       data-testid="my-button"
@@ -216,7 +221,7 @@ export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
 // ❌ NÃO FAZER - Criar custom quando daisyUI tem solução
 export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
   return (
-    <div 
+    <div
       className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
       onClick={onClick}
     >
