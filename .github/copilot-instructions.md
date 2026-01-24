@@ -341,40 +341,51 @@ Seguir o padrão de commits semânticos de: https://github.com/iuricode/padroes-
 ### Formato
 
 ```
-<tipo>: <descrição sucinta>
+<tipo>: <descrição em imperativo/presente>
 
 [corpo opcional]
 ```
+
+**⚠️ IMPORTANTE:** Usar sempre verbos no imperativo (presente), descrevendo o que o commit **faz**, não o que **vai fazer** ou **fez**.
+
+Exemplos de uso correto:
+- ✅ "cria novo componente" (o commit cria)
+- ✅ "arruma validação" (o commit arruma)
+- ✅ "adiciona link do GitHub" (o commit adiciona)
+- ✅ "remove código comentado" (o commit remove)
+- ❌ "criar novo componente" (infinitivo - parece futuro)
+- ❌ "arrumar validação" (infinitivo - parece futuro)
+- ❌ "adicionar link do GitHub" (infinitivo - parece futuro)
 
 ### Exemplos
 
 ```bash
 # Novo recurso
-git commit -m "feat: ✨ adicionar autenticação com Google"
+git commit -m "feat: ✨ adiciona autenticação com Google"
 
 # Correção de bug
-git commit -m "fix: 🐛 corrigir validação de email no formulário"
+git commit -m "fix: 🐛 arruma validação de email no formulário"
 
 # Documentação
-git commit -m "docs: 📚 atualizar README com instruções de instalação"
+git commit -m "docs: 📚 atualiza README com instruções de instalação"
 
 # Refatoração
-git commit -m "refactor: ♻️ converter function para arrow function"
+git commit -m "refactor: ♻️ converte function para arrow function"
 
 # Testes
-git commit -m "test: 🧪 adicionar testes unitários para ThemeSelector"
+git commit -m "test: 🧪 adiciona testes unitários para ThemeSelector"
 
 # Limpeza
-git commit -m "cleanup: 🧹 remover código comentado e imports não utilizados"
+git commit -m "cleanup: 🧹 remove código comentado e imports não utilizados"
 
 # Dependências
-git commit -m "chore: 🔧 atualizar dependências do projeto"
+git commit -m "chore: 🔧 atualiza dependências do projeto"
 
 # Performance
-git commit -m "perf: ⚡ otimizar renderização do ThemeSelector"
+git commit -m "perf: ⚡ otimiza renderização do ThemeSelector"
 
 # Build
-git commit -m "build: 📦 adicionar eslint-plugin-tailwindcss"
+git commit -m "build: 📦 adiciona eslint-plugin-tailwindcss"
 ```
 
 ## Comunicar Sempre Que:
