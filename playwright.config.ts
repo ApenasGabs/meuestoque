@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
+const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+const isRemoteMode = process.env.PLAYWRIGHT_REMOTE_MODE === "1";
+
 /**
  * Playwright configuration for end-to-end testing
  * See https://playwright.dev/docs/test-configuration
@@ -15,9 +22,9 @@ export default defineConfig({
   reporter: [["html"], ["list"]],
 
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: configuredBaseURL,
     trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    screenshot: "on",
   },
 
   projects: [
@@ -27,9 +34,11 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: isRemoteMode
+    ? undefined
+    : {
+        command: "npm run dev",
+        url: "http://localhost:5173",
+        reuseExistingServer: !process.env.CI,
+      },
 });

@@ -1,6 +1,17 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
+const openSettingsTab = async (page: Page): Promise<void> => {
+  await page.getByRole("button", { name: "Abrir configurações do app" }).click();
+};
+
+const openThemeDrawer = async (page: Page): Promise<void> => {
+  await openSettingsTab(page);
+  const themeButton = page.getByRole("button", { name: "Temas" });
+  await expect(themeButton).toBeVisible();
+  await themeButton.click();
+};
+
 test.describe("ThemeSelector - E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
     // Limpar localStorage antes de cada teste
@@ -12,6 +23,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
   test.describe("Renderização e UI", () => {
     test("deve exibir o botão de temas", async ({ page }) => {
       await page.goto("/");
+      await openSettingsTab(page);
 
       const themeButton = page.getByRole("button", { name: "Temas" });
       await expect(themeButton).toBeVisible();
@@ -20,8 +32,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve abrir o drawer quando o botão é clicado", async ({ page }) => {
       await page.goto("/");
 
-      // Clicar no botão de temas
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Verificar se o drawer está visível
       const drawer = page.locator(".drawer-side");
@@ -37,8 +48,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     }) => {
       await page.goto("/");
 
-      // Abrir o drawer
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Clicar no overlay
       await page.locator(".drawer-overlay").click();
@@ -51,8 +61,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve exibir todos os 33 temas disponíveis", async ({ page }) => {
       await page.goto("/");
 
-      // Abrir o drawer
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Contar os radio buttons
       const themeRadios = page.locator('input[name="theme-dropdown"]');
@@ -78,8 +87,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve mudar para tema dark e persistir", async ({ page }) => {
       await page.goto("/");
 
-      // Abrir drawer
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Selecionar tema dark
       await page.getByRole("radio", { name: "Dark" }).click();
@@ -117,8 +125,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
       ];
 
       for (const theme of themesToTest) {
-        // Abrir drawer
-        await page.getByRole("button", { name: "Temas" }).click();
+        await openThemeDrawer(page);
 
         // Selecionar tema
         await page.getByRole("radio", { name: theme.name }).click();
@@ -144,15 +151,14 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve marcar o tema correto como selecionado", async ({ page }) => {
       await page.goto("/");
 
-      // Abrir drawer
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Selecionar tema cupcake
       await page.getByRole("radio", { name: "Cupcake" }).click();
 
       // Fechar e reabrir drawer
       await page.locator(".drawer-overlay").click();
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Verificar se cupcake está marcado
       const cupcakeRadio = page.getByRole("radio", { name: "Cupcake" });
@@ -167,7 +173,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
       themeValue: string,
     ) => {
       await page.goto("/");
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
       await page.getByRole("radio", { name: themeName }).click();
       await page.waitForTimeout(100);
 
@@ -203,7 +209,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
       await page.goto("/");
 
       // Selecionar tema
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
       await page.getByRole("radio", { name: "Emerald" }).click();
       await page.waitForTimeout(100);
 
@@ -221,7 +227,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
       await page.goto("/");
 
       // Selecionar tema
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
       await page.getByRole("radio", { name: "Luxury" }).click();
       await page.waitForTimeout(100);
 
@@ -237,7 +243,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
   test.describe("Acessibilidade", () => {
     test("deve ter labels acessíveis para todos os temas", async ({ page }) => {
       await page.goto("/");
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Verificar alguns temas têm aria-label
       const lightRadio = page.getByRole("radio", { name: "Light" });
@@ -249,16 +255,16 @@ test.describe("ThemeSelector - E2E Tests", () => {
 
     test("deve ser navegável por teclado", async ({ page }) => {
       await page.goto("/");
+      await openSettingsTab(page);
 
-      // Focar no botão de temas usando Tab
-      await page.keyboard.press("Tab");
-
-      // Verificar se o botão está focado
       const themeButton = page.getByRole("button", { name: "Temas" });
+      await expect(themeButton).toBeVisible();
+
+      await themeButton.focus();
       await expect(themeButton).toBeFocused();
 
       // Abrir drawer com Enter
-      await page.keyboard.press("Enter");
+      await themeButton.press("Enter");
 
       // Verificar se drawer abriu
       const drawer = page.locator(".drawer-side");
@@ -269,7 +275,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
       page,
     }) => {
       await page.goto("/");
-      await page.getByRole("button", { name: "Temas" }).click();
+      await openThemeDrawer(page);
 
       // Verificar se os inputs têm role de radio
       const radios = page.locator('input[type="radio"]');
@@ -282,6 +288,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve funcionar em mobile", async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto("/");
+      await openSettingsTab(page);
 
       // Verificar se botão está visível
       const themeButton = page.getByRole("button", { name: "Temas" });
@@ -305,6 +312,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve funcionar em tablet", async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.goto("/");
+      await openSettingsTab(page);
 
       const themeButton = page.getByRole("button", { name: "Temas" });
       await expect(themeButton).toBeVisible();
@@ -319,6 +327,7 @@ test.describe("ThemeSelector - E2E Tests", () => {
     test("deve funcionar em desktop", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.goto("/");
+      await openSettingsTab(page);
 
       const themeButton = page.getByRole("button", { name: "Temas" });
       await expect(themeButton).toBeVisible();

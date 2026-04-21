@@ -4,7 +4,7 @@ Este projeto inclui testes end-to-end configurados com **Playwright** em **TypeS
 
 ## 📁 Estrutura
 
-```
+```text
 e2e/
 ├── general/              # Testes gerais da aplicação
 │   ├── app.spec.ts      # Testes da página principal
@@ -25,6 +25,30 @@ Execute todos os testes em todos os navegadores:
 ```bash
 npm run e2e
 ```
+
+### Modo remoto (tablet)
+
+Passo 1: abra o túnel SSH para o tablet em um terminal dedicado:
+
+```bash
+npm run e2e:tunnel
+```
+
+Passo 2: em outro terminal, rode qualquer comando E2E com a flag `-remote`:
+
+```bash
+npm run e2e -- -remote
+npm run e2e:ui -- -remote
+npm run e2e:debug -- -remote
+```
+
+Com `-remote`, o runner:
+
+- valida acesso ao CDP local do túnel (`127.0.0.1:LOCAL_TUNNEL_PORT`)
+- valida acesso ao endpoint remoto da aplicação (`PLAYWRIGHT_APP_URL`)
+- executa o cenário no dispositivo via CDP
+
+Se o túnel não estiver ativo, ele falha com instrução para executar `npm run e2e:tunnel`.
 
 ### Modo UI (recomendado para desenvolvimento)
 
