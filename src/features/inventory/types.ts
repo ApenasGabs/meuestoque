@@ -13,7 +13,7 @@ export interface InventoryCategory {
   order: number;
 }
 
-export interface ShoppingListItem {
+export interface InventoryShoppingListItem {
   id: string;
   productId: string;
   quantity: number;

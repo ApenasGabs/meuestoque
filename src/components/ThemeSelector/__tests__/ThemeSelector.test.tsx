@@ -137,7 +137,7 @@ describe("ThemeSelector", () => {
       });
     });
 
-    it("deve atualizar a classe do documento quando tema é alterado", async () => {
+    it("deve atualizar o data-theme do documento quando tema é alterado", async () => {
       render(<ThemeSelector />);
 
       // Selecionar o tema cyberpunk
@@ -145,8 +145,10 @@ describe("ThemeSelector", () => {
       fireEvent.click(cyberpunkTheme);
 
       await waitFor(() => {
-        expect(document.documentElement.className).toBe("cyberpunk");
-        expect(document.body.className).toBe("cyberpunk");
+        expect(document.documentElement.getAttribute("data-theme")).toBe(
+          "cyberpunk",
+        );
+        expect(document.body.getAttribute("data-theme")).toBe("cyberpunk");
       });
     });
 
@@ -303,9 +305,7 @@ describe("ThemeSelector", () => {
         expect(document.documentElement.getAttribute("data-theme")).toBe(
           "synthwave",
         );
-        expect(document.documentElement.className).toBe("synthwave");
         expect(document.body.getAttribute("data-theme")).toBe("synthwave");
-        expect(document.body.className).toBe("synthwave");
       });
     });
 
