@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
-import { Button } from "../../../components/Button/Button";
-import { Input } from "../../../components/Input/Input";
-import { Label } from "../../../components/Label/Label";
-import type { InventoryProduct, ShoppingListItem } from "../types";
+import { Button } from "../../../../components/Button/Button";
+import { Input } from "../../../../components/Input/Input";
+import { Label } from "../../../../components/Label/Label";
+import type { InventoryProduct, ShoppingListItem } from "../../types";
 import { ShoppingListItem as ShoppingListRow } from "./ShoppingListItem";
 
 interface ShoppingListViewProps {

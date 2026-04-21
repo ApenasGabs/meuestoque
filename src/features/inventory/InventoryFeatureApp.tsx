@@ -5,8 +5,8 @@ import { Button } from "../../components/Button/Button";
 import { Card, CardBody, CardTitle } from "../../components/Card/Card";
 import { Label } from "../../components/Label/Label";
 import ThemeSelector from "../../components/ThemeSelector/ThemeSelector";
-import { ShoppingListView } from "./components/ShoppingListView";
-import { StockView } from "./components/StockView";
+import { ShoppingListView } from "./components/shoppingListView/ShoppingListView";
+import { StockView } from "./components/stockView/StockView";
 import { useInventoryFeature } from "./useInventoryFeature";
 
 type FontSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";

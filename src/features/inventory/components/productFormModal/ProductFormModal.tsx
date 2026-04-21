@@ -1,9 +1,9 @@
 import type { FormEvent, ReactElement } from "react";
 import { useState } from "react";
-import { Button } from "../../../components/Button/Button";
-import { Input } from "../../../components/Input/Input";
-import { Label } from "../../../components/Label/Label";
-import type { InventoryCategory, InventoryProduct } from "../types";
+import { Button } from "../../../../components/Button/Button";
+import { Input } from "../../../../components/Input/Input";
+import { Label } from "../../../../components/Label/Label";
+import type { InventoryCategory, InventoryProduct } from "../../types";
 
 interface ProductFormModalProps {
   open: boolean;

@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
-import { Badge } from "../../../components/Badge/Badge";
-import { Button } from "../../../components/Button/Button";
-import { Card, CardBody } from "../../../components/Card/Card";
-import type { InventoryProduct } from "../types";
+import { Badge } from "../../../../components/Badge/Badge";
+import { Button } from "../../../../components/Button/Button";
+import { Card, CardBody } from "../../../../components/Card/Card";
+import type { InventoryProduct } from "../../types";
 import { ShoppingCartOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface ProductCardProps {
