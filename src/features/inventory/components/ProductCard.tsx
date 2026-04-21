@@ -3,6 +3,7 @@ import { Badge } from "../../../components/Badge/Badge";
 import { Button } from "../../../components/Button/Button";
 import { Card, CardBody } from "../../../components/Card/Card";
 import type { InventoryProduct } from "../types";
+import { ShoppingCartOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface ProductCardProps {
   product: InventoryProduct;
@@ -28,7 +29,7 @@ export const ProductCard = ({
     <Card
       className={`shadow-none ${isOut ? "border-error/50 bg-error/5" : isLow ? "border-warning/50 bg-warning/5" : "border-base-300"}`}
     >
-      <CardBody className="p-3 space-y-3">
+      <CardBody className="p-3 space-y-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -73,14 +74,13 @@ export const ProductCard = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => onAddToList(product)}>
-              Na lista
-            </Button>
+            <ShoppingCartOutlined onClick={() => onAddToList(product)} />
+            {/* <Button variant="ghost" size="sm"></Button> */}
             <Button variant="ghost" size="sm" onClick={() => onEdit(product)}>
-              Editar
+              <EditOutlined />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => onRemove(product.id)}>
-              Excluir
+              <DeleteOutlined />
             </Button>
           </div>
         </div>

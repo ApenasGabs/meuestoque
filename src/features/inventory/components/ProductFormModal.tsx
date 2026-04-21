@@ -26,7 +26,9 @@ export const ProductFormModal = ({
   const [quantity, setQuantity] = useState<string>(String(product?.quantity ?? 0));
   const [minStock, setMinStock] = useState<string>(String(product?.minStock ?? 1));
   const [unit, setUnit] = useState<string>(product?.unit ?? "un");
-  const [categoryId, setCategoryId] = useState<string>(product?.categoryId ?? categories[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState<string>(
+    product?.categoryId ?? categories[0]?.id ?? "",
+  );
   const [useNewCategory, setUseNewCategory] = useState<boolean>(false);
   const [newCategoryName, setNewCategoryName] = useState<string>("");
 

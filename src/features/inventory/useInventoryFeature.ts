@@ -22,7 +22,7 @@ export interface ShoppingItem {
   checked: boolean;
 }
 
-export type InventoryTab = "stock" | "list";
+export type InventoryTab = "stock" | "list" | "settings";
 export type StockFilter = "all" | "low" | "out";
 
 interface InventoryFeatureState {
