@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
-import { InventoryApp } from "./components/InventoryApp/InventoryApp";
+import { InventoryFeatureApp } from "./features/inventory/InventoryFeatureApp";
 
 const App = (): ReactElement => {
-  return <InventoryApp />;
+  return <InventoryFeatureApp />;
 };
 
 export default App;
