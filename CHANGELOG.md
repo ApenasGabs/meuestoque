@@ -5,6 +5,19 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.0](https://github.com/ApenasGabs/meuestoque/compare/v1.1.0...v1.2.0) (2026-04-22)
+
+### ✨ Features
+
+* :sparkles: add AppHeader and AppBottomNav components for navigation and synchronization status ([79eacfc](https://github.com/ApenasGabs/meuestoque/commit/79eacfca982ed19d3686224224059825429579a3))
+* :sparkles: enhance InventoryFeatureApp with settings view and refactor App component ([7f8697e](https://github.com/ApenasGabs/meuestoque/commit/7f8697e5584b01cf652fb233eaaa3959c2ab2732))
+* :sparkles: implement InventoryApp component and refactor App to use it ([703a64f](https://github.com/ApenasGabs/meuestoque/commit/703a64f6020cde70e788d5b31b458d1abd552771))
+* :sparkles: update ProductCard layout and enhance accessibility with aria-labels ([5184139](https://github.com/ApenasGabs/meuestoque/commit/5184139ce253162f36b2656d4304f8b35c1fe8bd))
+
+### 🔧 Chores
+
+* :sparkles: implemented new structure and features ([42bcbe5](https://github.com/ApenasGabs/meuestoque/commit/42bcbe51a90828b81aa05710e26c2c7e7dde012b))
+
 ## [1.1.0](https://github.com/ApenasGabs/meuestoque/compare/v1.0.0...v1.1.0) (2026-04-17)
 
 ### ✨ Features
