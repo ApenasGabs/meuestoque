@@ -56,6 +56,23 @@ Comando:
 pnpm run e2e:remote:logout
 ```
 
+## Falha forçada (print do dispositivo)
+
+Arquivo: [`e2e/tablet/forced-failure.spec.ts`](./forced-failure.spec.ts)
+
+Passos:
+1. Abrir a tela de login em `/login`.
+2. Capturar screenshot full-page do estado atual do dispositivo.
+3. Forçar falha intencional no teste.
+
+Comando:
+```bash
+pnpm run e2e:remote:failshot
+```
+
+Screenshot gerado em:
+`test-results/remote-cdp/forced-failure-device.png`
+
 ## Execução direta por arquivo
 
 Qualquer fluxo também pode ser executado diretamente pelo caminho do spec:

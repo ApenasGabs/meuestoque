@@ -59,7 +59,7 @@ export const ComprasWebShell = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
                 Histórico
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/stock")}>
+              <Button data-testId='estoque-btn' variant="ghost" size="sm" onClick={() => navigate("/stock")}>
                 Estoque
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>

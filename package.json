@@ -21,6 +21,7 @@
     "e2e:remote:theme": "bash scripts/run-e2e.sh test -remote theme",
     "e2e:remote:login": "bash scripts/run-e2e.sh test -remote login",
     "e2e:remote:logout": "bash scripts/run-e2e.sh test -remote logout",
+    "e2e:remote:failshot": "bash scripts/run-e2e.sh test -remote failshot",
     "e2e:theme:tablet": "bash scripts/run-e2e.sh test -remote theme",
     "preview": "vite preview"
   },
