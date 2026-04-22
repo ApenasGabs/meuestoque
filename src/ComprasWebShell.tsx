@@ -1,83 +1,59 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./components/Button/Button";
 import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
 import { PublicOnly, RequireAuth, RequireGroup } from "./components/RouteGuards";
-import ThemeSelector from "./components/ThemeSelector/ThemeSelector";
-import { supabase } from "./lib/supabase";
 import { GroupPage } from "./pages/GroupPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ListPage } from "./pages/ListPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { StockItemDetailsPage } from "./pages/StockItemDetailsPage";
 import { StockPage } from "./pages/StockPage";
 import { useAuthStore } from "./stores/authStore";
-import { useGroupStore } from "./stores/groupStore";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
+import { ProfilePage } from "./pages/ProfilePage";
+
+interface NavigationItem {
+  label: string;
+  path: string;
+  testId: string;
+  badgeCount?: number;
+}
 
 export const ComprasWebShell = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const userId = useAuthStore((state) => state.userId);
-  const userName = useAuthStore((state) => state.userName);
-  const clearUser = useAuthStore((state) => state.clearUser);
-  const groupName = useGroupStore((state) => state.groupName);
-  const clearAllGroupState = useGroupStore((state) => state.clearAllGroupState);
-  const clearStock = useStockStore((state) => state.clearStock);
+  const stockItems = useStockStore((state) => state.items);
   const ready = useSessionStore((state) => state.ready);
 
-  const handleLogout = async (): Promise<void> => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Falha ao sair da conta", error);
-      return;
-    }
+  const lowStockCount = stockItems.filter(
+    (item) => item.quantidade <= item.quantidade_minima,
+  ).length;
+  const outOfStockCount = stockItems.filter((item) => item.quantidade === 0).length;
+  const stockWarningCount = lowStockCount + outOfStockCount;
+  const inListCount = stockItems.filter((item) => item.na_lista).length;
 
-    clearUser();
-    clearAllGroupState();
-    clearStock();
-    navigate("/login", { replace: true });
-  };
+  const navigationItems: NavigationItem[] = [
+    { label: "Lista", path: "/list", testId: "nav-list", badgeCount: inListCount },
+    {
+      label: "Estoque",
+      path: "/stock",
+      testId: "nav-stock",
+      badgeCount: stockWarningCount,
+    },
+    { label: "Config", path: "/profile", testId: "nav-config" },
+  ];
 
   const showPrivateActions = ready && Boolean(userId);
+  const activePath = location.pathname;
 
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col">
-      <Navbar title="Compras em Dois">
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {showPrivateActions && (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/group")}>
-                Grupo
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/list")}>
-                Lista
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
-                Histórico
-              </Button>
-              <Button data-testId='estoque-btn' variant="ghost" size="sm" onClick={() => navigate("/stock")}>
-                Estoque
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
-                Perfil
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                Sair
-              </Button>
-            </>
-          )}
-          <div className="ml-2 flex items-center gap-2">
-            <span className="hidden sm:inline text-sm text-base-content/70">
-              {groupName ? `Grupo: ${groupName}` : (userName ?? "Visitante")}
-            </span>
-            <ThemeSelector />
-          </div>
-        </div>
-      </Navbar>
+    <div className="min-h-screen bg-base-200 flex flex-col pb-20">
+      <Navbar title="Meu estoque" />
 
       <main className="flex-1">
         <Routes>
@@ -159,6 +135,31 @@ export const ComprasWebShell = () => {
       </main>
 
       <Footer />
+
+      {showPrivateActions && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-base-100 border-t border-base-300 flex z-30">
+          {navigationItems.map((item) => {
+            const isActive = activePath === item.path || activePath.startsWith(`${item.path}/`);
+
+            return (
+              <Button
+                key={item.path}
+                type="button"
+                variant="ghost"
+                className={`relative flex-1 rounded-none h-16 flex-col gap-1 ${isActive ? "text-primary bg-primary/10 font-semibold" : "text-base-content/60"}`}
+                onClick={() => navigate(item.path)}
+                data-testid={item.testId}
+              >
+                {isActive && <span className="absolute left-3 right-3 top-1 h-1 rounded-full bg-primary" />}
+                <span className="text-xs uppercase tracking-wide">{item.label}</span>
+                {item.badgeCount !== undefined && item.badgeCount > 0 && (
+                  <span className="badge badge-sm badge-warning">{item.badgeCount}</span>
+                )}
+              </Button>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 };

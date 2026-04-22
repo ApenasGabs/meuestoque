@@ -87,7 +87,7 @@ export function LoginPage() {
     <main className="page auth">
       <Card>
         <CardBody>
-          <CardTitle>Compras em Dois</CardTitle>
+          <CardTitle>Meu estoque</CardTitle>
           <p>Entrar na sua conta</p>
 
           <form onSubmit={onSubmit} className="form mt-6">

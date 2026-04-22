@@ -77,8 +77,8 @@
 
 /* Layout e formulários compartilhados com a experiência web (v0) */
 :root {
-  color: #2a2a2a;
-  background: #f5f0e8;
+  color: var(--color-base-content);
+  background: var(--color-base-200);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.4;
 }
@@ -121,7 +121,7 @@ body {
   gap: 12px;
 }
 
-label {
+label:not(.label) {
   display: grid;
   gap: 6px;
 }

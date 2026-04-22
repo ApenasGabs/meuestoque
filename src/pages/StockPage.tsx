@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
-import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
 import { Input } from "../components/Input/Input";
 import { StockHistoryModal } from "../components/StockHistoryModal";
 import { StockItemModal } from "../components/StockItemModal";
 import { Textarea } from "../components/Textarea/Textarea";
-import { parseStockImportText, type ParsedStockImportItem, type StockImportSource } from "../domain/stockImportParser";
+import {
+  parseStockImportText,
+  type ParsedStockImportItem,
+  type StockImportSource,
+} from "../domain/stockImportParser";
+import { ProductCard } from "../features/inventory/components/productCard/ProductCard";
+import type { InventoryProduct } from "../features/inventory/types";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { supabase } from "../lib/supabase";
 import {
@@ -32,45 +37,6 @@ const categoryOrder = [
   "Pet",
   "Outros",
 ];
-
-const getStockStatus = (
-  item: StockItemRecord,
-): { label: string; variant: "success" | "warning" | "error" } => {
-  if (item.quantidade === 0) return { label: "Sem estoque", variant: "error" };
-  if (item.quantidade <= item.quantidade_minima * 1.2) {
-    return { label: "Perto do minimo", variant: "warning" };
-  }
-  return { label: "OK", variant: "success" };
-};
-
-const getExpiryStatus = (
-  item: StockItemRecord,
-): { label: string; variant: "warning" | "error" | "info" } | null => {
-  if (!item.data_validade) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const expiry = new Date(item.data_validade);
-  expiry.setHours(0, 0, 0, 0);
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diffDays = Math.floor((expiry.getTime() - today.getTime()) / msPerDay);
-
-  if (diffDays < 0) {
-    return { label: "Vencido", variant: "error" };
-  }
-
-  if (diffDays <= 3) {
-    return { label: `Vence em ${diffDays} dia(s)`, variant: "warning" };
-  }
-
-  if (diffDays <= 7) {
-    return { label: `Validade em ${diffDays} dias`, variant: "info" };
-  }
-
-  return null;
-};
 
 export const StockPage = () => {
   const navigate = useNavigate();
@@ -103,7 +69,11 @@ export const StockPage = () => {
   const [importing, setImporting] = useState(false);
 
   const wakeLock = useWakeLock();
-  const { isSupported: wakeLockIsSupported, request: requestWakeLock, release: releaseWakeLock } = wakeLock;
+  const {
+    isSupported: wakeLockIsSupported,
+    request: requestWakeLock,
+    release: releaseWakeLock,
+  } = wakeLock;
 
   useEffect(() => {
     if (!groupId) return;
@@ -280,7 +250,11 @@ export const StockPage = () => {
 
       const combinedByKey = new Map<
         string,
-        { existing: StockItemRecord | undefined; totalQuantidade: number; parsed: ParsedStockImportItem }
+        {
+          existing: StockItemRecord | undefined;
+          totalQuantidade: number;
+          parsed: ParsedStockImportItem;
+        }
       >();
 
       for (const parsed of parsedItems) {
@@ -289,7 +263,8 @@ export const StockPage = () => {
         const current = combinedByKey.get(key);
         combinedByKey.set(key, {
           existing: current?.existing ?? existing,
-          totalQuantidade: (current?.totalQuantidade ?? existing?.quantidade ?? 0) + parsed.quantidade,
+          totalQuantidade:
+            (current?.totalQuantidade ?? existing?.quantidade ?? 0) + parsed.quantidade,
           parsed,
         });
       }
@@ -420,81 +395,31 @@ export const StockPage = () => {
           </Card>
         ) : (
           filteredItems.map((item) => {
-            const status = getStockStatus(item);
-            const expiryStatus = getExpiryStatus(item);
-            return (
-              <Card key={item.id} className="card">
-                <CardBody>
-                  <div className="page-header">
-                    <div>
-                      <h3>{item.nome}</h3>
-                      <p className="muted">
-                        {item.quantidade.toFixed(2)} {item.unidade} · Min:{" "}
-                        {item.quantidade_minima.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="actions-row">
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                      {expiryStatus && (
-                        <Badge variant={expiryStatus.variant}>{expiryStatus.label}</Badge>
-                      )}
-                      {item.na_lista && <Badge variant="info">Na lista</Badge>}
-                    </div>
-                  </div>
+            const cardProduct: InventoryProduct = {
+              id: item.id,
+              name: item.nome,
+              quantity: item.quantidade,
+              minStock: item.quantidade_minima,
+              unit: item.unidade,
+              categoryId: item.categoria,
+            };
 
-                  <div className="actions-row">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void handleAdjustQuantity(item, -1)}
-                    >
-                      -{item.tamanho_porcao}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void handleAdjustQuantity(item, 1)}
-                    >
-                      +{item.tamanho_porcao}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void handleToggleInList(item)}
-                    >
-                      {item.na_lista ? "Retirar da lista" : "Incluir na lista"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingItem(item);
-                        setModalOpen(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
-                    <Button type="button" variant="ghost" onClick={() => setHistoryItem(item)}>
-                      Historico
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => navigate(`/stock/item/${item.id}`)}
-                    >
-                      Detalhes e consumo
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="danger"
-                      onClick={() => void handleDelete(item.id)}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                </CardBody>
-              </Card>
+            return (
+              <div key={item.id} className="space-y-1">
+                <ProductCard
+                  product={cardProduct}
+                  onEdit={() => {
+                    setEditingItem(item);
+                    setModalOpen(true);
+                  }}
+                  onAddToList={() => void handleToggleInList(item)}
+                  onRemove={() => void handleDelete(item.id)}
+                  onDecrease={() => void handleAdjustQuantity(item, -1)}
+                  onIncrease={() => void handleAdjustQuantity(item, 1)}
+                />
+
+                {item.na_lista && <p className="text-xs text-info px-2">Na lista de compras</p>}
+              </div>
             );
           })
         )}

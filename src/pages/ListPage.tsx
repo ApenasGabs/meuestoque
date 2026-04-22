@@ -66,6 +66,7 @@ export const ListPage = () => {
   const [draftName, setDraftName] = useState("");
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importSource, setImportSource] = useState<StockImportSource>("auto");
@@ -76,6 +77,18 @@ export const ListPage = () => {
   const setListId = useGroupStore((state) => state.setListId);
   const userId = useAuthStore((state) => state.userId);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!notice) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setNotice(null);
+    }, 2200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notice]);
 
   const refreshItems = useCallback(async (targetListId?: string | null) => {
     if (!targetListId) return;
@@ -178,6 +191,7 @@ export const ListPage = () => {
         createdBy: userId,
       });
       await refreshItems(listId);
+      setNotice(`"${payload.nome}" adicionado na lista.`);
     } catch (addError) {
       setError(addError instanceof Error ? addError.message : "Falha ao adicionar item");
     } finally {
@@ -190,6 +204,9 @@ export const ListPage = () => {
     try {
       await toggleListItemPurchased(item.id, !item.comprado);
       await refreshItems(listId);
+      setNotice(
+        item.comprado ? `"${item.nome}" desmarcado.` : `"${item.nome}" marcado como comprado.`,
+      );
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Falha ao atualizar item");
     }
@@ -200,6 +217,7 @@ export const ListPage = () => {
     try {
       await deleteListItem(itemId);
       await refreshItems(listId);
+      setNotice("Item removido da lista.");
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Falha ao remover item");
     }
@@ -236,6 +254,7 @@ export const ListPage = () => {
         setListId(nextListId);
       }
       await refreshItems(nextListId);
+      setNotice("Compra finalizada com sucesso.");
     } catch (finishError) {
       setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
     } finally {
@@ -253,6 +272,13 @@ export const ListPage = () => {
   }, [importSource, importText]);
 
   const total = calculateShoppingTotal(filteredItems);
+  const checkedCount = items.filter((item) => item.comprado).length;
+  const uncheckedCount = items.filter((item) => !item.comprado).length;
+
+  const categoryChips = [
+    { label: "Todos", value: "Todos" },
+    ...categories.slice(1).map((category) => ({ label: category, value: category })),
+  ];
 
   const handleImportToList = async (): Promise<void> => {
     if (!listId || importing) return;
@@ -281,6 +307,7 @@ export const ListPage = () => {
       await refreshItems(listId);
       setImportText("");
       setImportModalOpen(false);
+      setNotice(`${parsedItems.length} item(ns) importado(s) para a lista.`);
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Falha ao importar compra");
     } finally {
@@ -291,63 +318,95 @@ export const ListPage = () => {
   if (loading) {
     return (
       <main className="page auth">
-        <h1>Carregando lista</h1>
-        <p>Buscando os itens do grupo {groupName ?? "ativo"}...</p>
+        <div className="space-y-3">
+          <h1>Carregando lista</h1>
+          <p>Buscando os itens do grupo {groupName ?? "ativo"}...</p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="page">
-      <header className="page-header">
-        <div>
-          <h1>Lista</h1>
-          <p>{groupName ?? "Grupo ativo"}</p>
+    <main className="page pb-28 sm:pb-24">
+      {notice && (
+        <div className="toast toast-top toast-end z-50" data-testid="list-feedback-toast">
+          <div className="alert alert-success">
+            <span>{notice}</span>
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void handleFinishShopping()}
-          disabled={saving || items.length === 0}
-        >
-          {saving ? "Finalizando..." : "Finalizar"}
-        </Button>
+      )}
+
+      <header className="space-y-4 mb-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-primary font-semibold">
+              Lista de compras
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight">{groupName ?? "Grupo ativo"}</h1>
+            <p className="text-sm text-base-content/70">
+              {uncheckedCount} pendentes · {checkedCount} comprados
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => void handleFinishShopping()}
+            disabled={saving || items.length === 0}
+          >
+            {saving ? "Finalizando..." : "Finalizar compra"}
+          </Button>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {categoryChips.map((category) => (
+            <Button
+              key={category.value}
+              type="button"
+              variant={selectedCategory === category.value ? "primary" : "ghost"}
+              size="sm"
+              className="whitespace-nowrap shrink-0"
+              onClick={() => setSelectedCategory(category.value)}
+            >
+              {category.label}
+            </Button>
+          ))}
+        </div>
       </header>
 
       {error && <Alert type="error">{error}</Alert>}
 
-      <div className="row categories-row">
-        {categories.map((category) => (
-          <Button
-            key={category}
-            type="button"
-            variant={selectedCategory === category ? "primary" : "ghost"}
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </Button>
-        ))}
-      </div>
-
-      <Card className="card">
+      <Card className="card mb-4">
         <CardBody>
-          <div className="card-header">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h2>Itens</h2>
+              <h2 className="text-lg font-semibold">Itens</h2>
               <p className="muted">
                 Toque para marcar como comprado e ajuste o preço quando precisar.
               </p>
             </div>
-            <Button type="button" onClick={() => setModalVisible(true)}>
-              Novo item
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setImportModalOpen(true)}>
-              Importar compra
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setImportModalOpen(true)}
+              >
+                Importar compra
+              </Button>
+              <Button type="button" size="sm" onClick={() => setModalVisible(true)}>
+                Novo item
+              </Button>
+            </div>
           </div>
 
           {filteredItems.length === 0 ? (
-            <p className="empty-state">Nenhum item ainda. Adicione o primeiro.</p>
+            <div className="text-center py-12">
+              <p className="text-base font-medium">Nenhum item ainda</p>
+              <p className="empty-state mt-1">
+                Adicione o primeiro item ou gere uma lista inteligente.
+              </p>
+            </div>
           ) : (
             groupByCategory(filteredItems as ItemRecord[]).map(([category, categoryItems]) => (
               <section key={category} className="category-section">
@@ -358,14 +417,27 @@ export const ListPage = () => {
                   {categoryItems.map((item) => (
                     <article
                       key={item.id}
-                      className={item.comprado ? "list-item done" : "list-item"}
+                      className={`rounded-lg border border-base-300 bg-base-100 p-4 ${item.comprado ? "opacity-70" : ""}`}
                     >
-                      <div className="item-main">
-                        <strong>{item.nome}</strong>
-                        <span>{item.quantidade}</span>
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="min-w-0">
+                          <strong className="block truncate">{item.nome}</strong>
+                          <span className="text-sm text-base-content/60">
+                            Qtd: {item.quantidade}
+                          </span>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant={item.comprado ? "secondary" : "primary"}
+                          size="sm"
+                          onClick={() => void handleToggleItem(item)}
+                        >
+                          {item.comprado ? "Desmarcar" : "Comprar"}
+                        </Button>
                       </div>
 
-                      <div className="item-controls">
+                      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                         <label className="price-label" htmlFor={`price-${item.id}`}>
                           Preço
                         </label>
@@ -384,15 +456,7 @@ export const ListPage = () => {
                           size="sm"
                         />
 
-                        <div className="actions-row">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => void handleToggleItem(item)}
-                          >
-                            {item.comprado ? "Desmarcar" : "Comprar"}
-                          </Button>
+                        <div className="flex gap-2 justify-end">
                           <Button
                             type="button"
                             variant="ghost"
