@@ -14,10 +14,10 @@ const isRemoteMode = process.env.PLAYWRIGHT_REMOTE_MODE === "1";
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
-  fullyParallel: true,
+  fullyParallel: !isRemoteMode,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : isRemoteMode ? 1 : undefined,
 
   reporter: [["html"], ["list"]],
 

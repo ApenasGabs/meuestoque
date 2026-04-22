@@ -1,0 +1,6 @@
+{
+  "tablet": ["e2e/tablet"],
+  "theme": ["e2e/tablet/theme-smoke.spec.ts"],
+  "login": ["e2e/tablet/login.spec.ts"],
+  "logout": ["e2e/tablet/logout.spec.ts"]
+}

@@ -20,7 +20,8 @@
     "e2e:remote": "bash scripts/run-e2e.sh test -remote",
     "e2e:remote:theme": "bash scripts/run-e2e.sh test -remote theme",
     "e2e:remote:login": "bash scripts/run-e2e.sh test -remote login",
-    "e2e:theme:tablet": "node scripts/run-theme-remote-cdp.mjs",
+    "e2e:remote:logout": "bash scripts/run-e2e.sh test -remote logout",
+    "e2e:theme:tablet": "bash scripts/run-e2e.sh test -remote theme",
     "preview": "vite preview"
   },
   "dependencies": {

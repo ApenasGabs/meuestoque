@@ -33,29 +33,7 @@ for arg in "$@"; do
 done
 
 if [[ "${REMOTE_MODE}" == "1" ]]; then
-  echo "Modo remoto ativo: validando tunel e endpoint remoto..."
-
-  if ! curl --silent --fail --max-time 2 "http://127.0.0.1:${LOCAL_TUNNEL_PORT}/json/version" >/dev/null; then
-    echo "Tunel remoto indisponivel em 127.0.0.1:${LOCAL_TUNNEL_PORT}."
-    echo "Execute primeiro: bash scripts/open-e2e-remote-tunnel.sh"
-    exit 1
-  fi
-
-  if ! curl --silent --fail --max-time 3 "${PLAYWRIGHT_APP_URL}" >/dev/null; then
-    echo "Endpoint da aplicacao indisponivel: ${PLAYWRIGHT_APP_URL}"
-    exit 1
-  fi
-
-  export PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_APP_URL}"
-  export PLAYWRIGHT_REMOTE_MODE="1"
-
-  if [[ "${MODE}" == "report" ]]; then
-    echo "Modo remoto nao suporta report local. Rode sem -remote para abrir o report."
-    exit 1
-  fi
-
-  echo "Executando no tablet via CDP (interacao visivel na tela do dispositivo)..."
-  exec node "${ROOT_DIR}/scripts/run-theme-remote-cdp.mjs" "${PASSTHROUGH_ARGS[@]}"
+  exec node "${ROOT_DIR}/scripts/run-remote-playwright.mjs" "${MODE}" "${PASSTHROUGH_ARGS[@]}"
 fi
 
 COMMAND=(playwright)
