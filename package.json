@@ -17,15 +17,21 @@
     "e2e:ui": "bash scripts/run-e2e.sh ui",
     "e2e:debug": "bash scripts/run-e2e.sh debug",
     "e2e:report": "bash scripts/run-e2e.sh report",
+    "e2e:remote": "bash scripts/run-e2e.sh test -remote",
+    "e2e:remote:theme": "bash scripts/run-e2e.sh test -remote theme",
+    "e2e:remote:login": "bash scripts/run-e2e.sh test -remote login",
     "e2e:theme:tablet": "node scripts/run-theme-remote-cdp.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/icons": "6.x",
+    "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/vite": "^4.1.18",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.18"
+    "react-router-dom": "^7.14.2",
+    "tailwindcss": "^4.1.18",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
