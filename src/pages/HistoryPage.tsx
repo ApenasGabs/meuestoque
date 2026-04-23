@@ -6,19 +6,25 @@ import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
 import {
   deleteShoppingHistory,
+  duplicateShoppingListToActive,
   loadShoppingHistory,
   type ShoppingListRecord,
 } from "../lib/webData";
+import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 
 export function HistoryPage() {
   const groupId = useGroupStore((state) => state.groupId);
   const groupName = useGroupStore((state) => state.groupName);
+  const setListId = useGroupStore((state) => state.setListId);
+  const userId = useAuthStore((state) => state.userId);
   const navigate = useNavigate();
   const [history, setHistory] = useState<ShoppingListRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [deletingListId, setDeletingListId] = useState<string | null>(null);
+  const [duplicatingListId, setDuplicatingListId] = useState<string | null>(null);
 
   const loadHistory = useCallback(async (): Promise<void> => {
     if (!groupId) return;
@@ -42,6 +48,42 @@ export function HistoryPage() {
     void loadHistory();
   }, [loadHistory]);
 
+  useEffect(() => {
+    if (!notice) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setNotice(null);
+    }, 2400);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notice]);
+
+  const handleDuplicateList = async (sourceListId: string): Promise<void> => {
+    if (!groupId || duplicatingListId) return;
+
+    setDuplicatingListId(sourceListId);
+    setError(null);
+
+    try {
+      const result = await duplicateShoppingListToActive(groupId, sourceListId, userId);
+      setListId(result.targetListId);
+
+      if (result.duplicatedCount === 0) {
+        setNotice("Nenhum item novo para duplicar na lista ativa.");
+      } else {
+        setNotice(`${result.duplicatedCount} item(ns) duplicado(s) na lista ativa.`);
+      }
+    } catch (duplicateError) {
+      setError(
+        duplicateError instanceof Error ? duplicateError.message : "Falha ao duplicar lista",
+      );
+    } finally {
+      setDuplicatingListId(null);
+    }
+  };
+
   const handleDeleteHistory = async (listId: string): Promise<void> => {
     if (deletingListId) return;
 
@@ -63,6 +105,14 @@ export function HistoryPage() {
 
   return (
     <main className="page">
+      {notice && (
+        <div className="toast toast-top toast-end z-50">
+          <div className="alert alert-success">
+            <span>{notice}</span>
+          </div>
+        </div>
+      )}
+
       <header className="page-header">
         <div>
           <h1>Histórico</h1>
@@ -100,6 +150,15 @@ export function HistoryPage() {
                   </div>
                   <p>{list.items?.length ?? 0} itens</p>
                   <div className="actions-row mt-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={duplicatingListId !== null}
+                      onClick={() => void handleDuplicateList(list.id)}
+                    >
+                      {duplicatingListId === list.id ? "Duplicando..." : "Duplicar na lista"}
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"

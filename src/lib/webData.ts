@@ -25,6 +25,7 @@ export interface ItemRecord {
   preco: number | null;
   criado_por: string | null;
   list_id: string;
+  criado_em: string | null;
 }
 
 export interface MemberRecord {
@@ -151,7 +152,7 @@ export async function ensureActiveListForGroup(groupId: string): Promise<Shoppin
 export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
-    .select("id, nome, quantidade, categoria, comprado, preco, criado_por, list_id")
+    .select("id, nome, quantidade, categoria, comprado, preco, criado_por, list_id, criado_em")
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
 
@@ -200,6 +201,53 @@ export async function deleteListItem(itemId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function duplicateShoppingListToActive(
+  groupId: string,
+  sourceListId: string,
+  createdBy?: string | null,
+): Promise<{ targetListId: string; duplicatedCount: number }> {
+  const sourceItems = await loadListItems(sourceListId);
+  const activeList = await ensureActiveListForGroup(groupId);
+
+  if (sourceItems.length === 0) {
+    return { targetListId: activeList.id, duplicatedCount: 0 };
+  }
+
+  const targetItems = await loadListItems(activeList.id);
+  const existingKeys = new Set(
+    targetItems.map((item) => {
+      return `${item.nome.trim().toLowerCase()}::${item.quantidade.trim().toLowerCase()}::${item.categoria.trim().toLowerCase()}`;
+    }),
+  );
+
+  const itemsToInsert = sourceItems
+    .filter((item) => {
+      const key = `${item.nome.trim().toLowerCase()}::${item.quantidade.trim().toLowerCase()}::${item.categoria.trim().toLowerCase()}`;
+      return !existingKeys.has(key);
+    })
+    .map((item) => ({
+      list_id: activeList.id,
+      nome: item.nome,
+      quantidade: item.quantidade,
+      categoria: item.categoria,
+      preco: item.preco,
+      comprado: false,
+      criado_por: createdBy ?? item.criado_por ?? null,
+    }));
+
+  if (itemsToInsert.length === 0) {
+    return { targetListId: activeList.id, duplicatedCount: 0 };
+  }
+
+  const { error } = await supabase.from("items").insert(itemsToInsert);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { targetListId: activeList.id, duplicatedCount: itemsToInsert.length };
+}
+
 const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unidade: string } => {
   const normalized = rawQuantity.trim().replace(/\s+/g, " ");
   const match = normalized.match(/^(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z]+))?$/);
@@ -221,7 +269,7 @@ const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unid
 export async function finishShoppingList(listId: string, groupId: string): Promise<string | null> {
   const { data: items, error: itemsError } = await supabase
     .from("items")
-    .select("nome, quantidade, categoria, comprado, preco")
+    .select("id, nome, quantidade, categoria, comprado, preco, criado_por")
     .eq("list_id", listId);
 
   if (itemsError) throw new Error(itemsError.message);
@@ -229,7 +277,8 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
   const total = (items ?? []).reduce((sum, item) => sum + (item.preco ?? 0), 0);
 
   const boughtItems = (items ?? []).filter((item) => item.comprado);
-  const sourceItems = boughtItems.length > 0 ? boughtItems : (items ?? []);
+  const pendingItems = (items ?? []).filter((item) => !item.comprado);
+  const sourceItems = boughtItems;
 
   if (sourceItems.length > 0) {
     const currentStockItems = await getStockItems(groupId);
@@ -287,7 +336,7 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
           autoAdicionarLista: existingStockItem?.auto_adicionar_lista ?? false,
           consumoFrequencia: existingStockItem?.consumo_frequencia ?? "weekly",
           consumoValor: existingStockItem?.consumo_valor ?? 0,
-          dataCompra: existingStockItem?.data_compra ?? todayDate,
+          dataCompra: todayDate,
           dataValidade: existingStockItem?.data_validade ?? null,
         });
       }),
@@ -311,6 +360,25 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
   if (updateError) throw new Error(updateError.message);
 
   const nextList = await ensureActiveListForGroup(groupId);
+
+  if (pendingItems.length > 0) {
+    const { error: pendingInsertError } = await supabase.from("items").insert(
+      pendingItems.map((item) => ({
+        list_id: nextList.id,
+        nome: item.nome,
+        quantidade: item.quantidade,
+        categoria: item.categoria,
+        preco: item.preco,
+        comprado: false,
+        criado_por: item.criado_por,
+      })),
+    );
+
+    if (pendingInsertError) {
+      throw new Error(pendingInsertError.message);
+    }
+  }
+
   return nextList.id;
 }
 

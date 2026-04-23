@@ -1,8 +1,10 @@
 import type { ReactElement } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
 import { Checkbox } from "../../../../components/Checkbox/Checkbox";
+import { Input } from "../../../../components/Input/Input";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
 interface ShoppingListItemProps {
@@ -10,9 +12,8 @@ interface ShoppingListItemProps {
   product: InventoryProduct;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
-  onDecrease: (id: string) => void;
-  onIncrease: (id: string) => void;
   onBuy: (id: string) => void;
+  onUpdatePrice?: (id: string, value: number | null) => void;
 }
 
 export const ShoppingListItem = ({
@@ -20,10 +21,43 @@ export const ShoppingListItem = ({
   product,
   onToggle,
   onRemove,
-  onDecrease,
-  onIncrease,
   onBuy,
+  onUpdatePrice,
 }: ShoppingListItemProps): ReactElement => {
+  const [priceDraft, setPriceDraft] = useState<string>(
+    item.price !== null && item.price !== undefined ? item.price.toFixed(2).replace(".", ",") : "",
+  );
+
+  useEffect(() => {
+    setPriceDraft(
+      item.price !== null && item.price !== undefined
+        ? item.price.toFixed(2).replace(".", ",")
+        : "",
+    );
+  }, [item.price]);
+
+  const handlePriceBlur = (): void => {
+    if (!onUpdatePrice) return;
+
+    const normalizedValue = priceDraft.trim();
+    if (normalizedValue.length === 0) {
+      onUpdatePrice(item.id, null);
+      return;
+    }
+
+    const parsed = Number.parseFloat(normalizedValue.replace(",", "."));
+    if (Number.isNaN(parsed)) {
+      setPriceDraft(
+        item.price !== null && item.price !== undefined
+          ? item.price.toFixed(2).replace(".", ",")
+          : "",
+      );
+      return;
+    }
+
+    onUpdatePrice(item.id, parsed);
+  };
+
   return (
     <Card
       className={`shadow-none ${item.checked ? "opacity-70 border-base-300" : "border-base-300"}`}
@@ -52,21 +86,26 @@ export const ShoppingListItem = ({
             <p className="text-xs text-base-content/60">
               {item.quantity} {product.unit ?? "un"}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Input
+                value={priceDraft}
+                onChange={(event) => setPriceDraft(event.target.value)}
+                onBlur={handlePriceBlur}
+                placeholder="Preço"
+                inputMode="decimal"
+                size="sm"
+                className="w-28"
+              />
+              {item.isPriceStale && (
+                <Badge variant="warning" size="sm">
+                  Preço &gt;30 dias
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDecrease(item.id)}
-              disabled={item.quantity <= 1}
-            >
-              -
-            </Button>
             <span className="w-8 text-center font-semibold tabular-nums">{item.quantity}</span>
-            <Button variant="ghost" size="sm" onClick={() => onIncrease(item.id)}>
-              +
-            </Button>
             {!item.checked && (
               <Button variant="ghost" size="sm" onClick={() => onBuy(item.id)}>
                 Comprar

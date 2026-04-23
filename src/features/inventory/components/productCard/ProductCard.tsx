@@ -3,15 +3,14 @@ import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
 import type { InventoryProduct } from "../../types";
-import { ShoppingCartOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, ShoppingCartOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface ProductCardProps {
   product: InventoryProduct;
   onEdit: (product: InventoryProduct) => void;
   onAddToList: (product: InventoryProduct) => void;
   onRemove: (id: string) => void;
-  onDecrease: (product: InventoryProduct) => void;
-  onIncrease: (product: InventoryProduct) => void;
+  onCardClick?: (product: InventoryProduct) => void;
 }
 
 export const ProductCard = ({
@@ -19,17 +18,25 @@ export const ProductCard = ({
   onEdit,
   onAddToList,
   onRemove,
-  onDecrease,
-  onIncrease,
+  onCardClick,
 }: ProductCardProps): ReactElement => {
   const isOut = product.quantity === 0;
   const isLow = product.quantity > 0 && product.quantity <= product.minStock;
+  const isPendingValidity = Boolean(product.needsValidity);
 
   return (
     <Card
-      className={`shadow-none ${isOut ? "border-error/50 bg-error/5" : isLow ? "border-warning/50 bg-warning/5" : "border-base-300"}`}
+      className={`shadow-none ${onCardClick ? "cursor-pointer" : ""} ${isPendingValidity ? "border-error/60 bg-error/5" : isOut ? "border-error/50 bg-error/5" : isLow ? "border-warning/50 bg-warning/5" : "border-base-300"}`}
+      testId={`product-card-${product.id}`}
     >
-      <CardBody className="p-2 overflow-x-auto">
+      <CardBody
+        className="p-2 overflow-x-auto"
+        onClick={() => {
+          if (onCardClick) {
+            onCardClick(product);
+          }
+        }}
+      >
         <div className="flex items-center justify-between whitespace-nowrap">
           <div className="flex items-center gap-2 min-w-0">
             <p className="text-sm font-medium truncate max-w-44">{product.name}</p>
@@ -37,6 +44,11 @@ export const ProductCard = ({
             <p className="text-xs text-base-content/60">
               Min {product.minStock} {product.unit ?? "un"}
             </p>
+            {isPendingValidity && (
+              <Badge variant="error" size="sm">
+                Pendente Validade
+              </Badge>
+            )}
             {isOut && (
               <Badge variant="error" size="sm">
                 Zerado
@@ -50,30 +62,15 @@ export const ProductCard = ({
           </div>
 
           <div className="flex items-center ">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDecrease(product)}
-              disabled={product.quantity <= 0}
-              aria-label={`Diminuir quantidade de ${product.name}`}
-            >
-              -
-            </Button>
             <span className="w-8 text-center font-semibold tabular-nums">{product.quantity}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onIncrease(product)}
-              aria-label={`Aumentar quantidade de ${product.name}`}
-            >
-              +
-            </Button>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onAddToList(product)}
               aria-label={`Adicionar ${product.name} na lista`}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClickCapture={(event) => event.stopPropagation()}
             >
               <ShoppingCartOutlined />
             </Button>
@@ -82,6 +79,8 @@ export const ProductCard = ({
               size="sm"
               onClick={() => onEdit(product)}
               aria-label={`Editar ${product.name}`}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClickCapture={(event) => event.stopPropagation()}
             >
               <EditOutlined />
             </Button>
@@ -90,6 +89,8 @@ export const ProductCard = ({
               size="sm"
               onClick={() => onRemove(product.id)}
               aria-label={`Remover ${product.name}`}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClickCapture={(event) => event.stopPropagation()}
             >
               <DeleteOutlined />
             </Button>

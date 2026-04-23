@@ -1,16 +1,19 @@
+import type { ReactElement } from "react";
 import { useEffect } from "react";
+import { ComprasWebShell } from "../ComprasWebShell";
 import { supabase } from "../lib/supabase";
 import { restoreGroupContext } from "../lib/webData";
 import { useAuthStore } from "../stores/authStore";
 import { getPersistedGroupSnapshotForUser, useGroupStore } from "../stores/groupStore";
 import { useSessionStore } from "../stores/sessionStore";
 
-export function SessionBootstrap() {
+export function SessionBootstrap(): ReactElement {
   const setUser = useAuthStore((state) => state.setUser);
   const clearUser = useAuthStore((state) => state.clearUser);
   const { setGroup, setListId, setAllGroups, clearGroup, clearAllGroupState, setSnapshotUserId } =
     useGroupStore();
   const setReady = useSessionStore((state) => state.setReady);
+  const ready = useSessionStore((state) => state.ready);
 
   useEffect(() => {
     let active = true;
@@ -149,5 +152,13 @@ export function SessionBootstrap() {
     setUser,
   ]);
 
-  return null;
+  if (!ready) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-base-100">
+        <div className="loading loading-spinner loading-lg"></div>
+      </div>
+    );
+  }
+
+  return <ComprasWebShell />;
 }

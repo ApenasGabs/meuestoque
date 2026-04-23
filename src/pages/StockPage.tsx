@@ -52,7 +52,6 @@ export const StockPage = () => {
   const clearAutoAddedNotice = useStockStore((state) => state.clearAutoAddedNotice);
   const fetchItems = useStockStore((state) => state.fetchItems);
   const upsertItem = useStockStore((state) => state.upsertItem);
-  const updateItemQuantity = useStockStore((state) => state.updateItemQuantity);
   const toggleInShoppingList = useStockStore((state) => state.toggleInShoppingList);
   const removeItem = useStockStore((state) => state.removeItem);
 
@@ -188,18 +187,6 @@ export const StockPage = () => {
       await upsertItem(payload);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Falha ao salvar item");
-    }
-  };
-
-  const handleAdjustQuantity = async (item: StockItemRecord, sign: 1 | -1): Promise<void> => {
-    setError(null);
-    try {
-      const delta = item.tamanho_porcao * sign;
-      await updateItemQuantity(item.id, delta, userId);
-    } catch (quantityError) {
-      setError(
-        quantityError instanceof Error ? quantityError.message : "Falha ao atualizar quantidade",
-      );
     }
   };
 
@@ -414,8 +401,6 @@ export const StockPage = () => {
                   }}
                   onAddToList={() => void handleToggleInList(item)}
                   onRemove={() => void handleDelete(item.id)}
-                  onDecrease={() => void handleAdjustQuantity(item, -1)}
-                  onIncrease={() => void handleAdjustQuantity(item, 1)}
                 />
 
                 {item.na_lista && <p className="text-xs text-info px-2">Na lista de compras</p>}

@@ -5,6 +5,8 @@ export interface InventoryProduct {
   minStock: number;
   unit?: string;
   categoryId: string;
+  validityDate?: string | null;
+  needsValidity?: boolean;
 }
 
 export interface InventoryCategory {
@@ -18,4 +20,9 @@ export interface InventoryShoppingListItem {
   productId: string;
   quantity: number;
   checked: boolean;
+  price?: number | null;
+  isPriceStale?: boolean;
 }
+
+export type InventoryTab = "stock" | "list" | "settings";
+export type StockFilter = "low" | "out";

@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
 interface CardProps {
   children: ReactNode;
@@ -13,11 +13,7 @@ interface CardProps {
  * @param className - Classes CSS adicionais
  * @param testId - ID para testes
  */
-export const Card = ({
-  children,
-  className = "",
-  testId,
-}: CardProps): ReactElement => {
+export const Card = ({ children, className = "", testId }: CardProps): ReactElement => {
   return (
     <div
       className={`rounded-lg border border-base-300 bg-base-100 shadow-lg ${className}`.trim()}
@@ -28,7 +24,7 @@ export const Card = ({
   );
 };
 
-interface CardBodyProps {
+interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   centered?: boolean;
   className?: string;
@@ -45,13 +41,14 @@ export const CardBody = ({
   children,
   centered = false,
   className = "",
+  ...props
 }: CardBodyProps): ReactElement => {
-  const centerClass = centered
-    ? "flex flex-col items-center justify-center text-center"
-    : "";
+  const centerClass = centered ? "flex flex-col items-center justify-center text-center" : "";
 
   return (
-    <div className={`p-6 ${centerClass} ${className}`.trim()}>{children}</div>
+    <div className={`p-6 ${centerClass} ${className}`.trim()} {...props}>
+      {children}
+    </div>
   );
 };
 
@@ -66,13 +63,6 @@ interface CardTitleProps {
  * @param children - Conteúdo do título
  * @param className - Classes CSS adicionais
  */
-export const CardTitle = ({
-  children,
-  className = "",
-}: CardTitleProps): ReactElement => {
-  return (
-    <h2 className={`text-2xl font-bold mb-4 ${className}`.trim()}>
-      {children}
-    </h2>
-  );
+export const CardTitle = ({ children, className = "" }: CardTitleProps): ReactElement => {
+  return <h2 className={`text-2xl font-bold mb-4 ${className}`.trim()}>{children}</h2>;
 };

@@ -1,6 +1,7 @@
 import type { FormEvent, ReactElement } from "react";
 import { useState } from "react";
 import { Button } from "../../../../components/Button/Button";
+import { Checkbox } from "../../../../components/Checkbox/Checkbox";
 import { Input } from "../../../../components/Input/Input";
 import { Label } from "../../../../components/Label/Label";
 import type { InventoryCategory, InventoryProduct } from "../../types";
@@ -29,6 +30,8 @@ export const ProductFormModal = ({
   const [categoryId, setCategoryId] = useState<string>(
     product?.categoryId ?? categories[0]?.id ?? "",
   );
+  const [validityDate, setValidityDate] = useState<string>(product?.validityDate ?? "");
+  const [needsValidity, setNeedsValidity] = useState<boolean>(product?.needsValidity ?? !product);
   const [useNewCategory, setUseNewCategory] = useState<boolean>(false);
   const [newCategoryName, setNewCategoryName] = useState<string>("");
 
@@ -56,6 +59,8 @@ export const ProductFormModal = ({
       minStock: Number(minStock),
       unit: unit.trim() || "un",
       categoryId: finalCategoryId,
+      validityDate: validityDate.trim() || null,
+      needsValidity,
     };
 
     onSave(payload, product?.id);
@@ -118,6 +123,27 @@ export const ProductFormModal = ({
                 onChange={(event) => setUnit(event.target.value)}
                 placeholder="kg, un, L"
               />
+            </div>
+          </div>
+
+          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
+            <Checkbox
+              checked={needsValidity}
+              onChange={(event) => setNeedsValidity(event.target.checked)}
+              label="Pendente de validade"
+              color="error"
+            />
+            <div>
+              <Label htmlFor="product-validity-date">Data de validade</Label>
+              <Input
+                id="product-validity-date"
+                type="date"
+                value={validityDate}
+                onChange={(event) => setValidityDate(event.target.value)}
+              />
+              <p className="text-xs text-base-content/60 mt-1">
+                Marque como pendente para pinhar o item no topo até a validade ser informada.
+              </p>
             </div>
           </div>
 

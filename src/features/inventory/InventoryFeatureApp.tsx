@@ -107,27 +107,68 @@ export const InventoryFeatureApp = (): ReactElement => {
     shoppingList,
     activeTab,
     search,
-    filter,
+    filters,
     lowStockCount,
     outOfStockCount,
     checkedCount,
     uncheckedCount,
     setActiveTab,
     setSearch,
-    setFilter,
+    toggleFilter,
+    clearFilters,
     addProduct,
     updateProduct,
     removeProduct,
     addCategory,
-    updateQuantity,
     addToShoppingList,
     toggleItemChecked,
     removeFromShoppingList,
-    updateShoppingQuantity,
     markItemAsBought,
     clearCheckedItems,
     generateSmartList,
   } = useInventoryFeature();
+
+  const handleSmartAdd = ({
+    name,
+    quantity,
+    unit,
+  }: {
+    name: string;
+    quantity: number;
+    unit: string;
+    price: number | null;
+    hasQuantity: boolean;
+  }): void => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    const normalizedName = trimmedName.toLowerCase();
+    const existingProduct = products.find(
+      (product) => product.name.toLowerCase() === normalizedName,
+    );
+
+    if (existingProduct) {
+      addToShoppingList(existingProduct.id, Math.max(1, quantity));
+      return;
+    }
+
+    const otherCategoryId = categories.find((category) => category.name === "Outros")?.id;
+    const categoryId = otherCategoryId ?? addCategory("Outros");
+
+    const newProductId = addProduct({
+      name: trimmedName,
+      quantity: 0,
+      minStock: 1,
+      unit: unit.trim() || "un",
+      categoryId,
+      validityDate: null,
+      needsValidity: false,
+    });
+
+    addToShoppingList(newProductId, Math.max(1, quantity));
+  };
 
   return (
     <div className="bg-base-200 min-h-screen flex flex-col">
@@ -154,13 +195,13 @@ export const InventoryFeatureApp = (): ReactElement => {
             products={products}
             categories={categories}
             search={search}
-            filter={filter}
+            filters={filters}
             onSearchChange={setSearch}
-            onFilterChange={setFilter}
+            onToggleFilter={toggleFilter}
+            onClearFilters={clearFilters}
             onAddProduct={addProduct}
             onUpdateProduct={updateProduct}
             onRemoveProduct={removeProduct}
-            onUpdateQuantity={updateQuantity}
             onAddToShoppingList={(product) =>
               addToShoppingList(product.id, Math.max(product.minStock - product.quantity + 1, 1))
             }
@@ -172,17 +213,9 @@ export const InventoryFeatureApp = (): ReactElement => {
             shoppingList={shoppingList}
             checkedCount={checkedCount}
             uncheckedCount={uncheckedCount}
-            onAddToList={addToShoppingList}
+            onSmartAdd={handleSmartAdd}
             onToggle={toggleItemChecked}
             onRemove={removeFromShoppingList}
-            onDecrease={(id) => {
-              const currentQuantity = shoppingList.find((item) => item.id === id)?.quantity ?? 1;
-              updateShoppingQuantity(id, Math.max(1, currentQuantity - 1));
-            }}
-            onIncrease={(id) => {
-              const currentQuantity = shoppingList.find((item) => item.id === id)?.quantity ?? 1;
-              updateShoppingQuantity(id, currentQuantity + 1);
-            }}
             onBuy={markItemAsBought}
             onClearChecked={clearCheckedItems}
             onGenerateSmartList={generateSmartList}
