@@ -1,12 +1,12 @@
 import type { ReactElement } from "react";
-import { Badge } from "../../../components/Badge/Badge";
-import { Button } from "../../../components/Button/Button";
-import { Card, CardBody } from "../../../components/Card/Card";
-import { Checkbox } from "../../../components/Checkbox/Checkbox";
-import type { InventoryProduct, ShoppingListItem as ShoppingListItemType } from "../types";
+import { Badge } from "../../../../components/Badge/Badge";
+import { Button } from "../../../../components/Button/Button";
+import { Card, CardBody } from "../../../../components/Card/Card";
+import { Checkbox } from "../../../../components/Checkbox/Checkbox";
+import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
 interface ShoppingListItemProps {
-  item: ShoppingListItemType;
+  item: InventoryShoppingListItem;
   product: InventoryProduct;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;

@@ -4,7 +4,7 @@ Este projeto inclui testes end-to-end configurados com **Playwright** em **TypeS
 
 ## 📁 Estrutura
 
-```
+```text
 e2e/
 ├── general/              # Testes gerais da aplicação
 │   ├── app.spec.ts      # Testes da página principal
@@ -25,6 +25,55 @@ Execute todos os testes em todos os navegadores:
 ```bash
 npm run e2e
 ```
+
+### Modo remoto (tablet)
+
+Passo 1: abra o túnel SSH para o tablet em um terminal dedicado:
+
+```bash
+pnpm run e2e:tunnel
+```
+
+Passo 2: em outro terminal, rode o Playwright já conectado ao Chrome do tablet via **WebSocket CDP** (resolvido a partir de `http://127.0.0.1:LOCAL_TUNNEL_PORT/json/version`):
+
+```bash
+pnpm run e2e:remote
+pnpm run e2e:remote:theme
+pnpm run e2e:remote:login
+# equivalente:
+pnpm run e2e -- test -remote
+pnpm run e2e -- test -remote theme
+pnpm run e2e -- test -remote login
+```
+
+Com `-remote`, o script `scripts/run-remote-playwright.mjs`:
+
+- valida o túnel CDP e obtém `webSocketDebuggerUrl`
+- valida que a app responde em `PLAYWRIGHT_APP_URL` (ou `PLAYWRIGHT_BASE_URL`)
+- define `PLAYWRIGHT_CDP_URL` e `PLAYWRIGHT_REMOTE_MODE=1`
+- os specs de `e2e/tablet` usam fixture remoto (`e2e/tablet/remote-test.ts`) com `chromium.connectOverCDP`
+- o fixture reaproveita o contexto/aba já aberta no Chrome do tablet ("sequestro" da guia atual)
+- por padrão executa os testes em `e2e/tablet/` (manifesto `scripts/remote-suites.json`)
+
+Documentação dos fluxos remotos do tablet: [`e2e/tablet/REMOTE_FLOWS.md`](./tablet/REMOTE_FLOWS.md)
+
+Suites nomeados no manifesto: `tablet` (pasta inteira), `theme`, `login`. Listar:
+
+```bash
+node scripts/run-remote-playwright.mjs --list-suites
+```
+
+Passar argumentos crus do Playwright (sem suite do manifesto):
+
+```bash
+pnpm run e2e -- test -remote -- e2e/tablet/login.spec.ts --headed
+```
+
+**Login remoto:** defina `E2E_REMOTE_EMAIL` e `E2E_REMOTE_PASSWORD` no `.env.local` (veja `.env.example`). Sem essas variáveis o spec de login é ignorado (`test.skip`).
+
+**Nota:** `pnpm run e2e:ui -- -remote` e `pnpm run e2e:debug -- -remote` não abrem a UI do Playwright no modo CDP remoto descrito acima; use o fluxo `-remote` para o runner Node ou rode Playwright localmente sem `-remote`.
+
+Se o túnel não estiver ativo, o runner falha com instrução para executar `pnpm run e2e:tunnel`.
 
 ### Modo UI (recomendado para desenvolvimento)
 

@@ -1,54 +1,18 @@
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
 import { Badge } from "../../components/Badge/Badge";
 import { Button } from "../../components/Button/Button";
 import { Card, CardBody, CardTitle } from "../../components/Card/Card";
 import { Label } from "../../components/Label/Label";
 import ThemeSelector from "../../components/ThemeSelector/ThemeSelector";
-import { ShoppingListView } from "./components/ShoppingListView";
-import { StockView } from "./components/StockView";
+import {
+  FONT_SIZE_LABELS,
+  FONT_SIZE_OPTIONS,
+  getStoredTheme,
+  useFontSizePreference,
+} from "../../hooks/usePreferences";
+import { ShoppingListView } from "./components/shoppingListView/ShoppingListView";
+import { StockView } from "./components/stockView/StockView";
 import { useInventoryFeature } from "./useInventoryFeature";
-
-type FontSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
-const FONT_SIZE_OPTIONS: FontSize[] = ["xs", "sm", "md", "lg", "xl", "2xl"];
-
-const FONT_SIZE_CLASSES: Record<FontSize, string> = {
-  xs: "text-xs",
-  sm: "text-sm",
-  md: "text-base",
-  lg: "text-lg",
-  xl: "text-xl",
-  "2xl": "text-2xl",
-};
-
-const FONT_SIZE_LABELS: Record<FontSize, string> = {
-  xs: "XS",
-  sm: "Pequeno",
-  md: "Normal",
-  lg: "Grande",
-  xl: "Muito Grande",
-  "2xl": "Gigante",
-};
-
-const isFontSize = (value: string): value is FontSize =>
-  FONT_SIZE_OPTIONS.includes(value as FontSize);
-
-const getStoredFontSize = (): FontSize => {
-  if (typeof window === "undefined") {
-    return "md";
-  }
-
-  const savedFontSize = localStorage.getItem("fontSize");
-  return savedFontSize && isFontSize(savedFontSize) ? savedFontSize : "md";
-};
-
-const getStoredTheme = (): string => {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  return localStorage.getItem("theme") || "light";
-};
 
 const GearIcon = (): ReactElement => (
   <svg
@@ -67,17 +31,8 @@ const GearIcon = (): ReactElement => (
 );
 
 const SettingsView = (): ReactElement => {
-  const [fontSize, setFontSize] = useState<FontSize>(getStoredFontSize);
+  const { fontSize, setFontSize } = useFontSizePreference();
   const storedTheme = getStoredTheme();
-
-  useEffect(() => {
-    Object.values(FONT_SIZE_CLASSES).forEach((className) => {
-      document.documentElement.classList.remove(className);
-    });
-
-    document.documentElement.classList.add(FONT_SIZE_CLASSES[fontSize]);
-    localStorage.setItem("fontSize", fontSize);
-  }, [fontSize]);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-28">

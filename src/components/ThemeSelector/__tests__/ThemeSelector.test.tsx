@@ -113,9 +113,7 @@ describe("ThemeSelector", () => {
     it("deve marcar o tema light como checked por padrão", () => {
       render(<ThemeSelector />);
 
-      const lightTheme = screen.getByTestId(
-        "theme-option-light",
-      ) as HTMLInputElement;
+      const lightTheme = screen.getByTestId("theme-option-light") as HTMLInputElement;
       expect(lightTheme.checked).toBe(true);
     });
   });
@@ -129,15 +127,13 @@ describe("ThemeSelector", () => {
       fireEvent.click(darkTheme);
 
       await waitFor(() => {
-        expect(document.documentElement.getAttribute("data-theme")).toBe(
-          "dark",
-        );
+        expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
         expect(document.body.getAttribute("data-theme")).toBe("dark");
         expect(localStorage.getItem("theme")).toBe("dark");
       });
     });
 
-    it("deve atualizar a classe do documento quando tema é alterado", async () => {
+    it("deve atualizar o data-theme do documento quando tema é alterado", async () => {
       render(<ThemeSelector />);
 
       // Selecionar o tema cyberpunk
@@ -145,8 +141,8 @@ describe("ThemeSelector", () => {
       fireEvent.click(cyberpunkTheme);
 
       await waitFor(() => {
-        expect(document.documentElement.className).toBe("cyberpunk");
-        expect(document.body.className).toBe("cyberpunk");
+        expect(document.documentElement.getAttribute("data-theme")).toBe("cyberpunk");
+        expect(document.body.getAttribute("data-theme")).toBe("cyberpunk");
       });
     });
 
@@ -155,21 +151,15 @@ describe("ThemeSelector", () => {
 
       render(<ThemeSelector />);
 
-      const retroTheme = screen.getByTestId(
-        "theme-option-retro",
-      ) as HTMLInputElement;
+      const retroTheme = screen.getByTestId("theme-option-retro") as HTMLInputElement;
       expect(retroTheme.checked).toBe(true);
     });
 
     it("deve desmarcar tema anterior ao selecionar novo tema", async () => {
       render(<ThemeSelector />);
 
-      const lightTheme = screen.getByTestId(
-        "theme-option-light",
-      ) as HTMLInputElement;
-      const darkTheme = screen.getByTestId(
-        "theme-option-dark",
-      ) as HTMLInputElement;
+      const lightTheme = screen.getByTestId("theme-option-light") as HTMLInputElement;
+      const darkTheme = screen.getByTestId("theme-option-dark") as HTMLInputElement;
 
       // Light deve estar marcado inicialmente
       expect(lightTheme.checked).toBe(true);
@@ -218,9 +208,7 @@ describe("ThemeSelector", () => {
       render(<ThemeSelector />);
 
       // Verificar se tema persiste
-      const emeraldThemeAfter = screen.getByTestId(
-        "theme-option-emerald",
-      ) as HTMLInputElement;
+      const emeraldThemeAfter = screen.getByTestId("theme-option-emerald") as HTMLInputElement;
       expect(emeraldThemeAfter.checked).toBe(true);
     });
   });
@@ -300,12 +288,8 @@ describe("ThemeSelector", () => {
       fireEvent.click(synthwaveTheme);
 
       await waitFor(() => {
-        expect(document.documentElement.getAttribute("data-theme")).toBe(
-          "synthwave",
-        );
-        expect(document.documentElement.className).toBe("synthwave");
+        expect(document.documentElement.getAttribute("data-theme")).toBe("synthwave");
         expect(document.body.getAttribute("data-theme")).toBe("synthwave");
-        expect(document.body.className).toBe("synthwave");
       });
     });
 
@@ -319,9 +303,7 @@ describe("ThemeSelector", () => {
         fireEvent.click(themeElement);
 
         await waitFor(() => {
-          expect(document.documentElement.getAttribute("data-theme")).toBe(
-            theme,
-          );
+          expect(document.documentElement.getAttribute("data-theme")).toBe(theme);
           expect(document.body.getAttribute("data-theme")).toBe(theme);
         });
       }

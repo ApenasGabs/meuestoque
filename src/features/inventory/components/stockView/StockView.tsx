@@ -1,11 +1,11 @@
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
-import { Button } from "../../../components/Button/Button";
-import { Input } from "../../../components/Input/Input";
-import type { InventoryCategory, InventoryProduct } from "../types";
-import type { StockFilter } from "../useInventoryFeature";
-import { CategorySection } from "./CategorySection";
-import { ProductFormModal } from "./ProductFormModal";
+import { Button } from "../../../../components/Button/Button";
+import { Input } from "../../../../components/Input/Input";
+import type { InventoryCategory, InventoryProduct } from "../../types";
+import type { StockFilter } from "../../useInventoryFeature";
+import { CategorySection } from "../categorySection/CategorySection";
+import { ProductFormModal } from "../productFormModal/ProductFormModal";
 
 interface StockViewProps {
   products: InventoryProduct[];

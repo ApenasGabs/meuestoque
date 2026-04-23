@@ -10,18 +10,14 @@ const ThemeSelector = () => {
   });
 
   const applyTheme = (theme: string) => {
-    // daisyUI aceita tanto data-theme quanto class na raiz
+    // Mantem o tema sem sobrescrever classes globais (ex.: tamanho da fonte)
     document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.className = theme;
     document.body.setAttribute("data-theme", theme);
-    document.body.className = theme;
     localStorage.setItem("theme", theme);
   };
 
   const toggleDrawer = useCallback((): void => {
-    const drawerToggle = document.getElementById(
-      "theme-drawer",
-    ) as HTMLInputElement | null;
+    const drawerToggle = document.getElementById("theme-drawer") as HTMLInputElement | null;
 
     if (!drawerToggle) return;
 

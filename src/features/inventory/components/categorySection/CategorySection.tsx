@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { Button } from "../../../components/Button/Button";
-import { Badge } from "../../../components/Badge/Badge";
-import type { InventoryProduct } from "../types";
-import { ProductCard } from "./ProductCard";
+import { Button } from "../../../../components/Button/Button";
+import { Badge } from "../../../../components/Badge/Badge";
+import type { InventoryProduct } from "../../types";
+import { ProductCard } from "../productCard/ProductCard";
 
 interface CategorySectionProps {
   name: string;
