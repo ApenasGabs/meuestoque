@@ -5,6 +5,19 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.0](https://github.com/ApenasGabs/meuestoque/compare/v1.2.0...v1.3.0) (2026-04-23)
+
+### ✨ Features
+
+* :boom: Implement UI/UX restructuring for inventory management ([a3574a9](https://github.com/ApenasGabs/meuestoque/commit/a3574a9bbd5daa82c2c6e0fbb4b09ba391cee33b))
+* :sparkles: add forced failure test for remote E2E flows and update scripts for execution ([63608d5](https://github.com/ApenasGabs/meuestoque/commit/63608d55d286d956ea3453c50947a71705cd7e5d))
+* :sparkles: add Inventory management components including StockView, ShoppingListView, CategorySection, ProductCard, and ProductFormModal ([aa1e188](https://github.com/ApenasGabs/meuestoque/commit/aa1e1887aedd20d9193f4a49b1c13ecf429ed9e5))
+* :sparkles: enhance application structure with routing, add new E2E scripts, and update dependencies ([f38b438](https://github.com/ApenasGabs/meuestoque/commit/f38b438386a9e91924d6133d9513d9a412700232))
+* :sparkles: implement remote E2E testing for tablet with Playwright, including login, logout, and theme management flows ([a55cee7](https://github.com/ApenasGabs/meuestoque/commit/a55cee7a16058c0ddf197b41956b957848f8b55f))
+* :sparkles: implement remote E2E testing setup with Playwright and enhance theme management ([d5be620](https://github.com/ApenasGabs/meuestoque/commit/d5be620804fe1215e0f2bd01ca5d9779bd74c451))
+* :sparkles: refactor theme management and update ShoppingList components for consistency ([84acabc](https://github.com/ApenasGabs/meuestoque/commit/84acabc00acc282e23be3d3a196f3eeb925969a4))
+* :wrench: :sparkles: add registration and stock management pages with state management ([d80aac5](https://github.com/ApenasGabs/meuestoque/commit/d80aac5c74155241828f3bb46e98d3d35dfb5012))
+
 ## [1.2.0](https://github.com/ApenasGabs/meuestoque/compare/v1.1.0...v1.2.0) (2026-04-22)
 
 ### ✨ Features
