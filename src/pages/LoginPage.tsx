@@ -5,6 +5,7 @@ import { Alert } from "../components/Alert/Alert";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody, CardTitle } from "../components/Card/Card";
 import { Input } from "../components/Input/Input";
+import { useAppMode } from "../hooks/useAppMode";
 import { supabase } from "../lib/supabase";
 import { restoreGroupContext } from "../lib/webData";
 import { useAuthStore } from "../stores/authStore";
@@ -16,8 +17,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { appTitle } = useAppMode();
 
-  async function onSubmit(e: FormEvent) {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -81,13 +83,13 @@ export function LoginPage() {
     }
 
     setLoading(false);
-  }
+  };
 
   return (
     <main className="page auth">
       <Card>
         <CardBody>
-          <CardTitle>Meu estoque</CardTitle>
+          <CardTitle>{appTitle}</CardTitle>
           <p>Entrar na sua conta</p>
 
           <form onSubmit={onSubmit} className="form mt-6">

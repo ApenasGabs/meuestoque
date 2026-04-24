@@ -4,6 +4,7 @@ import { Button } from "../../components/Button/Button";
 import { Card, CardBody, CardTitle } from "../../components/Card/Card";
 import { Label } from "../../components/Label/Label";
 import ThemeSelector from "../../components/ThemeSelector/ThemeSelector";
+import { useAppMode } from "../../hooks/useAppMode";
 import {
   FONT_SIZE_LABELS,
   FONT_SIZE_OPTIONS,
@@ -101,6 +102,7 @@ const SettingsView = (): ReactElement => {
 };
 
 export const InventoryFeatureApp = (): ReactElement => {
+  const { appTitle } = useAppMode();
   const {
     products,
     categories,
@@ -175,7 +177,7 @@ export const InventoryFeatureApp = (): ReactElement => {
       <header className="bg-base-100 border-b border-base-300 px-4 py-3 sticky top-0 z-20 flex items-center justify-between gap-3">
         <div className="leading-tight">
           <p className="text-[11px] uppercase tracking-[0.16em] text-primary font-semibold">
-            Meu Estoque
+            {appTitle}
           </p>
           {/* <h1 className="text-base font-semibold tracking-tight">Estoque e Lista de Compras</h1> */}
         </div>
