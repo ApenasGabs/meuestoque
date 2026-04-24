@@ -5,6 +5,13 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.4.0](https://github.com/ApenasGabs/meuestoque/compare/v1.3.0...v1.4.0) (2026-04-24)
+
+### ✨ Features
+
+* :boom: :sparkles: add end-to-end tests for authentication and core flow ([2d0b49f](https://github.com/ApenasGabs/meuestoque/commit/2d0b49fd104ff9a6c4546c0de74cd9e025f764cd))
+* **inventory:** :wrench: enhance inventory management with new features and UI improvements ([acc6e79](https://github.com/ApenasGabs/meuestoque/commit/acc6e794510f9b4ecc8b04c9f2e71a8ef896c842))
+
 ## [1.3.0](https://github.com/ApenasGabs/meuestoque/compare/v1.2.0...v1.3.0) (2026-04-23)
 
 ### ✨ Features
