@@ -229,8 +229,8 @@ export function HistoryPage() {
                     {list.items && list.items.length > 0 && (
                       <div className="space-y-2 mb-4">
                         {list.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between bg-base-200/50 border border-base-300/50 p-2 rounded-lg text-sm">
-                            <div className="flex flex-col min-w-0">
+                          <div key={item.id} className="flex items-center justify-between bg-base-200/50 border border-base-300/50 p-2 rounded-lg text-sm gap-2">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <span className="font-medium truncate">{item.nome}</span>
                               <span className="text-xs text-base-content/50">
                                 {item.quantidade} • {item.categoria}

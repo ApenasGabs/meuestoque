@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "./components/Button/Button";
 import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
@@ -14,6 +15,8 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { StockItemDetailsPage } from "./pages/StockItemDetailsPage";
 import { StockPageNew } from "./pages/StockPageNew";
 import { useAuthStore } from "./stores/authStore";
+import { useGroupStore } from "./stores/groupStore";
+import { supabase } from "./lib/supabase";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -43,7 +46,42 @@ export const ComprasWebShell = () => {
   ).length;
   const outOfStockCount = stockItems.filter((item) => item.quantidade === 0).length;
   const stockWarningCount = lowStockCount + outOfStockCount;
-  const inListCount = stockItems.filter((item) => item.na_lista).length;
+
+  const listId = useGroupStore((state) => state.listId);
+  const [inListCount, setInListCount] = useState(0);
+
+  useEffect(() => {
+    if (!listId) {
+      setInListCount(0);
+      return;
+    }
+
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("items")
+        .select("*", { count: "exact", head: true })
+        .eq("list_id", listId)
+        .eq("comprado", false);
+      setInListCount(count ?? 0);
+    };
+
+    void fetchCount();
+
+    const channel = supabase
+      .channel(`shell-list-${listId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "items", filter: `list_id=eq.${listId}` },
+        () => {
+          void fetchCount();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [listId]);
 
   const navigationItems: NavigationItem[] = [
     { label: "Lista", path: "/list", testId: "nav-list", badgeCount: inListCount },
@@ -53,7 +91,7 @@ export const ComprasWebShell = () => {
       testId: "nav-stock",
       badgeCount: stockWarningCount,
     },
-    { label: <SettingOutlined />, path: "/profile", testId: "nav-config" },
+    { label: <SettingOutlined style={{ fontSize: '1.25rem' }} />, path: "/profile", testId: "nav-config" },
   ];
 
   const showPrivateActions = ready && Boolean(userId);
