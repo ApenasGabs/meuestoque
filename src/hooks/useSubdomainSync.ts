@@ -8,6 +8,9 @@ import { useAppMode } from "./useAppMode";
 const KNOWN_HOSTS = new Set([
   "meuestoque.apenasgabs.dev",
   "nossoestoque.apenasgabs.dev",
+  // Localhost aliases for development
+  "meuestoque.localhost",
+  "nossoestoque.localhost",
 ]);
 
 /**
