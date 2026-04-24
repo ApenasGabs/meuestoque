@@ -121,12 +121,25 @@ export const ProductFormModal = ({
             </div>
             <div>
               <Label htmlFor="product-unit">Unidade</Label>
-              <Input
+              <select
                 id="product-unit"
+                className="select select-bordered w-full"
                 value={unit}
                 onChange={(event) => setUnit(event.target.value)}
-                placeholder="kg, un, L"
-              />
+              >
+                {["un", "kg", "g", "L", "ml", "pct", "cx"].map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+                <option value="outro">Outro</option>
+              </select>
+              {unit === "outro" && (
+                <Input
+                  className="mt-1"
+                  value=""
+                  placeholder="Digite a unidade"
+                  onChange={(event) => setUnit(event.target.value)}
+                />
+              )}
             </div>
           </div>
 
@@ -171,7 +184,12 @@ export const ProductFormModal = ({
                 id="product-validity-date"
                 type="date"
                 value={validityDate}
-                onChange={(event) => setValidityDate(event.target.value)}
+                onChange={(event) => {
+                  setValidityDate(event.target.value);
+                  if (event.target.value) {
+                    setNeedsValidity(false);
+                  }
+                }}
               />
               <p className="text-xs text-base-content/60 mt-1">
                 Marque como pendente para pinhar o item no topo até a validade ser informada.

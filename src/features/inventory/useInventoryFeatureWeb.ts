@@ -47,7 +47,7 @@ const mapStockItemToProduct = (item: StockItemRecord): InventoryProduct => ({
   lastPurchaseDate: item.data_compra,
   categoryId: item.categoria || "Outros",
   validityDate: item.data_validade,
-  needsValidity: Boolean(item.data_validade),
+  needsValidity: !item.data_validade,
 });
 
 /**

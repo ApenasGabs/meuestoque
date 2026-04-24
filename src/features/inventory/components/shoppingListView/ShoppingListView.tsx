@@ -88,6 +88,10 @@ export const ShoppingListView = ({
     }
   };
 
+  const totalValue = useMemo(() => {
+    return shoppingList.reduce((sum, item) => sum + (item.price || 0), 0);
+  }, [shoppingList]);
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100 sticky top-0 z-10 space-y-3">
@@ -96,6 +100,7 @@ export const ShoppingListView = ({
             <h2 className="text-base font-semibold">Lista de Compras</h2>
             <p className="text-xs text-base-content/60">
               {uncheckedCount} pendentes · {checkedCount} comprados
+              {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
             </p>
           </div>
           <div className="flex gap-2">
