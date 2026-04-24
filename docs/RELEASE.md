@@ -1,6 +1,6 @@
 # Sistema de Release Automática
 
-Este template usa **Semantic Release** para automatizar versões, changelog e releases.
+Este Meu Estoque usa **Semantic Release** para automatizar versões, changelog e releases.
 
 ## Como Funciona
 

@@ -5,12 +5,16 @@ import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
 import {
+  addListItem,
   deleteShoppingHistory,
   duplicateShoppingListToActive,
+  ensureActiveListForGroup,
   loadShoppingHistory,
   updateShoppingHistoryPurchaseDate,
+  type ItemRecord,
   type ShoppingListRecord,
 } from "../lib/webData";
+import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 
@@ -27,6 +31,7 @@ export function HistoryPage() {
   const [deletingListId, setDeletingListId] = useState<string | null>(null);
   const [duplicatingListId, setDuplicatingListId] = useState<string | null>(null);
   const [editingDateListId, setEditingDateListId] = useState<string | null>(null);
+  const [addingItemId, setAddingItemId] = useState<string | null>(null);
   const [dateDrafts, setDateDrafts] = useState<Record<string, string>>({});
 
   const loadHistory = useCallback(async (): Promise<void> => {
@@ -138,6 +143,35 @@ export function HistoryPage() {
     }
   };
 
+  const handleAddSingleItem = async (item: ItemRecord): Promise<void> => {
+    if (!groupId || addingItemId) return;
+
+    setAddingItemId(item.id);
+    setError(null);
+
+    try {
+      const activeList = await ensureActiveListForGroup(groupId);
+      setListId(activeList.id);
+      
+      await addListItem({
+        listId: activeList.id,
+        nome: item.nome,
+        quantidade: item.quantidade,
+        categoria: item.categoria,
+        price: item.preco,
+        createdBy: userId,
+      });
+      
+      setNotice(`${item.nome} adicionado à lista atual.`);
+    } catch (addError) {
+      setError(
+        addError instanceof Error ? addError.message : "Falha ao adicionar item",
+      );
+    } finally {
+      setAddingItemId(null);
+    }
+  };
+
   return (
     <main className="page">
       {notice && (
@@ -186,8 +220,47 @@ export function HistoryPage() {
                       {list.total !== null ? `R$ ${list.total.toFixed(2)}` : "Sem total"}
                     </Badge>
                   </div>
-                  <p>{list.items?.length ?? 0} itens</p>
-                  <div className="flex items-end gap-2 mt-2">
+                  
+                  <div className="mt-4 border-t border-base-300 pt-3">
+                    <p className="font-semibold text-sm text-base-content/80 mb-2">
+                      {list.items?.length ?? 0} itens comprados
+                    </p>
+                    
+                    {list.items && list.items.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {list.items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between bg-base-200/50 border border-base-300/50 p-2 rounded-lg text-sm">
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium truncate">{item.nome}</span>
+                              <span className="text-xs text-base-content/50">
+                                {item.quantidade} • {item.categoria}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {item.preco !== null && (
+                                <span className="font-bold text-xs text-primary">
+                                  R$ {item.preco.toFixed(2)}
+                                </span>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="px-2"
+                                disabled={addingItemId === item.id}
+                                onClick={() => void handleAddSingleItem(item)}
+                                aria-label={`Adicionar ${item.nome} na lista`}
+                              >
+                                {addingItemId === item.id ? "..." : <ShoppingCartOutlined />}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 border-t border-base-300 pt-3">
                     <label className="form-control">
                       <span className="label-text text-xs">Editar data da compra</span>
                       <input

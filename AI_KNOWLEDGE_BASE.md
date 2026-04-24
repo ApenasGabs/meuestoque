@@ -89,3 +89,58 @@ No carregamento inicial (mount):
 ---
 
 > **DICA PARA A IA:** Ao implementar novas lógicas de estado global, pense se elas afetam `docs/ai/01_ARCHITECTURE_AND_DATA.md` ou `docs/ai/02_UX_AND_BUSINESS_RULES.md` e sinta-se livre para atualizar esses arquivos também.
+
+### 📝 (24/04/2026) Correção de RLS em `items` + saneamento de contexto de lista
+
+#### Arquitetura
+```mermaid
+graph TD
+        A[SessionBootstrap/Login/Register] --> B[restoreGroupContext]
+        B --> C[setGroup(groupId)]
+        B --> D[setListId(context.listId or null)]
+        E[ListPage/ListPageNew] --> F[ensureActiveListForGroup(groupId)]
+        F --> G[setListId(activeListId)]
+        G --> H[addListItem -> public.items]
+        I[Migration phase_a_v2_rls_policy_cleanup] --> J[remove políticas legadas]
+        I --> K[recria políticas V2 authenticated]
+        K --> H
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/components/SessionBootstrap.tsx` | Remove fallback de `listId` persistido de outro contexto e mantém `listId` alinhado ao grupo resolvido. |
+| `src/pages/LoginPage.tsx` | Remove fallback de `lastListId/listId` persistidos quando `context.group` já foi resolvido. |
+| `src/pages/RegisterPage.tsx` | Mesmo ajuste do Login para evitar reaproveitar lista de outro grupo após autenticação. |
+| `src/pages/ListPage.tsx` | Passa a resolver sempre a lista ativa pelo `groupId` antes de carregar/adicionar itens. |
+| `src/pages/ListPageNew.tsx` | Mesma proteção da `ListPage`, com sincronização explícita de `setListId(activeListId)`. |
+| `supabase/migrations/20260424_01_phase_a_v2_rls_policy_cleanup.sql` | Limpeza de policies legadas e padronização das policies V2 (authenticated) para `items`, `shopping_lists`, `stock_items`, `stock_lots`, `stock_movements`, `product_catalog`. |
+
+#### Lógica de Decisão
+```text
+SE contexto do grupo foi resolvido (context.group existe)
+    ENTÃO usar apenas context.listId (ou null)
+    E NÃO reutilizar listId persistido de sessão anterior.
+
+SE página de lista carregar com groupId
+    ENTÃO sempre resolver activeListId via ensureActiveListForGroup(groupId)
+    E sincronizar store com esse activeListId.
+
+SE banco tiver políticas legadas + V2 na mesma tabela
+    ENTÃO remover legadas
+    E manter apenas política canônica V2 para role authenticated.
+```
+
+#### Comportamento
+- O app não tenta mais inserir em `items` usando `list_id` antigo de outro grupo/sessão.
+- A entrada na lista agora depende sempre da lista ativa real do grupo atual.
+- O banco ficou com um conjunto único e consistente de policies RLS V2.
+- O cenário que gerava `new row violates row-level security policy for table "items"` por desvio de contexto foi mitigado.
+
+#### Checklist de Aceite
+- [x] Policies legadas removidas nas tabelas-alvo.
+- [x] Policies V2 recriadas e validadas (`authenticated`).
+- [x] Migração aplicada no Supabase (`phase_a_v2_rls_policy_cleanup`).
+- [x] Fluxo de bootstrap/login/register sem fallback perigoso de `listId`.
+- [x] List pages resolvendo lista ativa por `groupId`.

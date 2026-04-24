@@ -1,6 +1,6 @@
 # Extensões Recomendadas do VS Code
 
-Este documento lista todas as extensões necessárias para melhor desenvolvimento com este template.
+Este documento lista todas as extensões necessárias para melhor desenvolvimento com este Meu Estoque.
 
 ## 📋 Extensões Obrigatórias
 

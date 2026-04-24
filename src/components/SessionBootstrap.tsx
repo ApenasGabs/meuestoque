@@ -108,7 +108,8 @@ export function SessionBootstrap(): ReactElement {
         setAllGroups(groupsToStore);
         if (group) {
           setGroup(group.id, group.nome, group.codigo_convite);
-          setListId(listId ?? persistedSnapshot?.lastListId ?? persistedSnapshot?.listId ?? null);
+          // Keep list context tied to the resolved group to avoid stale cross-group list IDs.
+          setListId(listId ?? null);
         } else if (
           persistedSnapshot?.lastGroupId &&
           persistedSnapshot.groupName &&

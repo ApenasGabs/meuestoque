@@ -1,7 +1,10 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
+import { Textarea } from "../components/Textarea/Textarea";
+import { parseShoppingImportText } from "../domain/shoppingImportParser";
+import { type StockImportSource } from "../domain/stockImportParser";
 import { ShoppingListView } from "../features/inventory/components/shoppingListView/ShoppingListView";
 import type { InventoryProduct, InventoryShoppingListItem } from "../features/inventory/types";
 import {
@@ -38,6 +41,11 @@ export const ListPageNew = (): ReactElement => {
   const [saving, setSaving] = useState<boolean>(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importSource, setImportSource] = useState<StockImportSource>("auto");
+  const [importing, setImporting] = useState(false);
 
   const parseListQuantity = useCallback(
     (rawQuantity: string): { quantity: number; unit: string } => {
@@ -107,10 +115,10 @@ export const ListPageNew = (): ReactElement => {
       setError(null);
 
       try {
-        const activeListId = listId ?? (await ensureActiveListForGroup(groupId)).id;
+        const activeListId = (await ensureActiveListForGroup(groupId)).id;
         if (!mounted) return;
 
-        if (!listId) {
+        if (listId !== activeListId) {
           setListId(activeListId);
         }
 
@@ -259,7 +267,7 @@ export const ListPageNew = (): ReactElement => {
           createdBy: userId,
         });
         await refreshItems(listId);
-        setNotice(`\"${itemName}\" adicionado na lista.`);
+        setNotice(`"${itemName}" adicionado na lista.`);
       } catch (addError) {
         setError(addError instanceof Error ? addError.message : "Falha ao adicionar item");
       } finally {
@@ -403,6 +411,45 @@ export const ListPageNew = (): ReactElement => {
     [listId, refreshItems],
   );
 
+  const importPreview = useMemo(() => {
+    return parseShoppingImportText(importText, { source: importSource });
+  }, [importSource, importText]);
+
+  const handleImportToList = async (): Promise<void> => {
+    if (!listId || importing) return;
+
+    setError(null);
+    const parsedItems = parseShoppingImportText(importText, { source: importSource });
+
+    if (parsedItems.length === 0) {
+      setError("Não consegui identificar itens válidos no texto para importar na lista.");
+      return;
+    }
+
+    setImporting(true);
+    try {
+      for (const item of parsedItems) {
+        await addListItem({
+          listId,
+          nome: item.nome,
+          quantidade: item.quantidade,
+          categoria: item.categoria,
+          price: item.preco,
+          createdBy: userId,
+        });
+      }
+
+      await refreshItems(listId);
+      setImportText("");
+      setImportModalOpen(false);
+      setNotice(`${parsedItems.length} item(ns) importado(s) com sucesso.`);
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "Falha ao importar compra");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleFinalizeShopping = useCallback(async (): Promise<void> => {
     if (!listId || !groupId || shoppingItems.length === 0) {
       return;
@@ -464,8 +511,84 @@ export const ListPageNew = (): ReactElement => {
           onGenerateSmartList={handleGenerateSmartList}
           onFinalizeShopping={handleFinalizeShopping}
           onUpdateItemPrice={(id, value) => void handleUpdateItemPrice(id, value)}
+          onOpenImportModal={() => setImportModalOpen(true)}
         />
       </div>
+
+      {importModalOpen && (
+        <div
+          className="modal modal-open"
+          onClick={() => setImportModalOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="modal-box max-w-lg"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <h3 className="font-bold text-lg mb-4">Importar compra para lista</h3>
+
+            <div className="space-y-4">
+              <Textarea
+                label="Cole o texto da compra"
+                value={importText}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setImportText(event.target.value)
+                }
+                rows={10}
+                placeholder="Cole o recibo da compra aqui..."
+                helperText="Importa nome, quantidade e preço total por item quando disponível."
+              />
+
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text">Origem da compra</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={importSource}
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                    setImportSource(event.target.value as StockImportSource)
+                  }
+                >
+                  <option value="auto">Detectar automaticamente</option>
+                  <option value="tenda">Tenda</option>
+                  <option value="pague-menos">Pague Menos</option>
+                </select>
+              </div>
+
+              <p className="text-xs text-base-content/60">
+                Itens detectados: {importPreview.length}
+                {importPreview.length > 0
+                  ? ` (${importPreview
+                      .slice(0, 3)
+                      .map((item) => item.nome)
+                      .join(", ")}${importPreview.length > 3 ? ", ..." : ""})`
+                  : ""}
+              </p>
+
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setImportModalOpen(false)}
+                  disabled={importing}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void handleImportToList()}
+                  disabled={importing || importPreview.length === 0}
+                >
+                  {importing ? "Importando..." : "Importar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,9 @@ import { Checkbox } from "../../../../components/Checkbox/Checkbox";
 import { Input } from "../../../../components/Input/Input";
 import { Label } from "../../../../components/Label/Label";
 import type { InventoryCategory, InventoryProduct } from "../../types";
+import { PriceHistorySection } from "../priceHistory/PriceHistorySection";
+
+// ... (keep the rest of the existing imports if any)
 
 interface ProductFormModalProps {
   open: boolean;
@@ -240,6 +243,8 @@ export const ProductFormModal = ({
               {product ? "Salvar" : "Adicionar"}
             </Button>
           </div>
+
+          {product?.id && <PriceHistorySection stockItemId={product.id} />}
         </form>
       </div>
     </div>
