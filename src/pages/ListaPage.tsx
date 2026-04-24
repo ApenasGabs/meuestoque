@@ -4,6 +4,7 @@ import { Button } from "../components/Button/Button";
 import { Checkbox } from "../components/Checkbox/Checkbox";
 import { Input } from "../components/Input/Input";
 import type { ShoppingItem } from "../types/inventory";
+import { useNavigate } from "react-router-dom";
 
 interface ListaPageProps {
   items: ShoppingItem[];
@@ -14,6 +15,7 @@ interface ListaPageProps {
 export const ListaPage = ({ items, setItems, onFinalize }: ListaPageProps): ReactElement => {
   const [input, setInput] = useState<string>("");
   const checkedCount = items.filter((item) => item.checked).length;
+  const navigate = useNavigate();
 
   const addItem = (): void => {
     const value = input.trim();
@@ -109,7 +111,14 @@ export const ListaPage = ({ items, setItems, onFinalize }: ListaPageProps): Reac
           </ul>
         )}
       </div>
-
+      <Button
+        variant="primary"
+        onClick={() => navigate("/history")}
+        className="w-full"
+        data-testid="history-btn"
+      >
+        Historico
+      </Button>
       {checkedCount > 0 && (
         <div className="fixed bottom-16 left-0 right-0 px-4 pb-3">
           <Button

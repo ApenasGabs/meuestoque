@@ -17,9 +17,11 @@ import { useAuthStore } from "./stores/authStore";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
 import { ProfilePage } from "./pages/ProfilePage";
+import { SettingOutlined } from "@ant-design/icons";
+import type { ReactElement } from "react";
 
 interface NavigationItem {
-  label: string;
+  label: string | ReactElement;
   path: string;
   testId: string;
   badgeCount?: number;
@@ -51,7 +53,7 @@ export const ComprasWebShell = () => {
       testId: "nav-stock",
       badgeCount: stockWarningCount,
     },
-    { label: "Config", path: "/profile", testId: "nav-config" },
+    { label: <SettingOutlined />, path: "/profile", testId: "nav-config" },
   ];
 
   const showPrivateActions = ready && Boolean(userId);

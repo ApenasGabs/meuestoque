@@ -1,17 +1,17 @@
-# Guia de Configuração do Template
+# Guia de Configuração do Meu Estoque
 
-Este documento lista todas as configurações necessárias ao usar este template.
+Este documento lista todas as configurações necessárias ao usar este Meu Estoque.
 
 ## 1. Configuração Inicial
 
-### Clonar o Template
+### Clonar o Meu Estoque
 
 ```bash
 # Usando GitHub CLI
-gh repo create meu-projeto --template ApenasGabs/ApenasTemplate --clone
+gh repo create meu-projeto --Meu Estoque ApenasGabs/meuestoque --clone
 
 # Ou manualmente
-git clone https://github.com/ApenasGabs/ApenasTemplate.git meu-projeto
+git clone https://github.com/ApenasGabs/meuestoque.git meu-projeto
 cd meu-projeto
 ```
 
@@ -110,7 +110,7 @@ Instale extensões:
 
 ## 6. Tailwind CSS v4
 
-⚠️ **Importante:** Este template usa Tailwind CSS v4 (beta).
+⚠️ **Importante:** Este Meu Estoque usa Tailwind CSS v4 (beta).
 
 ### Plugin ESLint Temporariamente Desabilitado
 
@@ -210,4 +210,4 @@ Antes de começar a desenvolver:
 
 - [Documentação Completa](./README.md)
 - [Sistema de Release](./RELEASE.md)
-- [Issues no GitHub](https://github.com/ApenasGabs/ApenasTemplate/issues)
+- [Issues no GitHub](https://github.com/ApenasGabs/meuestoque/issues)

@@ -14,7 +14,7 @@ export interface ShoppingListRecord {
   closed_purchase_date: string | null;
   total: number | null;
   group_id: string;
-  items?: Array<{ id: string }>;
+  items?: ItemRecord[];
 }
 
 export interface ItemRecord {

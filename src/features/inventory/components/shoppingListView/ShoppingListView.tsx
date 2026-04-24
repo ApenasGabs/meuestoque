@@ -30,6 +30,7 @@ interface ShoppingListViewProps {
   onGenerateSmartList: () => void;
   onFinalizeShopping?: () => void;
   onUpdateItemPrice?: (id: string, value: number | null) => void;
+  onOpenImportModal?: () => void;
 }
 
 export const ShoppingListView = ({
@@ -47,6 +48,7 @@ export const ShoppingListView = ({
   onGenerateSmartList,
   onFinalizeShopping,
   onUpdateItemPrice,
+  onOpenImportModal,
 }: ShoppingListViewProps): ReactElement => {
   const [smartInput, setSmartInput] = useState<string>("");
   const [selectedUnit, setSelectedUnit] = useState<string>("un");
@@ -117,6 +119,11 @@ export const ShoppingListView = ({
             <Button variant="secondary" size="sm" onClick={onGenerateSmartList}>
               Lista inteligente
             </Button>
+            {onOpenImportModal && (
+              <Button variant="ghost" size="sm" onClick={onOpenImportModal}>
+                Importar compra
+              </Button>
+            )}
             {checkedCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearChecked}>
                 Limpar comprados

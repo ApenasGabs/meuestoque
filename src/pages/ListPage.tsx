@@ -110,11 +110,11 @@ export const ListPage = () => {
       setError(null);
 
       try {
-        const activeListId = listId ?? (await ensureActiveListForGroup(groupId)).id;
+        const activeListId = (await ensureActiveListForGroup(groupId)).id;
 
         if (!mounted) return;
 
-        if (!listId) {
+        if (listId !== activeListId) {
           setListId(activeListId);
         }
 
@@ -135,7 +135,7 @@ export const ListPage = () => {
     return () => {
       mounted = false;
     };
-  }, [groupId, listId, refreshItems, setListId]);
+  }, [groupId, listId, refreshItems, saving, setListId]);
 
   useEffect(() => {
     if (!listId) return;
@@ -186,7 +186,7 @@ export const ListPage = () => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [groupId, listId, refreshItems, setListId]);
+  }, [groupId, listId, refreshItems, saving, setListId]);
 
   const handleAddItem = async (payload: AddItemPayload): Promise<void> => {
     if (!listId) return;

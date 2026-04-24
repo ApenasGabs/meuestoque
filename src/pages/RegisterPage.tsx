@@ -66,11 +66,7 @@ export function RegisterPage() {
           useGroupStore
             .getState()
             .setGroup(context.group.id, context.group.nome, context.group.codigo_convite);
-          useGroupStore
-            .getState()
-            .setListId(
-              context.listId ?? persistedSnapshot?.lastListId ?? persistedSnapshot?.listId ?? null,
-            );
+          useGroupStore.getState().setListId(context.listId ?? null);
           navigate("/list");
         } else if (
           persistedSnapshot?.lastGroupId &&
