@@ -5,12 +5,12 @@ import { Navbar } from "./components/Navbar/Navbar";
 import { PublicOnly, RequireAuth, RequireGroup } from "./components/RouteGuards";
 import { GroupPage } from "./pages/GroupPage";
 import { HistoryPage } from "./pages/HistoryPage";
-import { ListPage } from "./pages/ListPage";
+import { ListPageNew } from "./pages/ListPageNew";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { StockItemDetailsPage } from "./pages/StockItemDetailsPage";
-import { StockPage } from "./pages/StockPage";
+import { StockPageNew } from "./pages/StockPageNew";
 import { useAuthStore } from "./stores/authStore";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
@@ -87,7 +87,7 @@ export const ComprasWebShell = () => {
             element={
               <RequireAuth>
                 <RequireGroup>
-                  <ListPage />
+                  <ListPageNew />
                 </RequireGroup>
               </RequireAuth>
             }
@@ -115,7 +115,7 @@ export const ComprasWebShell = () => {
             element={
               <RequireAuth>
                 <RequireGroup>
-                  <StockPage />
+                  <StockPageNew />
                 </RequireGroup>
               </RequireAuth>
             }
@@ -150,7 +150,9 @@ export const ComprasWebShell = () => {
                 onClick={() => navigate(item.path)}
                 data-testid={item.testId}
               >
-                {isActive && <span className="absolute left-3 right-3 top-1 h-1 rounded-full bg-primary" />}
+                {isActive && (
+                  <span className="absolute left-3 right-3 top-1 h-1 rounded-full bg-primary" />
+                )}
                 <span className="text-xs uppercase tracking-wide">{item.label}</span>
                 {item.badgeCount !== undefined && item.badgeCount > 0 && (
                   <span className="badge badge-sm badge-warning">{item.badgeCount}</span>

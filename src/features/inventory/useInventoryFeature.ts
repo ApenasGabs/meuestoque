@@ -1,37 +1,19 @@
 import { useMemo, useState } from "react";
-
-export interface InventoryProduct {
-  id: string;
-  name: string;
-  quantity: number;
-  minStock: number;
-  unit?: string;
-  categoryId: string;
-}
-
-export interface InventoryCategory {
-  id: string;
-  name: string;
-  order: number;
-}
-
-export interface ShoppingItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  checked: boolean;
-}
-
-export type InventoryTab = "stock" | "list" | "settings";
-export type StockFilter = "all" | "low" | "out";
+import type {
+  InventoryCategory,
+  InventoryProduct,
+  InventoryShoppingListItem,
+  InventoryTab,
+  StockFilter,
+} from "./types";
 
 interface InventoryFeatureState {
   products: InventoryProduct[];
   categories: InventoryCategory[];
-  shoppingList: ShoppingItem[];
+  shoppingList: InventoryShoppingListItem[];
   activeTab: InventoryTab;
   search: string;
-  filter: StockFilter;
+  filters: StockFilter[];
   lowStockCount: number;
   outOfStockCount: number;
   uncheckedCount: number;
@@ -41,8 +23,9 @@ interface InventoryFeatureState {
 interface InventoryFeatureActions {
   setActiveTab: (tab: InventoryTab) => void;
   setSearch: (value: string) => void;
-  setFilter: (value: StockFilter) => void;
-  addProduct: (product: Omit<InventoryProduct, "id">) => void;
+  toggleFilter: (value: StockFilter) => void;
+  clearFilters: () => void;
+  addProduct: (product: Omit<InventoryProduct, "id">) => string;
   updateProduct: (id: string, product: Omit<InventoryProduct, "id">) => void;
   removeProduct: (id: string) => void;
   addCategory: (name: string) => string;
@@ -64,6 +47,7 @@ const initialCategories: InventoryCategory[] = [
   { id: "cat-5", name: "Bebidas", order: 4 },
   { id: "cat-6", name: "Limpeza", order: 5 },
   { id: "cat-7", name: "Higiene", order: 6 },
+  { id: "cat-8", name: "Outros", order: 7 },
 ];
 
 const initialProducts: InventoryProduct[] = [
@@ -79,7 +63,7 @@ const initialProducts: InventoryProduct[] = [
   { id: "p-10", name: "Tomate", quantity: 2, minStock: 4, unit: "un", categoryId: "cat-4" },
 ];
 
-const initialShoppingList: ShoppingItem[] = [
+const initialShoppingList: InventoryShoppingListItem[] = [
   { id: "sl-1", productId: "p-2", quantity: 2, checked: false },
   { id: "sl-2", productId: "p-5", quantity: 1, checked: false },
 ];
@@ -89,10 +73,11 @@ const createId = (): string => `id-${Date.now()}-${Math.random().toString(16).sl
 export const useInventoryFeature = (): InventoryFeatureState & InventoryFeatureActions => {
   const [products, setProducts] = useState<InventoryProduct[]>(initialProducts);
   const [categories, setCategories] = useState<InventoryCategory[]>(initialCategories);
-  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>(initialShoppingList);
+  const [shoppingList, setShoppingList] =
+    useState<InventoryShoppingListItem[]>(initialShoppingList);
   const [activeTab, setActiveTab] = useState<InventoryTab>("stock");
   const [search, setSearch] = useState<string>("");
-  const [filter, setFilter] = useState<StockFilter>("all");
+  const [filters, setFilters] = useState<StockFilter[]>([]);
 
   const addCategory = (name: string): string => {
     const newId = createId();
@@ -102,8 +87,10 @@ export const useInventoryFeature = (): InventoryFeatureState & InventoryFeatureA
     return newId;
   };
 
-  const addProduct = (product: Omit<InventoryProduct, "id">): void => {
-    setProducts((previous) => [...previous, { ...product, id: createId() }]);
+  const addProduct = (product: Omit<InventoryProduct, "id">): string => {
+    const id = createId();
+    setProducts((previous) => [...previous, { ...product, id }]);
+    return id;
   };
 
   const updateProduct = (id: string, product: Omit<InventoryProduct, "id">): void => {
@@ -207,20 +194,35 @@ export const useInventoryFeature = (): InventoryFeatureState & InventoryFeatureA
     [shoppingList],
   );
 
+  const toggleFilter = (value: StockFilter): void => {
+    setFilters((previous) => {
+      if (previous.includes(value)) {
+        return previous.filter((item) => item !== value);
+      }
+
+      return [...previous, value];
+    });
+  };
+
+  const clearFilters = (): void => {
+    setFilters([]);
+  };
+
   return {
     products,
     categories,
     shoppingList,
     activeTab,
     search,
-    filter,
+    filters,
     lowStockCount,
     outOfStockCount,
     checkedCount,
     uncheckedCount,
     setActiveTab,
     setSearch,
-    setFilter,
+    toggleFilter,
+    clearFilters,
     addProduct,
     updateProduct,
     removeProduct,

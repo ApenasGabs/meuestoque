@@ -4,7 +4,7 @@ declare const process: {
   env: Record<string, string | undefined>;
 };
 
-const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5174";
 const isRemoteMode = process.env.PLAYWRIGHT_REMOTE_MODE === "1";
 
 /**
@@ -37,8 +37,8 @@ export default defineConfig({
   webServer: isRemoteMode
     ? undefined
     : {
-        command: "npm run dev",
-        url: "http://localhost:5173",
-        reuseExistingServer: !process.env.CI,
-      },
+      command: "npm run dev",
+      url: "http://localhost:5174",
+      reuseExistingServer: !process.env.CI,
+    },
 });

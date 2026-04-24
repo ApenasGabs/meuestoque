@@ -11,8 +11,9 @@ interface CategorySectionProps {
   onEdit: (product: InventoryProduct) => void;
   onAddToList: (product: InventoryProduct) => void;
   onRemove: (id: string) => void;
-  onDecrease: (product: InventoryProduct) => void;
-  onIncrease: (product: InventoryProduct) => void;
+  onConsume: (product: InventoryProduct) => void;
+  onOpenCustomConsume: (product: InventoryProduct) => void;
+  onCardClick?: (product: InventoryProduct) => void;
 }
 
 export const CategorySection = ({
@@ -21,8 +22,9 @@ export const CategorySection = ({
   onEdit,
   onAddToList,
   onRemove,
-  onDecrease,
-  onIncrease,
+  onConsume,
+  onOpenCustomConsume,
+  onCardClick,
 }: CategorySectionProps): ReactElement => {
   const [expanded, setExpanded] = useState<boolean>(true);
   const lowStockCount = products.filter((product) => product.quantity <= product.minStock).length;
@@ -54,8 +56,9 @@ export const CategorySection = ({
               onEdit={onEdit}
               onAddToList={onAddToList}
               onRemove={onRemove}
-              onDecrease={onDecrease}
-              onIncrease={onIncrease}
+              onConsume={onConsume}
+              onOpenCustomConsume={onOpenCustomConsume}
+              onCardClick={onCardClick}
             />
           ))}
         </div>

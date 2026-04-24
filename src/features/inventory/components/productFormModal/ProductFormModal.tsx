@@ -1,6 +1,7 @@
 import type { FormEvent, ReactElement } from "react";
 import { useState } from "react";
 import { Button } from "../../../../components/Button/Button";
+import { Checkbox } from "../../../../components/Checkbox/Checkbox";
 import { Input } from "../../../../components/Input/Input";
 import { Label } from "../../../../components/Label/Label";
 import type { InventoryCategory, InventoryProduct } from "../../types";
@@ -26,9 +27,13 @@ export const ProductFormModal = ({
   const [quantity, setQuantity] = useState<string>(String(product?.quantity ?? 0));
   const [minStock, setMinStock] = useState<string>(String(product?.minStock ?? 1));
   const [unit, setUnit] = useState<string>(product?.unit ?? "un");
+  const [portionSize, setPortionSize] = useState<string>(String(product?.portionSize ?? 1));
+  const [compositeUnit, setCompositeUnit] = useState<boolean>(Boolean(product?.compositeUnit));
   const [categoryId, setCategoryId] = useState<string>(
     product?.categoryId ?? categories[0]?.id ?? "",
   );
+  const [validityDate, setValidityDate] = useState<string>(product?.validityDate ?? "");
+  const [needsValidity, setNeedsValidity] = useState<boolean>(product?.needsValidity ?? !product);
   const [useNewCategory, setUseNewCategory] = useState<boolean>(false);
   const [newCategoryName, setNewCategoryName] = useState<string>("");
 
@@ -55,7 +60,11 @@ export const ProductFormModal = ({
       quantity: Number(quantity),
       minStock: Number(minStock),
       unit: unit.trim() || "un",
+      portionSize: Math.max(0.0001, Number(portionSize) || 1),
+      compositeUnit,
       categoryId: finalCategoryId,
+      validityDate: validityDate.trim() || null,
+      needsValidity,
     };
 
     onSave(payload, product?.id);
@@ -118,6 +127,55 @@ export const ProductFormModal = ({
                 onChange={(event) => setUnit(event.target.value)}
                 placeholder="kg, un, L"
               />
+            </div>
+          </div>
+
+          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
+            <Checkbox
+              checked={compositeUnit}
+              onChange={(event) => setCompositeUnit(event.target.checked)}
+              label="Unidade composta"
+            />
+            <div>
+              <Label htmlFor="product-portion-size">
+                {compositeUnit
+                  ? "Fator de consumo (1 unidade consumida equivale a)"
+                  : "Porção de consumo"}
+              </Label>
+              <Input
+                id="product-portion-size"
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                value={portionSize}
+                onChange={(event) => setPortionSize(event.target.value)}
+              />
+              <p className="text-xs text-base-content/60 mt-1">
+                {compositeUnit
+                  ? `Exemplo: 0.285 significa que ao consumir 1 un, baixa 0.285 ${unit || "un"} do estoque.`
+                  : `Consumo rápido sempre baixa este valor em ${unit || "un"}.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
+            <Checkbox
+              checked={needsValidity}
+              onChange={(event) => setNeedsValidity(event.target.checked)}
+              label="Pendente de validade"
+              color="error"
+            />
+            <div>
+              <Label htmlFor="product-validity-date">Data de validade</Label>
+              <Input
+                id="product-validity-date"
+                type="date"
+                value={validityDate}
+                onChange={(event) => setValidityDate(event.target.value)}
+              />
+              <p className="text-xs text-base-content/60 mt-1">
+                Marque como pendente para pinhar o item no topo até a validade ser informada.
+              </p>
             </div>
           </div>
 
