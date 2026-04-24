@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.0](https://github.com/ApenasGabs/meuestoque/compare/v1.5.0...v1.6.0) (2026-04-24)
+
+### ✨ Features
+
+* :wrench: refactor product cards for improved UI, add unit select input, include shopping list totals ([c971774](https://github.com/ApenasGabs/meuestoque/commit/c971774e1a4f579f72353c781207ff5a91dc8c57))
+
+### 🧱 CI/CD
+
+* :wrench: trigger vercel deploy via webhook after semantic-release ([3a0d2bd](https://github.com/ApenasGabs/meuestoque/commit/3a0d2bd062fc73958f5bffc15d7be647821c744e))
+
 ## [1.5.0](https://github.com/ApenasGabs/meuestoque/compare/v1.4.0...v1.5.0) (2026-04-24)
 
 ### ✨ Features
