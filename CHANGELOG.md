@@ -5,6 +5,20 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.0](https://github.com/ApenasGabs/meuestoque/compare/v1.4.0...v1.5.0) (2026-04-24)
+
+### ✨ Features
+
+* :sparkles: rebrand application as Meu Estoque, implement login redirect, and integrate Vercel Analytics ([ba5f115](https://github.com/ApenasGabs/meuestoque/commit/ba5f115491838a32ca93099f7d331f7222a9f049))
+
+### 🐛 Bug Fixes
+
+* :wrench:  Vercel deployment configuration, add analytics, and update app branding and routing logic ([4373eef](https://github.com/ApenasGabs/meuestoque/commit/4373eef6e2d84358c45039cdd2dfdfe03f4a7980))
+
+### ♻️ Refactoring
+
+* :broom: replace legacy documentation with organized AI knowledge base and add database migration scripts for shopping list finalization. ([471d3b7](https://github.com/ApenasGabs/meuestoque/commit/471d3b75622d894193ad6abe4a54ab9b8801abad))
+
 ## [1.4.0](https://github.com/ApenasGabs/meuestoque/compare/v1.3.0...v1.4.0) (2026-04-24)
 
 ### ✨ Features
