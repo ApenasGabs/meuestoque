@@ -69,42 +69,46 @@ export const ProductCard = ({
           }
         }}
       >
-        <div className="flex items-center justify-between whitespace-nowrap">
-          <div className="flex items-center gap-2 min-w-0">
-            <p className="text-sm font-medium truncate max-w-44">{product.name}</p>
-            {product.unit && <span className="text-xs text-base-content/60">({product.unit})</span>}
-            <p className="text-xs text-base-content/60">
-              Min {product.minStock} {product.unit ?? "un"}
-            </p>
-            {product.lastPurchaseDate && (
-              <p className="text-xs text-base-content/60">
-                Última compra: {new Date(product.lastPurchaseDate).toLocaleDateString("pt-BR")}
-              </p>
-            )}
-            {isPendingValidity && (
-              <Badge variant="error" size="sm">
-                Pendente Validade
-              </Badge>
-            )}
-            {isOut && (
-              <Badge variant="error" size="sm">
-                Zerado
-              </Badge>
-            )}
-            {isLow && !isOut && (
-              <Badge variant="warning" size="sm">
-                Baixo
-              </Badge>
-            )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-sm font-medium truncate max-w-40">{product.name}</p>
+              {isPendingValidity && (
+                <Badge variant="error" size="sm">
+                  Pendente Validade
+                </Badge>
+              )}
+              {isOut && (
+                <Badge variant="error" size="sm">
+                  Zerado
+                </Badge>
+              )}
+              {isLow && !isOut && (
+                <Badge variant="warning" size="sm">
+                  Baixo
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {product.unit && <span className="text-xs text-base-content/60">{product.unit}</span>}
+              {product.lastPurchaseDate && (
+                <span className="text-xs text-base-content/40">
+                  Última compra: {new Date(product.lastPurchaseDate).toLocaleDateString("pt-BR")}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center ">
-            <span className="w-8 text-center font-semibold tabular-nums">{product.quantity}</span>
+          <div className="flex items-center gap-0.5">
+            <span className="w-8 text-center font-semibold tabular-nums text-sm">{product.quantity}</span>
 
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              onClick={handleConsumeClick}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleConsumeClick();
+              }}
               onMouseDown={(event) => {
                 event.stopPropagation();
                 handleConsumePointerDown();
@@ -128,37 +132,32 @@ export const ProductCard = ({
                 onOpenCustomConsume(product);
               }}
               aria-label={`Consumir ${product.name}`}
+              className="text-xs font-mono px-1.5"
             >
-              Consumir
+              -{product.portionSize ?? 1}
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onAddToList(product)}
+              onClick={(event) => { event.stopPropagation(); onAddToList(product); }}
               aria-label={`Adicionar ${product.name} na lista`}
-              onMouseDown={(event) => event.stopPropagation()}
-              onClickCapture={(event) => event.stopPropagation()}
             >
               <ShoppingCartOutlined />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onEdit(product)}
+              onClick={(event) => { event.stopPropagation(); onEdit(product); }}
               aria-label={`Editar ${product.name}`}
-              onMouseDown={(event) => event.stopPropagation()}
-              onClickCapture={(event) => event.stopPropagation()}
             >
               <EditOutlined />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onRemove(product.id)}
+              onClick={(event) => { event.stopPropagation(); onRemove(product.id); }}
               aria-label={`Remover ${product.name}`}
-              onMouseDown={(event) => event.stopPropagation()}
-              onClickCapture={(event) => event.stopPropagation()}
             >
               <DeleteOutlined />
             </Button>

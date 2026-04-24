@@ -38,7 +38,12 @@ jobs:
           echo "Tags: $(git tag | tail -5)"
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
+
+      - name: Trigger Vercel Deploy
+        if: success()
+        run: curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK }}
