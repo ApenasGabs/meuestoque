@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.1](https://github.com/ApenasGabs/meuestoque/compare/v1.6.0...v1.6.1) (2026-04-24)
+
+### ♻️ Refactoring
+
+* :broom: migrate and consolidate stock inventory components, update domain logic, and clean up project documentation ([2ba6967](https://github.com/ApenasGabs/meuestoque/commit/2ba69672d516697c71b8662e86020f6fd10e2ad5))
+
 ## [1.6.0](https://github.com/ApenasGabs/meuestoque/compare/v1.5.0...v1.6.0) (2026-04-24)
 
 ### ✨ Features
