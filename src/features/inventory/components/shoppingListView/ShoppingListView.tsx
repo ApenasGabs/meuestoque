@@ -31,6 +31,7 @@ interface ShoppingListViewProps {
   onFinalizeShopping?: () => void;
   onUpdateItemPrice?: (id: string, value: number | null) => void;
   onOpenImportModal?: () => void;
+  onViewHistory?: () => void;
 }
 
 export const ShoppingListView = ({
@@ -49,9 +50,21 @@ export const ShoppingListView = ({
   onFinalizeShopping,
   onUpdateItemPrice,
   onOpenImportModal,
+  onViewHistory,
 }: ShoppingListViewProps): ReactElement => {
   const [smartInput, setSmartInput] = useState<string>("");
   const [selectedUnit, setSelectedUnit] = useState<string>("un");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
+
+  const categories = [
+    "Todos",
+    "🥦 Hortifruti",
+    "🥩 Carnes",
+    "🥛 Laticínios",
+    "🧹 Limpeza",
+    "🌾 Grãos",
+    "🍪 Outros",
+  ];
 
   const parsedDraft = useMemo<SmartShoppingDraft>(() => {
     const parts = smartInput
@@ -94,10 +107,19 @@ export const ShoppingListView = ({
     return shoppingList.reduce((sum, item) => sum + (item.price || 0), 0);
   }, [shoppingList]);
 
+  const filteredList = useMemo(() => {
+    if (selectedCategory === "Todos") return shoppingList;
+    return shoppingList.filter((item) => {
+      const product = products.find((p) => p.id === item.productId);
+      const isOther = selectedCategory === "🍪 Outros";
+      return product?.categoryId === selectedCategory || (isOther && !product?.categoryId);
+    });
+  }, [shoppingList, products, selectedCategory]);
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100 sticky top-0 z-10 space-y-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">Lista de Compras</h2>
             <p className="text-xs text-base-content/60">
@@ -105,7 +127,7 @@ export const ShoppingListView = ({
               {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {onFinalizeShopping && (
               <Button
                 variant="primary"
@@ -122,6 +144,11 @@ export const ShoppingListView = ({
             {onOpenImportModal && (
               <Button variant="ghost" size="sm" onClick={onOpenImportModal}>
                 Importar compra
+              </Button>
+            )}
+            {onViewHistory && (
+              <Button variant="ghost" size="sm" onClick={onViewHistory}>
+                Histórico
               </Button>
             )}
             {checkedCount > 0 && (
@@ -182,15 +209,29 @@ export const ShoppingListView = ({
             </Button>
           </div>
         </div>
+        
+        <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide -mx-2 px-2">
+          {categories.map((cat) => (
+            <Button
+              key={cat}
+              variant={selectedCategory === cat ? "primary" : "ghost"}
+              size="sm"
+              className="whitespace-nowrap rounded-full font-medium"
+              onClick={() => setSelectedCategory(cat)}
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-28">
-        {shoppingList.length === 0 ? (
+        {filteredList.length === 0 ? (
           <div className="text-center text-sm text-base-content/60 py-12">
-            Lista vazia. Gere uma lista inteligente ou adicione itens.
+            Nenhum item encontrado.
           </div>
         ) : (
-          shoppingList.map((item) => {
+          filteredList.map((item) => {
             const product = products.find((currentProduct) => currentProduct.id === item.productId);
 
             if (!product) {

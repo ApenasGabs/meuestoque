@@ -512,6 +512,7 @@ export const ListPageNew = (): ReactElement => {
           onFinalizeShopping={handleFinalizeShopping}
           onUpdateItemPrice={(id, value) => void handleUpdateItemPrice(id, value)}
           onOpenImportModal={() => setImportModalOpen(true)}
+          onViewHistory={() => navigate("/history")}
         />
       </div>
 
