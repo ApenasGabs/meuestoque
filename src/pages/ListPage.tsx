@@ -163,9 +163,21 @@ export const ListPage = () => {
           filter: `id=eq.${listId}`,
         },
         async (payload) => {
+          // REVIEW - Revalidate this workflow to ensure thats it's working properly
           if (payload.new && payload.new.ativa === false && groupId) {
-            const nextList = await ensureActiveListForGroup(groupId);
-            setListId(nextList.id);
+            // Skip if finishShoppingList is already handling the transition.
+            // The 'saving' flag is true during finalization, which already
+            // calls ensureActiveListForGroup — running it here concurrently
+            // would race against the unique constraint.
+            if (saving) return;
+
+            try {
+              const nextList = await ensureActiveListForGroup(groupId);
+              setListId(nextList.id);
+            } catch {
+              // Swallow errors from the subscription — the primary flow
+              // (finishShoppingList) will handle list creation.
+            }
           }
         },
       )

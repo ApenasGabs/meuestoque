@@ -17,6 +17,7 @@ interface StockViewProps {
   onAddProduct: (product: Omit<InventoryProduct, "id">) => void;
   onUpdateProduct: (id: string, product: Omit<InventoryProduct, "id">) => void;
   onRemoveProduct: (id: string) => void;
+  onConsumeProduct?: (product: InventoryProduct, portions?: number) => void;
   onAddToShoppingList: (product: InventoryProduct) => void;
   onAddCategory: (name: string) => string;
 }
@@ -32,6 +33,7 @@ export const StockView = ({
   onAddProduct,
   onUpdateProduct,
   onRemoveProduct,
+  onConsumeProduct = () => undefined,
   onAddToShoppingList,
   onAddCategory,
 }: StockViewProps): ReactElement => {
@@ -39,6 +41,8 @@ export const StockView = ({
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
   const [pendingProduct, setPendingProduct] = useState<InventoryProduct | null>(null);
   const [pendingValidityDate, setPendingValidityDate] = useState<string>("");
+  const [consumingProduct, setConsumingProduct] = useState<InventoryProduct | null>(null);
+  const [customPortionCount, setCustomPortionCount] = useState<string>("1");
   const hasFilters = filters.length > 0;
 
   const pendingProducts = useMemo(
@@ -167,6 +171,11 @@ export const StockView = ({
             }}
             onAddToList={onAddToShoppingList}
             onRemove={onRemoveProduct}
+            onConsume={(product) => onConsumeProduct(product, 1)}
+            onOpenCustomConsume={(product) => {
+              setConsumingProduct(product);
+              setCustomPortionCount("1");
+            }}
             onCardClick={(product) => {
               setPendingProduct(product);
               setPendingValidityDate(product.validityDate ?? "");
@@ -197,6 +206,11 @@ export const StockView = ({
                 }}
                 onAddToList={onAddToShoppingList}
                 onRemove={onRemoveProduct}
+                onConsume={(product) => onConsumeProduct(product, 1)}
+                onOpenCustomConsume={(product) => {
+                  setConsumingProduct(product);
+                  setCustomPortionCount("1");
+                }}
                 onCardClick={(product) => {
                   setEditingProduct(product);
                   setOpenForm(true);
@@ -268,6 +282,77 @@ export const StockView = ({
                   }}
                 >
                   Salvar validade
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {consumingProduct && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 flex items-end justify-center p-0 sm:p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setConsumingProduct(null);
+            }
+          }}
+        >
+          <div className="w-full max-w-lg bg-base-100 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-base-300">
+              <div>
+                <h2 className="font-semibold text-sm">Consumo customizado</h2>
+                <p className="text-xs text-base-content/60">{consumingProduct.name}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setConsumingProduct(null)}>
+                x
+              </Button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <Input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  label="Quantidade em porções"
+                  value={customPortionCount}
+                  onChange={(event) => setCustomPortionCount(event.target.value)}
+                />
+                <p className="text-xs text-base-content/60 mt-1">
+                  1 porção = {consumingProduct.portionSize ?? 1} {consumingProduct.unit ?? "un"}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => setConsumingProduct(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => {
+                    if (!consumingProduct) {
+                      return;
+                    }
+
+                    const portions = Number.parseFloat(customPortionCount);
+                    if (!Number.isFinite(portions) || portions <= 0) {
+                      return;
+                    }
+
+                    onConsumeProduct(consumingProduct, portions);
+                    setConsumingProduct(null);
+                    setCustomPortionCount("1");
+                  }}
+                >
+                  Consumir
                 </Button>
               </div>
             </div>

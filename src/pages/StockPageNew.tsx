@@ -19,8 +19,15 @@ export const StockPageNew = (): ReactElement => {
   const [search, setSearch] = useState<string>("");
   const [filters, setFilters] = useState<Array<"low" | "out">>([]);
 
-  const { products, categories, loading, addProduct, updateProduct, removeProduct } =
-    useInventoryFeatureWeb();
+  const {
+    products,
+    categories,
+    loading,
+    addProduct,
+    updateProduct,
+    removeProduct,
+    updateQuantity,
+  } = useInventoryFeatureWeb();
 
   useEffect(() => {
     if (!groupId) {
@@ -50,6 +57,19 @@ export const StockPageNew = (): ReactElement => {
 
   const handleRemoveProduct = async (id: string): Promise<void> => {
     await removeProduct(id);
+  };
+
+  const handleConsumeProduct = async (
+    product: InventoryProduct,
+    portions: number = 1,
+  ): Promise<void> => {
+    const portionSize = product.portionSize ?? 1;
+    const delta = -1 * Math.max(0, portions) * Math.max(0.0001, portionSize);
+    if (delta === 0) {
+      return;
+    }
+
+    await updateQuantity(product.id, delta);
   };
 
   const handleAddCategory = (name: string): string => {
@@ -87,6 +107,7 @@ export const StockPageNew = (): ReactElement => {
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onRemoveProduct={handleRemoveProduct}
+          onConsumeProduct={(product, portions) => void handleConsumeProduct(product, portions)}
           onAddToShoppingList={handleAddToShoppingList}
           onAddCategory={handleAddCategory}
         />

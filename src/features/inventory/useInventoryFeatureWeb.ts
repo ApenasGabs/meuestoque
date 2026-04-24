@@ -42,9 +42,12 @@ const mapStockItemToProduct = (item: StockItemRecord): InventoryProduct => ({
   quantity: item.quantidade,
   minStock: item.quantidade_minima,
   unit: item.unidade || "un",
+  portionSize: item.tamanho_porcao,
+  compositeUnit: item.tamanho_porcao !== 1,
+  lastPurchaseDate: item.data_compra,
   categoryId: item.categoria || "Outros",
-  validityDate: (item as unknown as { data_validade?: string | null }).data_validade || null,
-  needsValidity: false,
+  validityDate: item.data_validade,
+  needsValidity: Boolean(item.data_validade),
 });
 
 /**
@@ -128,7 +131,7 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       quantidade: product.quantity,
       quantidadeMinima: product.minStock,
       unidade: product.unit || "un",
-      tamanhoPorcao: 1,
+      tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
       autoAdicionarLista: false,
       consumoFrequencia: "weekly",
       consumoValor: 0,
@@ -146,6 +149,11 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       throw new Error("Grupo não selecionado");
     }
 
+    const currentItem = items.find((item) => item.id === id);
+    if (!currentItem) {
+      throw new Error("Item não encontrado para atualização");
+    }
+
     await upsertItem({
       id,
       groupId,
@@ -154,10 +162,10 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       quantidade: product.quantity,
       quantidadeMinima: product.minStock,
       unidade: product.unit || "un",
-      tamanhoPorcao: 1,
-      autoAdicionarLista: false,
-      consumoFrequencia: "weekly",
-      consumoValor: 0,
+      tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
+      autoAdicionarLista: currentItem.auto_adicionar_lista,
+      consumoFrequencia: currentItem.consumo_frequencia,
+      consumoValor: currentItem.consumo_valor,
       dataValidade: product.validityDate || null,
     });
   };

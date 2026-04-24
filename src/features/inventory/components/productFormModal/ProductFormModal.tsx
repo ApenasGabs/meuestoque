@@ -27,6 +27,8 @@ export const ProductFormModal = ({
   const [quantity, setQuantity] = useState<string>(String(product?.quantity ?? 0));
   const [minStock, setMinStock] = useState<string>(String(product?.minStock ?? 1));
   const [unit, setUnit] = useState<string>(product?.unit ?? "un");
+  const [portionSize, setPortionSize] = useState<string>(String(product?.portionSize ?? 1));
+  const [compositeUnit, setCompositeUnit] = useState<boolean>(Boolean(product?.compositeUnit));
   const [categoryId, setCategoryId] = useState<string>(
     product?.categoryId ?? categories[0]?.id ?? "",
   );
@@ -58,6 +60,8 @@ export const ProductFormModal = ({
       quantity: Number(quantity),
       minStock: Number(minStock),
       unit: unit.trim() || "un",
+      portionSize: Math.max(0.0001, Number(portionSize) || 1),
+      compositeUnit,
       categoryId: finalCategoryId,
       validityDate: validityDate.trim() || null,
       needsValidity,
@@ -123,6 +127,34 @@ export const ProductFormModal = ({
                 onChange={(event) => setUnit(event.target.value)}
                 placeholder="kg, un, L"
               />
+            </div>
+          </div>
+
+          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
+            <Checkbox
+              checked={compositeUnit}
+              onChange={(event) => setCompositeUnit(event.target.checked)}
+              label="Unidade composta"
+            />
+            <div>
+              <Label htmlFor="product-portion-size">
+                {compositeUnit
+                  ? "Fator de consumo (1 unidade consumida equivale a)"
+                  : "Porção de consumo"}
+              </Label>
+              <Input
+                id="product-portion-size"
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                value={portionSize}
+                onChange={(event) => setPortionSize(event.target.value)}
+              />
+              <p className="text-xs text-base-content/60 mt-1">
+                {compositeUnit
+                  ? `Exemplo: 0.285 significa que ao consumir 1 un, baixa 0.285 ${unit || "un"} do estoque.`
+                  : `Consumo rápido sempre baixa este valor em ${unit || "un"}.`}
+              </p>
             </div>
           </div>
 

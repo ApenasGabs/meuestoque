@@ -11,6 +11,7 @@ export interface ShoppingListRecord {
   id: string;
   ativa: boolean;
   finalizada_em: string | null;
+  closed_purchase_date: string | null;
   total: number | null;
   group_id: string;
   items?: Array<{ id: string }>;
@@ -26,6 +27,13 @@ export interface ItemRecord {
   criado_por: string | null;
   list_id: string;
   criado_em: string | null;
+}
+
+interface FinalizeShoppingRpcResult {
+  next_list_id: string | null;
+  bought_items_count: number;
+  pending_items_count: number;
+  finalized_total: number | null;
 }
 
 export interface MemberRecord {
@@ -121,15 +129,48 @@ export async function loadMembers(groupId: string): Promise<MemberRecord[]> {
 }
 
 export async function loadActiveList(groupId: string): Promise<ShoppingListRecord | null> {
+  // Query both ativa=true and status='active' to handle any data inconsistency.
   const { data, error } = await supabase
     .from("shopping_lists")
-    .select("id, ativa, finalizada_em, total, group_id")
+    .select("id, ativa, finalizada_em, closed_purchase_date, total, group_id")
     .eq("group_id", groupId)
-    .eq("ativa", true)
+    .or("ativa.eq.true,status.eq.active")
     .limit(1);
 
   if (error) throw new Error(error.message);
   return data?.[0] ?? null;
+}
+
+const isActiveShoppingListUniqueViolation = (message: string): boolean => {
+  const normalizedMessage = message.toLowerCase();
+  return (
+    normalizedMessage.includes("idx_shopping_lists_active_group") ||
+    normalizedMessage.includes("ux_shopping_lists_group_active") ||
+    (normalizedMessage.includes("duplicate key") &&
+      normalizedMessage.includes("shopping_lists"))
+  );
+};
+
+/**
+ * Close any orphaned active lists for the group that may exist due to
+ * data inconsistency between `ativa` and `status` columns.
+ */
+async function closeOrphanedActiveLists(groupId: string, excludeListId?: string): Promise<void> {
+  let query = supabase
+    .from("shopping_lists")
+    .update({
+      ativa: false,
+      status: "closed",
+      finalizada_em: new Date().toISOString(),
+    })
+    .eq("group_id", groupId)
+    .or("ativa.eq.true,status.eq.active");
+
+  if (excludeListId) {
+    query = query.neq("id", excludeListId);
+  }
+
+  await query;
 }
 
 export async function ensureActiveListForGroup(groupId: string): Promise<ShoppingListRecord> {
@@ -138,11 +179,37 @@ export async function ensureActiveListForGroup(groupId: string): Promise<Shoppin
 
   const { data, error } = await supabase
     .from("shopping_lists")
-    .insert({ group_id: groupId, ativa: true })
-    .select("id, ativa, finalizada_em, total, group_id")
+    .insert({ group_id: groupId, ativa: true, status: "active" })
+    .select("id, ativa, finalizada_em, closed_purchase_date, total, group_id")
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isActiveShoppingListUniqueViolation(error.message)) {
+      // Another concurrent request might have created the list, try to find it.
+      const concurrentList = await loadActiveList(groupId);
+      if (concurrentList) return concurrentList;
+
+      // If we still can't find an active list, there might be orphaned rows
+      // blocking the unique constraint. Close them and retry once.
+      await closeOrphanedActiveLists(groupId);
+
+      const { data: retryData, error: retryError } = await supabase
+        .from("shopping_lists")
+        .insert({ group_id: groupId, ativa: true, status: "active" })
+        .select("id, ativa, finalizada_em, closed_purchase_date, total, group_id")
+        .maybeSingle();
+
+      if (retryError) {
+        // One more attempt to find an existing list after the retry insert failed.
+        const lastChanceList = await loadActiveList(groupId);
+        if (lastChanceList) return lastChanceList;
+        throw new Error(retryError.message);
+      }
+      if (retryData) return retryData;
+    }
+
+    throw new Error(error.message);
+  }
   if (!data) {
     throw new Error("Não foi possível criar a lista ativa do grupo");
   }
@@ -267,6 +334,30 @@ const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unid
 };
 
 export async function finishShoppingList(listId: string, groupId: string): Promise<string | null> {
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_finalize_shopping_list", {
+      p_list_id: listId,
+      p_purchase_date: new Date().toISOString().slice(0, 10),
+    });
+
+    if (rpcError) {
+      console.warn("Erro retornado pela RPC rpc_finalize_shopping_list:", rpcError);
+    }
+
+    if (!rpcError && rpcData) {
+      const normalizedRpcData = Array.isArray(rpcData)
+        ? (rpcData[0] as FinalizeShoppingRpcResult | undefined)
+        : (rpcData as FinalizeShoppingRpcResult);
+
+      if (normalizedRpcData?.next_list_id) {
+        return normalizedRpcData.next_list_id;
+      }
+    }
+  } catch (err) {
+    console.warn("Falha ao executar rpc_finalize_shopping_list, usando fallback:", err);
+    // Fallback para implementação legada quando a RPC ainda não estiver disponível.
+  }
+
   const { data: items, error: itemsError } = await supabase
     .from("items")
     .select("id, nome, quantidade, categoria, comprado, preco, criado_por")
@@ -274,6 +365,7 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
   if (itemsError) throw new Error(itemsError.message);
 
+  const todayDate = new Date().toISOString().slice(0, 10);
   const total = (items ?? []).reduce((sum, item) => sum + (item.preco ?? 0), 0);
 
   const boughtItems = (items ?? []).filter((item) => item.comprado);
@@ -288,8 +380,6 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         stockItem,
       ]),
     );
-    const todayDate = new Date().toISOString().slice(0, 10);
-
     type AggregatedStockUpdate = {
       key: string;
       nome: string;
@@ -348,16 +438,23 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
     }
   }
 
+  // Close the current list AND any other orphaned active lists for this group.
+  // This prevents unique constraint violations from stale data.
   const { error: updateError } = await supabase
     .from("shopping_lists")
     .update({
       ativa: false,
+      status: "closed",
       finalizada_em: new Date().toISOString(),
+      closed_purchase_date: todayDate,
       total: total > 0 ? total : null,
     })
     .eq("id", listId);
 
   if (updateError) throw new Error(updateError.message);
+
+  // Also close any other orphaned active lists for the group to avoid constraint conflicts.
+  await closeOrphanedActiveLists(groupId);
 
   const nextList = await ensureActiveListForGroup(groupId);
 
@@ -385,14 +482,38 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 export async function loadShoppingHistory(groupId: string): Promise<ShoppingListRecord[]> {
   const { data, error } = await supabase
     .from("shopping_lists")
-    .select("id, ativa, finalizada_em, total, group_id, items(*)")
+    .select("id, ativa, finalizada_em, closed_purchase_date, total, group_id, items(*)")
     .eq("group_id", groupId)
     .eq("ativa", false)
     .order("finalizada_em", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+
+  const records = (data ?? []) as ShoppingListRecord[];
+  return records.sort((first, second) => {
+    const firstDate = first.closed_purchase_date ?? first.finalizada_em ?? "";
+    const secondDate = second.closed_purchase_date ?? second.finalizada_em ?? "";
+    return secondDate.localeCompare(firstDate);
+  });
 }
+
+export const updateShoppingHistoryPurchaseDate = async (
+  listId: string,
+  purchaseDate: string,
+): Promise<void> => {
+  const normalizedDate = purchaseDate.trim();
+  if (!normalizedDate) {
+    throw new Error("Data de compra inválida");
+  }
+
+  const { error } = await supabase
+    .from("shopping_lists")
+    .update({ closed_purchase_date: normalizedDate })
+    .eq("id", listId)
+    .eq("ativa", false);
+
+  if (error) throw new Error(error.message);
+};
 
 export const deleteShoppingHistory = async (listId: string): Promise<void> => {
   const { error } = await supabase
@@ -464,7 +585,7 @@ export async function createGroupForCurrentUser(groupName: string): Promise<{
 
   const { data: list, error: listError } = await supabase
     .from("shopping_lists")
-    .insert({ group_id: group.id, ativa: true })
+    .insert({ group_id: group.id, ativa: true, status: "active" })
     .select("id")
     .maybeSingle();
 
@@ -577,7 +698,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 export async function createShoppingListForGroup(groupId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("shopping_lists")
-    .insert({ group_id: groupId, ativa: true })
+    .insert({ group_id: groupId, ativa: true, status: "active" })
     .select("id")
     .maybeSingle();
 
@@ -610,11 +731,34 @@ export interface StockItemRecord {
 export interface StockMovementRecord {
   id: string;
   item_id: string;
+  stock_item_id: string | null;
+  lot_id: string | null;
   tipo: "entrada" | "saida" | "ajuste" | "consumo_auto";
   quantidade: number;
+  unidade: string | null;
+  custo_unitario_ref: number | null;
   observacao: string | null;
+  origem: string | null;
+  source_list_id: string | null;
+  source_list_item_id: string | null;
   criado_por: string | null;
   criado_em: string;
+}
+
+export interface StockLotRecord {
+  id: string;
+  stock_item_id: string;
+  source_list_item_id: string | null;
+  quantidade_inicial: number;
+  quantidade_restante: number;
+  unidade: string;
+  custo_total: number | null;
+  custo_unitario: number | null;
+  fator_consumo: number | null;
+  data_compra: string;
+  data_validade: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface UpsertStockItemInput {
@@ -777,6 +921,7 @@ export const upsertStockItem = async (input: UpsertStockItemInput): Promise<Stoc
     categoria: normalizeStockCategory(input.categoria),
     unidade: normalizeStockText(input.unidade),
     quantidade: toPositiveNumber(input.quantidade),
+    quantidade_atual: toPositiveNumber(input.quantidade),
     quantidade_minima: toPositiveNumber(input.quantidadeMinima),
     tamanho_porcao: Math.max(1, toPositiveNumber(input.tamanhoPorcao, 1)),
     auto_adicionar_lista: input.autoAdicionarLista,
@@ -810,13 +955,33 @@ export const getStockMovements = async (
 ): Promise<StockMovementRecord[]> => {
   const { data, error } = await supabase
     .from("stock_movements")
-    .select("id, item_id, tipo, quantidade, observacao, criado_por, criado_em")
-    .eq("item_id", itemId)
+    .select(
+      "id, item_id, stock_item_id, lot_id, tipo, quantidade, unidade, custo_unitario_ref, observacao, origem, source_list_id, source_list_item_id, criado_por, criado_em",
+    )
+    .or(`item_id.eq.${itemId},stock_item_id.eq.${itemId}`)
     .order("criado_em", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
   return (data ?? []) as StockMovementRecord[];
+};
+
+export const getStockLotsByStockItem = async (stockItemId: string): Promise<StockLotRecord[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("stock_lots")
+      .select(
+        "id, stock_item_id, source_list_item_id, quantidade_inicial, quantidade_restante, unidade, custo_total, custo_unitario, fator_consumo, data_compra, data_validade, created_by, created_at",
+      )
+      .eq("stock_item_id", stockItemId)
+      .order("data_compra", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as StockLotRecord[];
+  } catch {
+    // Compatibilidade com ambientes onde a migration V2 ainda não foi aplicada.
+    return [];
+  }
 };
 
 export const setStockItemInShoppingList = async (

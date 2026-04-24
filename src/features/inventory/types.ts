@@ -4,6 +4,9 @@ export interface InventoryProduct {
   quantity: number;
   minStock: number;
   unit?: string;
+  portionSize?: number;
+  compositeUnit?: boolean;
+  lastPurchaseDate?: string | null;
   categoryId: string;
   validityDate?: string | null;
   needsValidity?: boolean;

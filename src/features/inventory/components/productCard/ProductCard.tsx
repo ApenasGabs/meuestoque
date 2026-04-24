@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { useRef } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
@@ -10,6 +11,8 @@ interface ProductCardProps {
   onEdit: (product: InventoryProduct) => void;
   onAddToList: (product: InventoryProduct) => void;
   onRemove: (id: string) => void;
+  onConsume?: (product: InventoryProduct) => void;
+  onOpenCustomConsume?: (product: InventoryProduct) => void;
   onCardClick?: (product: InventoryProduct) => void;
 }
 
@@ -18,11 +21,40 @@ export const ProductCard = ({
   onEdit,
   onAddToList,
   onRemove,
+  onConsume = () => undefined,
+  onOpenCustomConsume = () => undefined,
   onCardClick,
 }: ProductCardProps): ReactElement => {
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef<boolean>(false);
+
   const isOut = product.quantity === 0;
   const isLow = product.quantity > 0 && product.quantity <= product.minStock;
   const isPendingValidity = Boolean(product.needsValidity);
+
+  const handleConsumePointerDown = (): void => {
+    longPressTriggeredRef.current = false;
+    longPressTimeoutRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      onOpenCustomConsume(product);
+    }, 500);
+  };
+
+  const clearLongPress = (): void => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const handleConsumeClick = (): void => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+
+    onConsume(product);
+  };
 
   return (
     <Card
@@ -44,6 +76,11 @@ export const ProductCard = ({
             <p className="text-xs text-base-content/60">
               Min {product.minStock} {product.unit ?? "un"}
             </p>
+            {product.lastPurchaseDate && (
+              <p className="text-xs text-base-content/60">
+                Última compra: {new Date(product.lastPurchaseDate).toLocaleDateString("pt-BR")}
+              </p>
+            )}
             {isPendingValidity && (
               <Badge variant="error" size="sm">
                 Pendente Validade
@@ -63,6 +100,37 @@ export const ProductCard = ({
 
           <div className="flex items-center ">
             <span className="w-8 text-center font-semibold tabular-nums">{product.quantity}</span>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleConsumeClick}
+              onMouseDown={(event) => {
+                event.stopPropagation();
+                handleConsumePointerDown();
+              }}
+              onMouseUp={(event) => {
+                event.stopPropagation();
+                clearLongPress();
+              }}
+              onMouseLeave={clearLongPress}
+              onTouchStart={(event) => {
+                event.stopPropagation();
+                handleConsumePointerDown();
+              }}
+              onTouchEnd={(event) => {
+                event.stopPropagation();
+                clearLongPress();
+              }}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onOpenCustomConsume(product);
+              }}
+              aria-label={`Consumir ${product.name}`}
+            >
+              Consumir
+            </Button>
 
             <Button
               variant="ghost"
