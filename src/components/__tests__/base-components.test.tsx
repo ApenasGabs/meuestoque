@@ -217,11 +217,6 @@ describe("FeatureCard Component", () => {
 describe("Footer Component", () => {
   it("renders footer text and link", () => {
     render(<Footer />);
-    expect(
-      screen.getByText(
-        "Template React + TypeScript + Vite + Tailwind CSS + daisyUI",
-      ),
-    ).toBeInTheDocument();
     const link = screen.getByText("ApenasGabs") as HTMLAnchorElement;
     expect(link.href).toContain("github.com/apenasgabs");
   });

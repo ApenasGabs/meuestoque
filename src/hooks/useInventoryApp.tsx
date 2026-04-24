@@ -30,10 +30,6 @@ export const useInventoryApp = (): UseInventoryAppResult => {
   const [stockItems, setStockItems] = useState<StockItem[]>(INITIAL_STOCK);
 
   useEffect(() => {
-    document.title = "Meu Estoque";
-  }, []);
-
-  useEffect(() => {
     const interval = window.setInterval(() => {
       setSyncStatus("syncing");
       window.setTimeout(() => setSyncStatus("synced"), 1200);

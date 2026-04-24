@@ -1,5 +1,7 @@
 # GitHub Copilot - Instruções de Código
 
+> **⚠️ ATENÇÃO IAs:** Leia obrigatoriamente o arquivo `AI_KNOWLEDGE_BASE.md` na raiz do projeto antes de iniciar o trabalho, e atualize-o sempre que modificar uma regra de negócio importante!
+
 ## Tipagem TypeScript
 
 - ❌ **NUNCA** usar `any` em nenhuma circunstância
@@ -241,6 +243,16 @@ export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
 - ✅ Debounce em inputs de busca
 
 ## Documentação
+
+### Documentação Gerada por IA - PADRÃO ESTRITO
+Toda vez que você (a IA) for documentar a conclusão de uma tarefa no `AI_KNOWLEDGE_BASE.md` ou gerar um *artifact* de resumo, você **DEVE** obrigatoriamente usar este formato estruturado:
+- **Gráfico Mermaid**: Visualize o fluxo ou a arquitetura.
+- **Tabelas Markdown**: Liste todos os arquivos criados ou modificados.
+- **Lógica de Decisão**: Bloco de código em texto puro explicando as regras.
+- **Comportamento da Feature**: Explicação em bullet points.
+- **Checklist de Aceite**: Confirmação do que foi entregue.
+
+*(Nunca escreva apenas parágrafos longos, use sempre os recursos visuais acima)*
 
 ### JSDoc - OBRIGATÓRIO
 

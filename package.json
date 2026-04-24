@@ -29,6 +29,7 @@
     "@ant-design/icons": "6.x",
     "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@vercel/analytics": "^2.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.14.2",

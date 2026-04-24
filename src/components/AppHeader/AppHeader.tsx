@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { Badge } from "../Badge/Badge";
 import type { SyncStatus, TabKey } from "../../types/inventory";
+import { useAppMode } from "../../hooks/useAppMode";
 
 interface SyncConfig {
   label: string;
@@ -30,6 +31,8 @@ const SyncBadge = ({ status }: { status: SyncStatus }): ReactElement => {
 };
 
 export const AppHeader = ({ activeTab, syncStatus }: AppHeaderProps): ReactElement => {
+  const { appTitle } = useAppMode();
+
   const titles: Record<TabKey, string> = {
     lista: "Lista de Compras",
     pendentes: "Pendentes",
@@ -40,7 +43,7 @@ export const AppHeader = ({ activeTab, syncStatus }: AppHeaderProps): ReactEleme
     <header className="bg-base-100 border-b border-base-300 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
       <div className="leading-tight">
         <p className="text-[11px] uppercase tracking-[0.16em] text-primary font-semibold">
-          Meu Estoque
+          {appTitle}
         </p>
         <h1 className="text-base font-semibold tracking-tight">{titles[activeTab]}</h1>
       </div>
@@ -48,3 +51,4 @@ export const AppHeader = ({ activeTab, syncStatus }: AppHeaderProps): ReactEleme
     </header>
   );
 };
+

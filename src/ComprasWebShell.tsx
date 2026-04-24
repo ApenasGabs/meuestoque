@@ -3,6 +3,8 @@ import { Button } from "./components/Button/Button";
 import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
 import { PublicOnly, RequireAuth, RequireGroup } from "./components/RouteGuards";
+import { useAppMode } from "./hooks/useAppMode";
+import { useSubdomainSync } from "./hooks/useSubdomainSync";
 import { GroupPage } from "./pages/GroupPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ListPageNew } from "./pages/ListPageNew";
@@ -29,6 +31,10 @@ export const ComprasWebShell = () => {
   const userId = useAuthStore((state) => state.userId);
   const stockItems = useStockStore((state) => state.items);
   const ready = useSessionStore((state) => state.ready);
+  const { appTitle } = useAppMode();
+
+  // Sincroniza subdomínio (meuestoque ↔ nossoestoque) e document.title
+  useSubdomainSync();
 
   const lowStockCount = stockItems.filter(
     (item) => item.quantidade <= item.quantidade_minima,
@@ -53,7 +59,7 @@ export const ComprasWebShell = () => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col pb-20">
-      <Navbar title="Meu estoque" />
+      <Navbar title={appTitle} />
 
       <main className="flex-1">
         <Routes>
