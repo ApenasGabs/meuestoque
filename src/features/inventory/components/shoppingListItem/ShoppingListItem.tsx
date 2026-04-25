@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
@@ -12,8 +12,8 @@ interface ShoppingListItemProps {
   product: InventoryProduct;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
-  onBuy: (id: string) => void;
   onUpdatePrice?: (id: string, value: number | null) => void;
+  onUpdateQuantity?: (id: string, value: number) => void;
 }
 
 export const ShoppingListItem = ({
@@ -21,20 +21,39 @@ export const ShoppingListItem = ({
   product,
   onToggle,
   onRemove,
-  onBuy,
   onUpdatePrice,
+  onUpdateQuantity,
 }: ShoppingListItemProps): ReactElement => {
+  const [prevQuantity, setPrevQuantity] = useState(item.quantity);
+  const [quantityDraft, setQuantityDraft] = useState<string>(String(item.quantity));
+  const [prevPrice, setPrevPrice] = useState(item.price);
   const [priceDraft, setPriceDraft] = useState<string>(
     item.price !== null && item.price !== undefined ? item.price.toFixed(2).replace(".", ",") : "",
   );
 
-  useEffect(() => {
+  if (item.price !== prevPrice) {
+    setPrevPrice(item.price);
     setPriceDraft(
       item.price !== null && item.price !== undefined
         ? item.price.toFixed(2).replace(".", ",")
         : "",
     );
-  }, [item.price]);
+  }
+
+  if (item.quantity !== prevQuantity) {
+    setPrevQuantity(item.quantity);
+    setQuantityDraft(String(item.quantity));
+  }
+
+  const handleQuantityBlur = (): void => {
+    if (!onUpdateQuantity) return;
+    const parsed = Number.parseFloat(quantityDraft.replace(",", "."));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      onUpdateQuantity(item.id, parsed);
+    } else {
+      setQuantityDraft(String(item.quantity));
+    }
+  };
 
   const handlePriceBlur = (): void => {
     if (!onUpdatePrice) return;
@@ -84,33 +103,54 @@ export const ShoppingListItem = ({
               )}
             </div>
             <p className="text-xs text-base-content/60">
-              {item.quantity} {product.unit ?? "un"}
+              {item.quantity} {product.unit ?? "Un"}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Input
-                value={priceDraft}
-                onChange={(event) => setPriceDraft(event.target.value)}
-                onBlur={handlePriceBlur}
-                placeholder="Preço"
-                inputMode="decimal"
-                size="sm"
-                className="w-28"
-              />
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
+                <Input
+                  value={quantityDraft}
+                  onChange={(event) => setQuantityDraft(event.target.value)}
+                  onFocus={(event) => event.target.select()}
+                  onBlur={handleQuantityBlur}
+                  placeholder={String(item.quantity)}
+                  inputMode="decimal"
+                  size="sm"
+                  className="px-2 text-center tabular-nums"
+                  style={{
+                    width: `${Math.max(String(item.quantity).length, quantityDraft.length, 1) + 3}ch`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold text-base-content/40">Preço</span>
+                <Input
+                  value={priceDraft}
+                  onChange={(event) => setPriceDraft(event.target.value)}
+                  onFocus={(event) => event.target.select()}
+                  onBlur={handlePriceBlur}
+                  placeholder={
+                    item.price !== null && item.price !== undefined
+                      ? item.price.toFixed(2).replace(".", ",")
+                      : "0,00"
+                  }
+                  inputMode="decimal"
+                  size="sm"
+                  className="px-2 text-center tabular-nums"
+                  style={{
+                    width: `${Math.max(item.price !== null && item.price !== undefined ? item.price.toFixed(2).length : 4, priceDraft.length, 4) + 3}ch`,
+                  }}
+                />
+              </div>
               {item.isPriceStale && (
                 <Badge variant="warning" size="sm">
-                  Preço &gt;30 dias
+                  Antigo
                 </Badge>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="w-8 text-center font-semibold tabular-nums">{item.quantity}</span>
-            {!item.checked && (
-              <Button variant="ghost" size="sm" onClick={() => onBuy(item.id)}>
-                Comprar
-              </Button>
-            )}
             <Button variant="ghost" size="sm" onClick={() => onRemove(item.id)}>
               Excluir
             </Button>

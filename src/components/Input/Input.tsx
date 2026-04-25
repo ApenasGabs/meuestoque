@@ -44,16 +44,18 @@ export const Input = ({
   const variantClass = variantClasses[variant] || variantClasses.bordered;
   const sizeClass = sizeClasses[size] || sizeClasses.md;
   const hasError = error ? "input-error" : "";
+  const hasWidth = className.includes("w-") || (props.style && props.style.width);
+  const isFullWidth = (label || !hasWidth);
 
   return (
-    <div className="w-full">
+    <div className={isFullWidth ? "w-full" : ""}>
       {label && (
         <label className="label">
           <span className="label-text">{label}</span>
         </label>
       )}
       <input
-        className={`input w-full ${variantClass} ${sizeClass} ${hasError} ${className}`.trim()}
+        className={`input ${isFullWidth ? "w-full" : ""} ${variantClass} ${sizeClass} ${hasError} ${className}`.trim()}
         {...props}
       />
       {error && (

@@ -4,15 +4,18 @@ import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Input } from "../../../../components/Input/Input";
 import { Label } from "../../../../components/Label/Label";
+import { Select } from "../../../../components/Select/Select";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 import { ShoppingListItem } from "../shoppingListItem/ShoppingListItem";
+import { toUnit, type Unit } from "../../../../types/inventory.types";
 
 interface SmartShoppingDraft {
   name: string;
   quantity: number;
   price: number | null;
   hasQuantity: boolean;
-  unit: string;
+  unit: Unit;
+  category: string;
 }
 
 interface ShoppingListViewProps {
@@ -25,11 +28,10 @@ interface ShoppingListViewProps {
   onSmartAdd: (draft: SmartShoppingDraft) => void;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
-  onBuy: (id: string) => void;
-  onClearChecked: () => void;
   onGenerateSmartList: () => void;
   onFinalizeShopping?: () => void;
   onUpdateItemPrice?: (id: string, value: number | null) => void;
+  onUpdateItemQuantity?: (id: string, value: number) => void;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
 }
@@ -44,16 +46,16 @@ export const ShoppingListView = ({
   onSmartAdd,
   onToggle,
   onRemove,
-  onBuy,
-  onClearChecked,
   onGenerateSmartList,
   onFinalizeShopping,
   onUpdateItemPrice,
+  onUpdateItemQuantity,
   onOpenImportModal,
   onViewHistory,
 }: ShoppingListViewProps): ReactElement => {
   const [smartInput, setSmartInput] = useState<string>("");
-  const [selectedUnit, setSelectedUnit] = useState<string>("un");
+  const [selectedUnit, setSelectedUnit] = useState<Unit>("Un");
+  const [selectedCategoryForDraft, setSelectedCategoryForDraft] = useState<string>("Outros");
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
 
   const categories = [
@@ -83,8 +85,9 @@ export const ShoppingListView = ({
       price: priceValue !== null && !Number.isNaN(priceValue) ? priceValue : null,
       hasQuantity,
       unit: selectedUnit,
+      category: selectedCategoryForDraft,
     };
-  }, [selectedUnit, smartInput]);
+  }, [selectedCategoryForDraft, selectedUnit, smartInput]);
 
   const handleSmartSubmit = (): void => {
     if (!parsedDraft.name.trim()) {
@@ -93,7 +96,8 @@ export const ShoppingListView = ({
 
     onSmartAdd(parsedDraft);
     setSmartInput("");
-    setSelectedUnit("un");
+    setSelectedUnit("Un");
+    setSelectedCategoryForDraft("Outros");
   };
 
   const handleSmartKeyDown = (event: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -128,16 +132,6 @@ export const ShoppingListView = ({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {onFinalizeShopping && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={onFinalizeShopping}
-                disabled={finalizeDisabled}
-              >
-                {finalizing ? "Finalizando..." : "Finalizar compra"}
-              </Button>
-            )}
             <Button variant="secondary" size="sm" onClick={onGenerateSmartList}>
               Lista inteligente
             </Button>
@@ -149,11 +143,6 @@ export const ShoppingListView = ({
             {onViewHistory && (
               <Button variant="ghost" size="sm" onClick={onViewHistory}>
                 Histórico
-              </Button>
-            )}
-            {checkedCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={onClearChecked}>
-                Limpar comprados
               </Button>
             )}
           </div>
@@ -178,27 +167,48 @@ export const ShoppingListView = ({
             <Badge variant="secondary" size="sm">
               Qtd {parsedDraft.quantity}
             </Badge>
-            {parsedDraft.price !== null && (
-              <Badge variant="warning" size="sm">
-                R$ {parsedDraft.price.toFixed(2).replace(".", ",")}
-              </Badge>
-            )}
+
+            <Badge variant="warning" size="sm">
+              R$ {parsedDraft?.price?.toFixed(2).replace(".", ",") || 0}
+            </Badge>
             {parsedDraft.hasQuantity && (
               <div className="flex items-center gap-2">
                 <Label htmlFor="smart-unit" className="text-xs">
                   Unidade
                 </Label>
-                <select
+                <Select
                   id="smart-unit"
-                  className="select select-bordered select-sm"
+                  size="sm"
                   value={selectedUnit}
-                  onChange={(event) => setSelectedUnit(event.target.value)}
-                >
-                  <option value="kg">kg</option>
-                  <option value="L">L</option>
-                  <option value="un">un</option>
-                  <option value="composta">composta</option>
-                </select>
+                  onChange={(event) => setSelectedUnit(toUnit(event.target.value))}
+                  options={[
+                    { value: "Kg", label: "Kg" },
+                    { value: "L", label: "L" },
+                    { value: "Un", label: "Un" },
+                    { value: "cx", label: "cx" },
+                    { value: "pct", label: "pct" },
+                  ]}
+                />
+              </div>
+            )}
+
+            {(parsedDraft.hasQuantity || smartInput.includes(",")) && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="smart-category" className="text-xs">
+                  Categoria
+                </Label>
+                <Select
+                  id="smart-category"
+                  size="sm"
+                  value={selectedCategoryForDraft}
+                  onChange={(event) => setSelectedCategoryForDraft(event.target.value)}
+                  options={categories
+                    .filter((c) => c !== "Todos")
+                    .map((c) => ({
+                      value: c,
+                      label: c,
+                    }))}
+                />
               </div>
             )}
           </div>
@@ -209,7 +219,7 @@ export const ShoppingListView = ({
             </Button>
           </div>
         </div>
-        
+
         <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide -mx-2 px-2">
           {categories.map((cat) => (
             <Button
@@ -245,8 +255,8 @@ export const ShoppingListView = ({
                 product={product}
                 onToggle={onToggle}
                 onRemove={onRemove}
-                onBuy={onBuy}
                 onUpdatePrice={onUpdateItemPrice}
+                onUpdateQuantity={onUpdateItemQuantity}
               />
             );
           })
@@ -254,14 +264,17 @@ export const ShoppingListView = ({
       </div>
 
       <div className="fixed bottom-16 left-0 right-0 px-4 pb-3">
-        <Button
-          variant="primary"
-          className="w-full"
-          onClick={onClearChecked}
-          disabled={checkedCount === 0}
-        >
-          Remover itens comprados
-        </Button>
+        {checkedCount > 0 && onFinalizeShopping && (
+          <Button
+            variant="primary"
+            className="w-full"
+            size="sm"
+            onClick={onFinalizeShopping}
+            disabled={finalizeDisabled}
+          >
+            {finalizing ? "Finalizando..." : "Finalizar compra"}
+          </Button>
+        )}
       </div>
     </div>
   );

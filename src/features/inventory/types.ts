@@ -1,9 +1,11 @@
+import type { Unit } from "../../types/inventory.types";
+
 export interface InventoryProduct {
   id: string;
   name: string;
   quantity: number;
   minStock: number;
-  unit?: string;
+  unit?: Unit;
   portionSize?: number;
   compositeUnit?: boolean;
   lastPurchaseDate?: string | null;

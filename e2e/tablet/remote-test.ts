@@ -24,14 +24,14 @@ export const resolveRemoteUrl = (path: string): string =>
 
 export const test = base.extend<RemoteFixtures, RemoteWorkerFixtures>({
   remoteBrowser: [
-    async ({}, use): Promise<void> => {
+    async (_args, provide): Promise<void> => {
       const cdpUrl =
         process.env.PLAYWRIGHT_CDP_URL ||
         `http://127.0.0.1:${process.env.LOCAL_TUNNEL_PORT || "9223"}`;
       const browser = await chromium.connectOverCDP(cdpUrl);
 
       try {
-        await use(browser);
+        await provide(browser);
       } finally {
         await browser.close();
       }
@@ -39,16 +39,16 @@ export const test = base.extend<RemoteFixtures, RemoteWorkerFixtures>({
     { scope: "worker" },
   ],
 
-  context: async ({ remoteBrowser }, use): Promise<void> => {
+  context: async ({ remoteBrowser }, provide): Promise<void> => {
     const existingContext = remoteBrowser.contexts()[0];
     const context =
       existingContext ?? (await remoteBrowser.newContext({ baseURL: getRemoteBaseUrl() }));
-    await use(context);
+    await provide(context);
   },
 
-  page: async ({ context }, use): Promise<void> => {
+  page: async ({ context }, provide): Promise<void> => {
     const page = context.pages()[0] ?? (await context.newPage());
-    await use(page);
+    await provide(page);
   },
 });
 

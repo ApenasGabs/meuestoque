@@ -2,7 +2,11 @@ import type { ReactElement, ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
+import { Button } from "../components/Button/Button";
+import { Modal, ModalActions } from "../components/Modal/Modal";
+import { Select } from "../components/Select/Select";
 import { Textarea } from "../components/Textarea/Textarea";
+import { Toast } from "../components/Toast/Toast";
 import { parseShoppingImportText } from "../domain/shoppingImportParser";
 import { type StockImportSource } from "../domain/stockImportParser";
 import { ShoppingListView } from "../features/inventory/components/shoppingListView/ShoppingListView";
@@ -15,6 +19,7 @@ import {
   loadListItems,
   toggleListItemPurchased,
   updateListItemPrice,
+  updateListItemQuantity,
   type ItemRecord,
 } from "../lib/webData";
 import { supabase } from "../lib/supabase";
@@ -22,6 +27,8 @@ import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 import type { StockItemRecord } from "../lib/webData";
+import type { Unit } from "../types/inventory.types";
+import { toUnit } from "../types/inventory.types";
 
 /**
  * Shopping List Page with integrated inventory feature using latest UX.
@@ -47,24 +54,21 @@ export const ListPageNew = (): ReactElement => {
   const [importSource, setImportSource] = useState<StockImportSource>("auto");
   const [importing, setImporting] = useState(false);
 
-  const parseListQuantity = useCallback(
-    (rawQuantity: string): { quantity: number; unit: string } => {
-      const normalized = rawQuantity.trim().replace(/\s+/g, " ");
-      const match = normalized.match(/^(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z]+))?$/);
+  const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
+    const normalized = rawQuantity.trim().replace(/\s+/g, " ");
+    const match = normalized.match(/^(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z]+))?$/);
 
-      if (!match) {
-        return { quantity: 1, unit: "un" };
-      }
+    if (!match) {
+      return { quantity: 1, unit: "Un" };
+    }
 
-      const parsedQuantity = Number.parseFloat(match[1].replace(",", "."));
+    const parsedQuantity = Number.parseFloat(match[1].replace(",", "."));
 
-      return {
-        quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1,
-        unit: (match[2] ?? "un").trim() || "un",
-      };
-    },
-    [],
-  );
+    return {
+      quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1,
+      unit: toUnit(match[2]),
+    };
+  }, []);
 
   const isPriceOlderThan30Days = useCallback((createdAt: string | null): boolean => {
     if (!createdAt) return false;
@@ -86,18 +90,6 @@ export const ListPageNew = (): ReactElement => {
     const loadedItems = await loadListItems(targetListId);
     setShoppingItems(loadedItems);
   }, []);
-
-  useEffect(() => {
-    if (!notice) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setNotice(null);
-    }, 2200);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [notice]);
 
   useEffect(() => {
     if (!groupId) {
@@ -173,7 +165,7 @@ export const ListPageNew = (): ReactElement => {
           name: item.nome,
           quantity: item.quantidade,
           minStock: item.quantidade_minima,
-          unit: item.unidade || "un",
+          unit: item.unidade || "Un",
           categoryId: item.categoria || "Outros",
           validityDate: (item as unknown as { validade_em?: string | null }).validade_em || null,
           needsValidity: false,
@@ -238,6 +230,7 @@ export const ListPageNew = (): ReactElement => {
       unit: string;
       price: number | null;
       hasQuantity: boolean;
+      category: string;
     }): Promise<void> => {
       if (!listId) {
         setError("Lista não inicializada");
@@ -262,7 +255,7 @@ export const ListPageNew = (): ReactElement => {
           listId,
           nome: itemName,
           quantidade: quantityLabel,
-          categoria: matchedStockItem?.categoria ?? "Outros",
+          categoria: payload.category || matchedStockItem?.categoria || "Outros",
           price: payload.price,
           createdBy: userId,
         });
@@ -310,40 +303,26 @@ export const ListPageNew = (): ReactElement => {
     [listId, refreshItems],
   );
 
-  const handleBuyItem = useCallback(
-    async (itemId: string): Promise<void> => {
-      const targetItem = shoppingItems.find((item) => item.id === itemId);
-      if (!targetItem || targetItem.comprado || !listId) return;
+  const handleUpdateItemQuantity = useCallback(
+    async (itemId: string, quantity: number): Promise<void> => {
+      if (!listId) return;
+
+      const item = shoppingItems.find((i) => i.id === itemId);
+      if (!item) return;
+
+      const parsed = parseListQuantity(item.quantidade);
+      const unit = parsed.unit || "Un";
+      const quantityLabel = `${quantity} ${unit}`;
 
       try {
-        await toggleListItemPurchased(itemId, true);
+        await updateListItemQuantity(itemId, quantityLabel);
         await refreshItems(listId);
-      } catch (buyError) {
-        setError(buyError instanceof Error ? buyError.message : "Falha ao comprar item");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Falha ao atualizar quantidade");
       }
     },
-    [listId, refreshItems, shoppingItems],
+    [listId, parseListQuantity, refreshItems, shoppingItems],
   );
-
-  const handleClearChecked = useCallback(async (): Promise<void> => {
-    if (!listId) return;
-
-    const checkedItems = shoppingItems.filter((item) => item.comprado);
-    if (checkedItems.length === 0) return;
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      await Promise.all(checkedItems.map((item) => deleteListItem(item.id)));
-      await refreshItems(listId);
-      setNotice("Itens comprados removidos da lista.");
-    } catch (clearError) {
-      setError(clearError instanceof Error ? clearError.message : "Falha ao limpar comprados");
-    } finally {
-      setSaving(false);
-    }
-  }, [listId, refreshItems, shoppingItems]);
 
   const handleGenerateSmartList = useCallback(async (): Promise<void> => {
     if (!listId) return;
@@ -485,13 +464,9 @@ export const ListPageNew = (): ReactElement => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
-      {notice && (
-        <div className="toast toast-top toast-end z-50" data-testid="list-feedback-toast">
-          <div className="alert alert-success">
-            <span>{notice}</span>
-          </div>
-        </div>
-      )}
+      <Toast visible={!!notice} onDismiss={() => setNotice(null)} testId="list-feedback-toast">
+        {notice}
+      </Toast>
 
       {error && <Alert type="error">{error}</Alert>}
 
@@ -506,89 +481,76 @@ export const ListPageNew = (): ReactElement => {
           onSmartAdd={handleSmartAdd}
           onToggle={handleToggleItemChecked}
           onRemove={handleRemoveItem}
-          onBuy={handleBuyItem}
-          onClearChecked={handleClearChecked}
           onGenerateSmartList={handleGenerateSmartList}
           onFinalizeShopping={handleFinalizeShopping}
           onUpdateItemPrice={(id, value) => void handleUpdateItemPrice(id, value)}
+          onUpdateItemQuantity={(id, value) => void handleUpdateItemQuantity(id, value)}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
         />
       </div>
 
       {importModalOpen && (
-        <div
-          className="modal modal-open"
-          onClick={() => setImportModalOpen(false)}
-          role="presentation"
+        <Modal
+          open={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          title="Importar compra para lista"
         >
-          <div
-            className="modal-box max-w-lg"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-          >
-            <h3 className="font-bold text-lg mb-4">Importar compra para lista</h3>
+          <div className="space-y-4">
+            <Textarea
+              label="Cole o texto da compra"
+              value={importText}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                setImportText(event.target.value)
+              }
+              rows={10}
+              placeholder="Cole o recibo da compra aqui..."
+              helperText="Importa nome, quantidade e preço total por item quando disponível."
+            />
 
-            <div className="space-y-4">
-              <Textarea
-                label="Cole o texto da compra"
-                value={importText}
-                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                  setImportText(event.target.value)
-                }
-                rows={10}
-                placeholder="Cole o recibo da compra aqui..."
-                helperText="Importa nome, quantidade e preço total por item quando disponível."
-              />
+            <Select
+              label="Origem da compra"
+              value={importSource}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                setImportSource(event.target.value as StockImportSource)
+              }
+              options={[
+                { value: "auto", label: "Detectar automaticamente" },
+                { value: "tenda", label: "Tenda" },
+                { value: "pague-menos", label: "Pague Menos" },
+              ]}
+            />
 
-              <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text">Origem da compra</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={importSource}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    setImportSource(event.target.value as StockImportSource)
-                  }
-                >
-                  <option value="auto">Detectar automaticamente</option>
-                  <option value="tenda">Tenda</option>
-                  <option value="pague-menos">Pague Menos</option>
-                </select>
-              </div>
+            <p className="text-xs text-base-content/60">
+              Itens detectados: {importPreview.length}
+              {importPreview.length > 0
+                ? ` (${importPreview
+                    .slice(0, 3)
+                    .map((item) => item.nome)
+                    .join(", ")}${importPreview.length > 3 ? ", ..." : ""})`
+                : ""}
+            </p>
 
-              <p className="text-xs text-base-content/60">
-                Itens detectados: {importPreview.length}
-                {importPreview.length > 0
-                  ? ` (${importPreview
-                      .slice(0, 3)
-                      .map((item) => item.nome)
-                      .join(", ")}${importPreview.length > 3 ? ", ..." : ""})`
-                  : ""}
-              </p>
-
-              <div className="modal-action">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setImportModalOpen(false)}
-                  disabled={importing}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => void handleImportToList()}
-                  disabled={importing || importPreview.length === 0}
-                >
-                  {importing ? "Importando..." : "Importar"}
-                </button>
-              </div>
-            </div>
+            <ModalActions>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setImportModalOpen(false)}
+                disabled={importing}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => void handleImportToList()}
+                disabled={importing || importPreview.length === 0}
+              >
+                {importing ? "Importando..." : "Importar"}
+              </Button>
+            </ModalActions>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
