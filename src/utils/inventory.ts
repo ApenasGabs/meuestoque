@@ -1,6 +1,4 @@
-import type { StockItem } from "../types/inventory";
-
-export const UNITS = ["un", "kg", "g", "L", "mL", "cx", "pct"] as const;
+import type { StockItem } from "../types/inventory.types";
 
 export const CATEGORIES = [
   "Laticinios",

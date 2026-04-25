@@ -8,6 +8,8 @@ import type {
 import type { StockItemRecord } from "../../lib/webData";
 import { useGroupStore } from "../../stores/groupStore";
 import { useStockStore } from "../../stores/stockStore";
+import { useAuthStore } from "../../stores/authStore";
+import { toUnit } from "../../types/inventory.types";
 
 /**
  * Bridge hook between new inventory UI and Supabase-backed stores.
@@ -22,6 +24,7 @@ interface InventoryFeatureWebState {
   uncheckedCount: number;
   checkedCount: number;
   loading: boolean;
+  lastAutoAddedItemName: string | null;
 }
 
 interface InventoryFeatureWebActions {
@@ -31,6 +34,7 @@ interface InventoryFeatureWebActions {
   updateProduct: (id: string, product: Omit<InventoryProduct, "id">) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
   updateQuantity: (id: string, delta: number) => Promise<void>;
+  toggleInShoppingList: (id: string, include: boolean) => Promise<void>;
 }
 
 /**
@@ -41,7 +45,7 @@ const mapStockItemToProduct = (item: StockItemRecord): InventoryProduct => ({
   name: item.nome,
   quantity: item.quantidade,
   minStock: item.quantidade_minima,
-  unit: item.unidade || "un",
+  unit: toUnit(item.unidade),
   portionSize: item.tamanho_porcao,
   compositeUnit: item.tamanho_porcao !== 1,
   lastPurchaseDate: item.data_compra,
@@ -92,6 +96,8 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
   const upsertItem = useStockStore((state) => state.upsertItem);
   const updateItemQuantity = useStockStore((state) => state.updateItemQuantity);
   const removeItem = useStockStore((state) => state.removeItem);
+  const toggleInShoppingListStore = useStockStore((state) => state.toggleInShoppingList);
+  const lastAutoAddedItemName = useStockStore((state) => state.lastAutoAddedItemName);
 
   const products = useMemo(() => items.map(mapStockItemToProduct), [items]);
 
@@ -130,7 +136,7 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       categoria: product.categoryId,
       quantidade: product.quantity,
       quantidadeMinima: product.minStock,
-      unidade: product.unit || "un",
+      unidade: product.unit || "Un",
       tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
       autoAdicionarLista: false,
       consumoFrequencia: "weekly",
@@ -161,7 +167,7 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       categoria: product.categoryId,
       quantidade: product.quantity,
       quantidadeMinima: product.minStock,
-      unidade: product.unit || "un",
+      unidade: product.unit || "Un",
       tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
       autoAdicionarLista: currentItem.auto_adicionar_lista,
       consumoFrequencia: currentItem.consumo_frequencia,
@@ -175,7 +181,11 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
   };
 
   const updateQuantity = async (id: string, delta: number): Promise<void> => {
-    await updateItemQuantity(id, delta);
+    await updateItemQuantity(id, delta, useAuthStore.getState().userId);
+  };
+
+  const toggleInShoppingList = async (id: string, include: boolean): Promise<void> => {
+    await toggleInShoppingListStore(id, include);
   };
 
   return {
@@ -187,6 +197,7 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
     uncheckedCount,
     checkedCount,
     loading,
+    lastAutoAddedItemName,
     // Actions
     toggleFilter,
     clearFilters,
@@ -194,5 +205,6 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
     updateProduct,
     removeProduct,
     updateQuantity,
+    toggleInShoppingList,
   };
 };

@@ -1,4 +1,4 @@
-import type { PendingItem, ShoppingItem, StockItem } from "../types/inventory";
+import type { PendingItem, ShoppingItem, StockItem } from "../types/inventory.types";
 
 export const INITIAL_STOCK: StockItem[] = [
   {
@@ -21,7 +21,7 @@ export const INITIAL_STOCK: StockItem[] = [
     canonical: "Ovos",
     brand: null,
     category: "Proteinas",
-    unit: "un",
+    unit: "Un",
     qty: 6,
     min: 12,
     autoInclude: true,
@@ -35,7 +35,7 @@ export const INITIAL_STOCK: StockItem[] = [
     canonical: "Arroz",
     brand: "Tio Joao",
     category: "Graos",
-    unit: "kg",
+    unit: "Kg",
     qty: 4,
     min: 2,
     autoInclude: false,
@@ -49,7 +49,7 @@ export const INITIAL_STOCK: StockItem[] = [
     canonical: "Feijao Carioca",
     brand: "Camil",
     category: "Graos",
-    unit: "kg",
+    unit: "Kg",
     qty: 1,
     min: 2,
     autoInclude: true,

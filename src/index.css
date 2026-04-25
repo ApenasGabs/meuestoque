@@ -126,7 +126,7 @@ label:not(.label) {
   gap: 6px;
 }
 
-input:not(.input),
+input:not(.input):not([type="checkbox"]):not([type="radio"]),
 textarea:not(.textarea) {
   border: 1px solid #d9d4cc;
   border-radius: 10px;

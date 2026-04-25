@@ -7,6 +7,7 @@ Biblioteca de componentes reutilizáveis seguindo o padrão do daisyUI.
 - [Button](#button)
 - [Badge](#badge)
 - [Input](#input)
+- [Select](#select)
 - [Textarea](#textarea)
 - [Checkbox](#checkbox)
 - [Radio](#radio)
@@ -14,6 +15,12 @@ Biblioteca de componentes reutilizáveis seguindo o padrão do daisyUI.
 - [Progress](#progress)
 - [Loading](#loading)
 - [Alert](#alert)
+- [Toast](#toast)
+- [Modal](#modal)
+- [Fieldset](#fieldset)
+- [Skeleton](#skeleton)
+- [Join](#join)
+- [Dock](#dock)
 - [Divider](#divider)
 - [Card](#card)
 - [NavBar](#navbar)
@@ -36,7 +43,7 @@ Componente de botão com múltiplas variantes e tamanhos.
 ```tsx
 import { Button } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Button>Primary</Button>
@@ -63,7 +70,7 @@ Componente de badge/label para destacar informações.
 ```tsx
 import { Badge } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Badge variant="primary">New</Badge>
@@ -93,7 +100,7 @@ Componente de input com validação e variantes.
 import { Input } from '@/components';
 import { useState } from 'react';
 
-export function MyComponent() {
+export const MyComponent = () => {
   const [value, setValue] = useState('');
 
   return (
@@ -139,7 +146,7 @@ Componente de checkbox com label.
 ```tsx
 import { Checkbox } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Checkbox label="Accept terms" />
@@ -192,7 +199,7 @@ Componente de barra de progresso.
 ```tsx
 import { Progress } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Progress value={50} />
@@ -220,7 +227,7 @@ Componente de spinner/loading com múltiplas variantes.
 ```tsx
 import { Loading } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Loading />
@@ -246,7 +253,7 @@ Componente de alerta com ícone.
 ```tsx
 import { Alert } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <>
       <Alert type="info">Informação</Alert>
@@ -288,7 +295,7 @@ Componente de card com composição.
 ```tsx
 import { Card, CardBody, CardTitle } from '@/components';
 
-export function MyComponent() {
+export const MyComponent = () => {
   return (
     <Card>
       <CardBody centered>
@@ -329,6 +336,177 @@ import * as Components from '@/components';
 
 Todos os componentes são totalmente tipados com TypeScript e suportam IntelliSense completo.
 
+## Select
+
+Componente de select com variantes e validação, seguindo o padrão do Input.
+
+### Props
+
+- `variant`: `'bordered' | 'filled' | 'faded'` (padrão: `'bordered'`)
+- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `label`: `string`
+- `error`: `string`
+- `helperText`: `string`
+- `options`: `Array<{ value: string; label: string }>` (alternativa a children)
+- Todos os atributos padrão de `<select>`
+
+### Exemplo
+
+```tsx
+import { Select } from '@/components';
+
+export const MyComponent = () => {
+  return (
+    <>
+      <Select label="Unidade" options={[
+        { value: 'un', label: 'un' },
+        { value: 'kg', label: 'kg' },
+        { value: 'L', label: 'L' },
+      ]} />
+      <Select label="Categoria">
+        <option value="a">Opção A</option>
+        <option value="b">Opção B</option>
+      </Select>
+    </>
+  );
+}
+```
+
+## Modal
+
+Componente de modal usando o dialog nativo do HTML com classes daisyUI.
+
+### Props
+
+- `open`: `boolean` (se o modal está visível)
+- `onClose`: `() => void`
+- `title`: `string`
+- `subtitle`: `string`
+- `className`: `string`
+- `testId`: `string`
+
+### Sub-componentes
+
+- `ModalActions` - Container para botões de ação do modal
+
+### Exemplo
+
+```tsx
+import { Modal, ModalActions } from '@/components';
+import { Button } from '@/components';
+
+export const MyComponent = () => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Modal open={open} onClose={() => setOpen(false)} title="Título">
+      <p>Conteúdo do modal</p>
+      <ModalActions>
+        <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+        <Button>Confirmar</Button>
+      </ModalActions>
+    </Modal>
+  );
+}
+```
+
+## Toast
+
+Componente de toast com auto-dismiss usando o padrão daisyUI.
+
+### Props
+
+- `visible`: `boolean`
+- `type`: `'info' | 'success' | 'warning' | 'error'` (padrão: `'success'`)
+- `position`: posição na tela (padrão: `'toast-top toast-end'`)
+- `onDismiss`: `() => void`
+- `autoDismissMs`: `number` (padrão: `2500`)
+- `testId`: `string`
+
+### Exemplo
+
+```tsx
+import { Toast } from '@/components';
+
+export const MyComponent = () => {
+  const [notice, setNotice] = useState<string | null>(null);
+
+  return (
+    <Toast visible={!!notice} onDismiss={() => setNotice(null)}>
+      {notice}
+    </Toast>
+  );
+}
+```
+
+## Fieldset
+
+Componente de fieldset para agrupar campos de formulário.
+
+### Props
+
+- `legend`: `string` (título do grupo)
+- `description`: `string`
+- `className`: `string`
+- Todos os atributos padrão de `<fieldset>`
+
+### Exemplo
+
+```tsx
+import { Fieldset } from '@/components';
+
+export const MyComponent = () => {
+  return (
+    <Fieldset legend="Unidade composta">
+      <Checkbox label="Ativar" />
+      <Input label="Fator" />
+    </Fieldset>
+  );
+}
+```
+
+## Skeleton
+
+Componente de skeleton para estados de loading.
+
+### Props
+
+- `variant`: `'text' | 'circle' | 'rect'` (padrão: `'text'`)
+- `width`: `string`
+- `height`: `string`
+- `lines`: `number` (para variant=text)
+
+### Sub-componentes
+
+- `SkeletonCard` - Skeleton pré-formatado no formato de card
+
+## Join
+
+Componente para agrupar itens com bordas compartilhadas.
+
+### Props
+
+- `direction`: `'horizontal' | 'vertical'` (padrão: `'horizontal'`)
+- `className`: `string`
+
+## Dock
+
+Componente de dock (bottom navigation bar).
+
+### Props
+
+- `className`: `string`
+- `testId`: `string`
+
+### Sub-componentes
+
+- `DockItem` - Item individual do dock
+  - `label`: `string | ReactElement`
+  - `active`: `boolean`
+  - `badgeCount`: `number`
+  - `onClick`: `() => void`
+  - `testId`: `string`
+
 ## 📦 Estrutura
 
 ```
@@ -339,17 +517,24 @@ src/components/
 ├── Card/
 ├── Checkbox/
 ├── Divider/
+├── Dock/
 ├── ExternalLink/
 ├── FeatureCard/
+├── Fieldset/
 ├── Footer/
 ├── Input/
+├── Join/
 ├── Label/
 ├── Loading/
 ├── Logo/
+├── Modal/
 ├── Navbar/
 ├── Progress/
 ├── Radio/
+├── Select/
+├── Skeleton/
 ├── Textarea/
+├── Toast/
 ├── ToolItem/
 ├── CounterCard/
 └── index.ts

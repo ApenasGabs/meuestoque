@@ -1,5 +1,44 @@
 export type TabKey = "lista" | "pendentes" | "estoque";
 export type SyncStatus = "synced" | "syncing" | "offline" | "error";
+export type Unit = "Un" | "Kg" | "g" | "L" | "mL" | "cx" | "pct";
+
+export const UNITS: Unit[] = ["Un", "Kg", "g", "L", "mL", "cx", "pct"];
+
+/**
+ * Safely converts a string to a Unit type.
+ * Normalizes common variations like 'un' -> 'Un', 'kg' -> 'Kg', etc.
+ */
+export function toUnit(raw: string | null | undefined): Unit {
+  if (!raw) return "Un";
+
+  const normalized = raw.trim().toLowerCase();
+
+  const mapping: Record<string, Unit> = {
+    un: "Un",
+    kg: "Kg",
+    g: "g",
+    l: "L",
+    ml: "mL",
+    cx: "cx",
+    pct: "pct",
+    unidade: "Un",
+    unidades: "Un",
+    quilo: "Kg",
+    quilos: "Kg",
+    grama: "g",
+    gramas: "g",
+    litro: "L",
+    litros: "L",
+    mililitro: "mL",
+    mililitros: "mL",
+    caixa: "cx",
+    caixas: "cx",
+    pacote: "pct",
+    pacotes: "pct",
+  };
+
+  return mapping[normalized] ?? "Un";
+}
 
 export interface ShoppingItem {
   id: number;
@@ -24,7 +63,7 @@ export interface StockItem {
   canonical: string;
   brand: string | null;
   category: string;
-  unit: string;
+  unit: Unit;
   qty: number;
   min: number;
   autoInclude: boolean;
@@ -40,7 +79,7 @@ export interface PendingStockPayload {
   canonical: string;
   brand: string | null;
   category: string;
-  unit: string;
+  unit: Unit;
   qty: number;
   min: number;
   autoInclude: boolean;

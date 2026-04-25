@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
+import { Toast } from "../components/Toast/Toast";
 import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
@@ -64,18 +65,6 @@ export function HistoryPage() {
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
-
-  useEffect(() => {
-    if (!notice) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setNotice(null);
-    }, 2400);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [notice]);
 
   const handleDuplicateList = async (sourceListId: string): Promise<void> => {
     if (!groupId || duplicatingListId) return;
@@ -152,7 +141,7 @@ export function HistoryPage() {
     try {
       const activeList = await ensureActiveListForGroup(groupId);
       setListId(activeList.id);
-      
+
       await addListItem({
         listId: activeList.id,
         nome: item.nome,
@@ -161,12 +150,10 @@ export function HistoryPage() {
         price: item.preco,
         createdBy: userId,
       });
-      
+
       setNotice(`${item.nome} adicionado à lista atual.`);
     } catch (addError) {
-      setError(
-        addError instanceof Error ? addError.message : "Falha ao adicionar item",
-      );
+      setError(addError instanceof Error ? addError.message : "Falha ao adicionar item");
     } finally {
       setAddingItemId(null);
     }
@@ -174,13 +161,9 @@ export function HistoryPage() {
 
   return (
     <main className="page">
-      {notice && (
-        <div className="toast toast-top toast-end z-50">
-          <div className="alert alert-success">
-            <span>{notice}</span>
-          </div>
-        </div>
-      )}
+      <Toast visible={!!notice} onDismiss={() => setNotice(null)}>
+        {notice}
+      </Toast>
 
       <header className="page-header">
         <div>
@@ -220,42 +203,47 @@ export function HistoryPage() {
                       {list.total !== null ? `R$ ${list.total.toFixed(2)}` : "Sem total"}
                     </Badge>
                   </div>
-                  
+
                   <div className="mt-4 border-t border-base-300 pt-3">
                     <p className="font-semibold text-sm text-base-content/80 mb-2">
-                      {list.items?.length ?? 0} itens comprados
+                      {list.items?.filter((i) => i.comprado).length ?? 0} itens comprados
                     </p>
-                    
-                    {list.items && list.items.length > 0 && (
+
+                    {list.items && list.items.filter((i) => i.comprado).length > 0 && (
                       <div className="space-y-2 mb-4">
-                        {list.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between bg-base-200/50 border border-base-300/50 p-2 rounded-lg text-sm gap-2">
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="font-medium truncate">{item.nome}</span>
-                              <span className="text-xs text-base-content/50">
-                                {item.quantidade} • {item.categoria}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {item.preco !== null && (
-                                <span className="font-bold text-xs text-primary">
-                                  R$ {item.preco.toFixed(2)}
+                        {list.items
+                          .filter((i) => i.comprado)
+                          .map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between bg-base-200/50 border border-base-300/50 p-2 rounded-lg text-sm gap-2"
+                            >
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="font-medium truncate">{item.nome}</span>
+                                <span className="text-xs text-base-content/50">
+                                  {item.quantidade} • {item.categoria}
                                 </span>
-                              )}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="px-2"
-                                disabled={addingItemId === item.id}
-                                onClick={() => void handleAddSingleItem(item)}
-                                aria-label={`Adicionar ${item.nome} na lista`}
-                              >
-                                {addingItemId === item.id ? "..." : <ShoppingCartOutlined />}
-                              </Button>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {item.preco !== null && (
+                                  <span className="font-bold text-xs text-primary">
+                                    R$ {item.preco.toFixed(2)}
+                                  </span>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="px-2"
+                                  disabled={addingItemId === item.id}
+                                  onClick={() => void handleAddSingleItem(item)}
+                                  aria-label={`Adicionar ${item.nome} na lista`}
+                                >
+                                  {addingItemId === item.id ? "..." : <ShoppingCartOutlined />}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </div>

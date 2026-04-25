@@ -1,6 +1,7 @@
 import { normalizeInviteCode } from "../domain/listRules";
 import { pickActiveGroup, type GroupRecord } from "../domain/sessionRules";
 import { supabase } from "./supabase";
+import { toUnit, type Unit } from "../types/inventory.types";
 
 export interface UserSessionData {
   id: string;
@@ -27,6 +28,7 @@ export interface ItemRecord {
   criado_por: string | null;
   list_id: string;
   criado_em: string | null;
+  unidade?: Unit;
 }
 
 interface FinalizeShoppingRpcResult {
@@ -146,8 +148,7 @@ const isActiveShoppingListUniqueViolation = (message: string): boolean => {
   return (
     normalizedMessage.includes("idx_shopping_lists_active_group") ||
     normalizedMessage.includes("ux_shopping_lists_group_active") ||
-    (normalizedMessage.includes("duplicate key") &&
-      normalizedMessage.includes("shopping_lists"))
+    (normalizedMessage.includes("duplicate key") && normalizedMessage.includes("shopping_lists"))
   );
 };
 
@@ -237,10 +238,14 @@ export interface AddListItemInput {
 }
 
 export async function addListItem(input: AddListItemInput): Promise<void> {
+  const parsed = parseListQuantityLabel(input.quantidade);
   const { error } = await supabase.from("items").insert({
     list_id: input.listId,
     nome: input.nome,
     quantidade: input.quantidade,
+    quantidade_raw: input.quantidade,
+    quantidade_num: parsed.quantidade,
+    unidade: parsed.unidade,
     categoria: input.categoria,
     preco: input.price ?? null,
     comprado: false,
@@ -258,6 +263,18 @@ export async function toggleListItemPurchased(itemId: string, purchased: boolean
 
 export async function updateListItemPrice(itemId: string, price: number | null): Promise<void> {
   const { error } = await supabase.from("items").update({ preco: price }).eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateListItemQuantity(itemId: string, quantity: string): Promise<void> {
+  const parsed = parseListQuantityLabel(quantity);
+  const { error } = await supabase.from("items").update({ 
+    quantidade: quantity,
+    quantidade_raw: quantity,
+    quantidade_num: parsed.quantidade,
+    unidade: parsed.unidade
+  }).eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -315,21 +332,20 @@ export async function duplicateShoppingListToActive(
   return { targetListId: activeList.id, duplicatedCount: itemsToInsert.length };
 }
 
-const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unidade: string } => {
+const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unidade: Unit } => {
   const normalized = rawQuantity.trim().replace(/\s+/g, " ");
   const match = normalized.match(/^(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z]+))?$/);
 
   if (!match) {
-    return { quantidade: 1, unidade: "un" };
+    return { quantidade: 1, unidade: "Un" };
   }
 
   const parsedQuantity = Number.parseFloat(match[1].replace(",", "."));
   const quantidade = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
-  const unidade = (match[2] ?? "un").trim();
 
   return {
     quantidade,
-    unidade: unidade.length > 0 ? unidade : "un",
+    unidade: toUnit(match[2]),
   };
 };
 
@@ -384,7 +400,7 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
       key: string;
       nome: string;
       categoria: string | null | undefined;
-      unidade: string;
+      unidade: Unit;
       quantidade: number;
     };
     const aggregatedStockUpdates = new Map<string, AggregatedStockUpdate>();
@@ -713,7 +729,7 @@ export interface StockItemRecord {
   group_id: string;
   nome: string;
   categoria: string;
-  unidade: string;
+  unidade: Unit;
   quantidade: number;
   quantidade_minima: number;
   tamanho_porcao: number;
@@ -766,7 +782,7 @@ export interface UpsertStockItemInput {
   groupId: string;
   nome: string;
   categoria: string;
-  unidade: string;
+  unidade: Unit;
   quantidade: number;
   quantidadeMinima: number;
   tamanhoPorcao: number;

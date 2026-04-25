@@ -49,10 +49,10 @@ export const ComprasWebShell = () => {
 
   const listId = useGroupStore((state) => state.listId);
   const [inListCount, setInListCount] = useState(0);
+  const listBadgeCount = listId ? inListCount : 0;
 
   useEffect(() => {
     if (!listId) {
-      setInListCount(0);
       return;
     }
 
@@ -84,7 +84,7 @@ export const ComprasWebShell = () => {
   }, [listId]);
 
   const navigationItems: NavigationItem[] = [
-    { label: "Lista", path: "/list", testId: "nav-list", badgeCount: inListCount },
+    { label: "Lista", path: "/list", testId: "nav-list", badgeCount: listBadgeCount },
     {
       label: "Estoque",
       path: "/stock",

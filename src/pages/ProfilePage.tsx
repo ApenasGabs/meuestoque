@@ -5,7 +5,7 @@ import { Alert } from "../components/Alert/Alert";
 import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
-import { Label } from "../components/Label/Label";
+import { Fieldset } from "../components/Fieldset/Fieldset";
 import ThemeSelector from "../components/ThemeSelector/ThemeSelector";
 import {
   FONT_SIZE_LABELS,
@@ -133,14 +133,12 @@ export const ProfilePage = (): ReactElement => {
       <Card className="card form mb-4">
         <CardBody>
           <p className="section-title">Preferências do app</p>
-          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
-            <Label>Tema</Label>
+          <Fieldset legend="Tema">
             <ThemeSelector />
             <p className="text-xs text-base-content/60">Tema salvo: {storedTheme}</p>
-          </div>
+          </Fieldset>
 
-          <div className="rounded-box border border-base-300 bg-base-200 p-4 space-y-3">
-            <Label>Tamanho da fonte</Label>
+          <Fieldset legend="Tamanho da fonte">
             <div className="flex flex-wrap gap-2">
               {FONT_SIZE_OPTIONS.map((size) => (
                 <Button
@@ -156,7 +154,7 @@ export const ProfilePage = (): ReactElement => {
             <p className="text-xs text-base-content/60 mt-2">
               Tamanho salvo: {FONT_SIZE_LABELS[fontSize]}
             </p>
-          </div>
+          </Fieldset>
         </CardBody>
       </Card>
 

@@ -7,6 +7,7 @@ import { useInventoryFeatureWeb } from "../features/inventory/useInventoryFeatur
 import type { InventoryProduct } from "../features/inventory/types";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
+import { Toast } from "../components/Toast/Toast";
 
 /**
  * New Stock Page with integrated inventory feature using latest UX
@@ -18,6 +19,7 @@ export const StockPageNew = (): ReactElement => {
   const fetchItems = useStockStore((state) => state.fetchItems);
   const [search, setSearch] = useState<string>("");
   const [filters, setFilters] = useState<Array<"low" | "out">>([]);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const {
     products,
@@ -27,7 +29,11 @@ export const StockPageNew = (): ReactElement => {
     updateProduct,
     removeProduct,
     updateQuantity,
+    toggleInShoppingList,
+    lastAutoAddedItemName,
   } = useInventoryFeatureWeb();
+  
+  const clearAutoAddedNotice = useStockStore((state) => state.clearAutoAddedNotice);
 
   useEffect(() => {
     if (!groupId) {
@@ -38,10 +44,30 @@ export const StockPageNew = (): ReactElement => {
     void fetchItems(groupId);
   }, [groupId, fetchItems, navigate]);
 
-  const handleAddToShoppingList = (product: InventoryProduct): void => {
-    // Integration with shopping list happens via store update
-    // For now, just placeholder
-    console.log("Add to shopping list:", product.name);
+  useEffect(() => {
+    if (lastAutoAddedItemName) {
+      const timer = setTimeout(() => {
+        setToast({ 
+          message: `${lastAutoAddedItemName} atingiu estoque mínimo e foi para a lista!`, 
+          type: "success" 
+        });
+        clearAutoAddedNotice();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAutoAddedItemName, clearAutoAddedNotice]);
+
+  const handleAddToShoppingList = async (product: InventoryProduct): Promise<void> => {
+    if (!groupId) return;
+    try {
+      await toggleInShoppingList(product.id, true);
+      setToast({ message: `${product.name} marcado para compra!`, type: "success" });
+    } catch (error) {
+      setToast({
+        message: error instanceof Error ? error.message : "Falha ao adicionar à lista",
+        type: "error",
+      });
+    }
   };
 
   const handleAddProduct = async (product: Omit<InventoryProduct, "id">): Promise<void> => {
@@ -112,6 +138,16 @@ export const StockPageNew = (): ReactElement => {
           onAddCategory={handleAddCategory}
         />
       </div>
+
+      {toast && (
+        <Toast
+          visible={Boolean(toast)}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
+        >
+          {toast.message}
+        </Toast>
+      )}
     </div>
   );
 };
