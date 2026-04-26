@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.7.0](https://github.com/ApenasGabs/meuestoque/compare/v1.6.1...v1.7.0) (2026-04-26)
+
+### ✨ Features
+
+* :boom:  enhance stock item details with batch cost analysis, pack size conversions, and inventory auto-consumption configuration. ([83bf2eb](https://github.com/ApenasGabs/meuestoque/commit/83bf2eb42f3cde1f5130bb9dda723e3651687182))
+
+### 📚 Documentation
+
+* :books: standardize component JSDoc comments, update project documentation, and add comprehensive QA test assets. ([184dd5c](https://github.com/ApenasGabs/meuestoque/commit/184dd5cec86cdb94218915ea89c3dbee73a87aae))
+
 ## [1.6.1](https://github.com/ApenasGabs/meuestoque/compare/v1.6.0...v1.6.1) (2026-04-24)
 
 ### ♻️ Refactoring
