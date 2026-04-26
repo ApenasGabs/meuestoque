@@ -31,7 +31,9 @@ interface ShoppingListViewProps {
   onGenerateSmartList: () => void;
   onFinalizeShopping?: () => void;
   onUpdateItemPrice?: (id: string, value: number | null) => void;
+  onUpdateItemUnitPrice?: (id: string, value: number | null) => void;
   onUpdateItemQuantity?: (id: string, value: number) => void;
+  onUpdateValidityDate?: (id: string, date: string | null) => void;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
 }
@@ -49,7 +51,9 @@ export const ShoppingListView = ({
   onGenerateSmartList,
   onFinalizeShopping,
   onUpdateItemPrice,
+  onUpdateItemUnitPrice,
   onUpdateItemQuantity,
+  onUpdateValidityDate,
   onOpenImportModal,
   onViewHistory,
 }: ShoppingListViewProps): ReactElement => {
@@ -256,7 +260,9 @@ export const ShoppingListView = ({
                 onToggle={onToggle}
                 onRemove={onRemove}
                 onUpdatePrice={onUpdateItemPrice}
+                onUpdateUnitPrice={onUpdateItemUnitPrice}
                 onUpdateQuantity={onUpdateItemQuantity}
+                onUpdateValidityDate={onUpdateValidityDate}
               />
             );
           })

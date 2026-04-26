@@ -25,10 +25,15 @@ export interface ItemRecord {
   categoria: string;
   comprado: boolean;
   preco: number | null;
+  preco_unitario: number | null;
+  preco_total: number | null;
+  quantidade_num: number | null;
+  unidade?: Unit;
   criado_por: string | null;
   list_id: string;
   criado_em: string | null;
-  unidade?: Unit;
+  data_validade?: string | null;
+  product_id?: string | null;
 }
 
 interface FinalizeShoppingRpcResult {
@@ -220,12 +225,12 @@ export async function ensureActiveListForGroup(groupId: string): Promise<Shoppin
 export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
-    .select("id, nome, quantidade, categoria, comprado, preco, criado_por, list_id, criado_em")
+    .select("id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, product_id")
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as ItemRecord[];
 }
 
 export interface AddListItemInput {
@@ -262,7 +267,32 @@ export async function toggleListItemPurchased(itemId: string, purchased: boolean
 }
 
 export async function updateListItemPrice(itemId: string, price: number | null): Promise<void> {
-  const { error } = await supabase.from("items").update({ preco: price }).eq("id", itemId);
+  const { error } = await supabase
+    .from("items")
+    .update({ preco: price, preco_total: price, preco_unitario: null })
+    .eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Updates the unit price (R$/unit) of an item and calculates preco_total automatically.
+ * Used when the user enters price-per-kg or price-per-unit instead of a total.
+ */
+export async function updateListItemUnitPrice(
+  itemId: string,
+  unitPrice: number | null,
+  quantityNum: number,
+): Promise<void> {
+  const precoTotal =
+    unitPrice !== null && quantityNum > 0
+      ? Math.round(unitPrice * quantityNum * 100) / 100
+      : null;
+
+  const { error } = await supabase
+    .from("items")
+    .update({ preco_unitario: unitPrice, preco_total: precoTotal, preco: precoTotal })
+    .eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -281,6 +311,12 @@ export async function updateListItemQuantity(itemId: string, quantity: string): 
 
 export async function deleteListItem(itemId: string): Promise<void> {
   const { error } = await supabase.from("items").delete().eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateListItemValidityDate(itemId: string, validityDate: string | null): Promise<void> {
+  const { error } = await supabase.from("items").update({ data_validade: validityDate }).eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -376,13 +412,14 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
   const { data: items, error: itemsError } = await supabase
     .from("items")
-    .select("id, nome, quantidade, categoria, comprado, preco, criado_por")
+    .select("id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, data_validade")
     .eq("list_id", listId);
 
   if (itemsError) throw new Error(itemsError.message);
 
   const todayDate = new Date().toISOString().slice(0, 10);
-  const total = (items ?? []).reduce((sum, item) => sum + (item.preco ?? 0), 0);
+  // Prefer preco_total (unit-price-based) over preco (manually entered total) for accuracy.
+  const total = (items ?? []).reduce((sum, item) => sum + (item.preco_total ?? item.preco ?? 0), 0);
 
   const boughtItems = (items ?? []).filter((item) => item.comprado);
   const pendingItems = (items ?? []).filter((item) => !item.comprado);
@@ -405,15 +442,39 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
     };
     const aggregatedStockUpdates = new Map<string, AggregatedStockUpdate>();
 
+    const stockItemsArr = Array.from(stockByKey.values());
+
     for (const boughtItem of sourceItems) {
       const parsed = parseListQuantityLabel(boughtItem.quantidade);
       if (parsed.quantidade <= 0) continue;
 
-      const key = `${boughtItem.nome.trim().toLowerCase()}::${parsed.unidade.toLowerCase()}`;
+      const itemName = boughtItem.nome.trim().toLowerCase();
+      const itemUnit = parsed.unidade.toLowerCase();
+
+      let key = `${itemName}::${itemUnit}`;
+      let matchedStockItem = stockByKey.get(key);
+
+      let isPackConversion = false;
+      let conversionFactor = 1;
+
+      if (!matchedStockItem) {
+        matchedStockItem = stockItemsArr.find(
+          (si) => si.nome.trim().toLowerCase() === itemName && 
+                  si.pack_label?.trim().toLowerCase() === itemUnit
+        );
+        
+        if (matchedStockItem && matchedStockItem.pack_size) {
+          isPackConversion = true;
+          conversionFactor = matchedStockItem.pack_size;
+          key = `${itemName}::${matchedStockItem.unidade.toLowerCase()}`;
+        }
+      }
+
+      const finalQuantity = parsed.quantidade * conversionFactor;
       const existingAggregatedUpdate = aggregatedStockUpdates.get(key);
 
       if (existingAggregatedUpdate) {
-        existingAggregatedUpdate.quantidade += parsed.quantidade;
+        existingAggregatedUpdate.quantidade += finalQuantity;
         continue;
       }
 
@@ -421,8 +482,8 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         key,
         nome: boughtItem.nome,
         categoria: boughtItem.categoria,
-        unidade: parsed.unidade,
-        quantidade: parsed.quantidade,
+        unidade: isPackConversion && matchedStockItem ? (matchedStockItem.unidade as Unit) : (parsed.unidade as Unit),
+        quantidade: finalQuantity,
       });
     }
 
@@ -451,6 +512,80 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
     for (const savedStockItem of savedStockItems) {
       const key = `${savedStockItem.nome.trim().toLowerCase()}::${savedStockItem.unidade.toLowerCase()}`;
       stockByKey.set(key, savedStockItem);
+    }
+
+    // Create stock lots and movements for each bought item (mirrors RPC behavior)
+    for (const boughtItem of sourceItems) {
+      const parsed = parseListQuantityLabel(boughtItem.quantidade);
+      if (parsed.quantidade <= 0) continue;
+
+      const itemName = boughtItem.nome.trim().toLowerCase();
+      const itemUnit = parsed.unidade.toLowerCase();
+
+      let isPackConversion = false;
+      let conversionFactor = 1;
+
+      const stockItemsArr = Array.from(stockByKey.values());
+      let matchedStockItem = stockItemsArr.find(
+        (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === itemUnit
+      );
+
+      if (!matchedStockItem) {
+         matchedStockItem = stockItemsArr.find(
+          (si) => si.nome.trim().toLowerCase() === itemName && 
+                  si.pack_label?.trim().toLowerCase() === itemUnit
+        );
+        if (matchedStockItem && matchedStockItem.pack_size) {
+          isPackConversion = true;
+          conversionFactor = matchedStockItem.pack_size;
+        }
+      }
+
+      if (!matchedStockItem) continue;
+
+      const finalQuantity = parsed.quantidade * conversionFactor;
+      const finalUnit = matchedStockItem.unidade;
+
+      const precoTotal = boughtItem.preco_total ?? boughtItem.preco ?? null;
+      const precoUnitario = boughtItem.preco_unitario ??
+        (precoTotal != null && parsed.quantidade > 0
+          ? Math.round((precoTotal / parsed.quantidade) * 100) / 100
+          : null);
+      
+      const precoUnitarioConvertido = isPackConversion && precoTotal != null && finalQuantity > 0 
+          ? Math.round((precoTotal / finalQuantity) * 100) / 100 
+          : precoUnitario;
+
+      try {
+        const lot = await createStockLot({
+          stockItemId: matchedStockItem.id,
+          sourceListItemId: boughtItem.id,
+          quantidade: finalQuantity,
+          unidade: finalUnit,
+          custoUnitario: precoUnitarioConvertido,
+          custoTotal: precoTotal != null ? precoTotal : null,
+          dataCompra: todayDate,
+          dataValidade: boughtItem.data_validade ?? null,
+          createdBy: boughtItem.criado_por,
+        });
+
+        await recordStockMovement({
+          itemId: matchedStockItem.id,
+          tipo: "entrada",
+          quantidade: finalQuantity,
+          observacao: isPackConversion ? `Entrada por compra de ${parsed.quantidade} ${parsed.unidade} (convertido para ${finalUnit})` : "Entrada por finalização de compra",
+          createdBy: boughtItem.criado_por,
+          lotId: lot.id,
+          unidade: finalUnit,
+          custoUnitarioRef: precoUnitarioConvertido,
+          origem: "list_finalize",
+          sourceListId: listId,
+          sourceListItemId: boughtItem.id,
+        });
+      } catch (lotError) {
+        // Non-critical: if lot creation fails, the stock item quantity was already updated
+        console.warn("Falha ao criar lote para item:", boughtItem.nome, lotError);
+      }
     }
   }
 
@@ -742,6 +877,8 @@ export interface StockItemRecord {
   ultimo_consumo_auto_em: string | null;
   criado_em: string;
   atualizado_em: string;
+  pack_label: string | null;
+  pack_size: number | null;
 }
 
 export interface StockMovementRecord {
@@ -777,6 +914,18 @@ export interface StockLotRecord {
   created_at: string;
 }
 
+export interface CreateStockLotInput {
+  stockItemId: string;
+  sourceListItemId?: string | null;
+  quantidade: number;
+  unidade: string;
+  custoUnitario?: number | null;
+  custoTotal?: number | null;
+  dataCompra: string;
+  dataValidade?: string | null;
+  createdBy?: string | null;
+}
+
 export interface UpsertStockItemInput {
   id?: string;
   groupId: string;
@@ -791,6 +940,8 @@ export interface UpsertStockItemInput {
   consumoValor: number;
   dataCompra?: string | null;
   dataValidade?: string | null;
+  packLabel?: string;
+  packSize?: number;
 }
 
 export interface RecordStockMovementInput {
@@ -799,6 +950,12 @@ export interface RecordStockMovementInput {
   quantidade: number;
   observacao?: string;
   createdBy?: string | null;
+  lotId?: string | null;
+  unidade?: string | null;
+  custoUnitarioRef?: number | null;
+  origem?: string | null;
+  sourceListId?: string | null;
+  sourceListItemId?: string | null;
 }
 
 export interface StockConsumptionSummary {
@@ -907,7 +1064,7 @@ export const getStockItems = async (groupId: string): Promise<StockItemRecord[]>
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .eq("group_id", groupId)
     .order("nome", { ascending: true });
@@ -920,7 +1077,7 @@ export const getStockItemById = async (itemId: string): Promise<StockItemRecord 
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .eq("id", itemId)
     .maybeSingle();
@@ -945,13 +1102,15 @@ export const upsertStockItem = async (input: UpsertStockItemInput): Promise<Stoc
     consumo_valor: toPositiveNumber(input.consumoValor),
     data_compra: input.dataCompra ?? null,
     data_validade: input.dataValidade ?? null,
+    pack_label: input.packLabel ?? null,
+    pack_size: input.packSize ?? null,
   };
 
   const { data, error } = await supabase
     .from("stock_items")
     .upsert(payload)
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .maybeSingle();
 
@@ -1000,6 +1159,36 @@ export const getStockLotsByStockItem = async (stockItemId: string): Promise<Stoc
   }
 };
 
+/**
+ * Creates a stock lot for a given stock item.
+ * The trigger `trg_sync_stock_item_quantity` will automatically
+ * recalculate `stock_items.quantidade` after insert.
+ */
+export const createStockLot = async (input: CreateStockLotInput): Promise<StockLotRecord> => {
+  const { data, error } = await supabase
+    .from("stock_lots")
+    .insert({
+      stock_item_id: input.stockItemId,
+      source_list_item_id: input.sourceListItemId ?? null,
+      quantidade_inicial: input.quantidade,
+      quantidade_restante: input.quantidade,
+      unidade: input.unidade,
+      custo_unitario: input.custoUnitario ?? null,
+      custo_total: input.custoTotal ?? null,
+      data_compra: input.dataCompra,
+      data_validade: input.dataValidade ?? null,
+      created_by: input.createdBy ?? null,
+    })
+    .select(
+      "id, stock_item_id, source_list_item_id, quantidade_inicial, quantidade_restante, unidade, custo_total, custo_unitario, fator_consumo, data_compra, data_validade, created_by, created_at",
+    )
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Não foi possível criar o lote de estoque");
+  return data as StockLotRecord;
+};
+
 export const setStockItemInShoppingList = async (
   itemId: string,
   include: boolean,
@@ -1016,7 +1205,7 @@ export const setStockItemInShoppingList = async (
     .update({ na_lista: include })
     .eq("id", itemId)
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .maybeSingle();
 
@@ -1038,29 +1227,56 @@ export const recordStockMovement = async (
   const item = await getStockItemById(input.itemId);
   if (!item) throw new Error("Item de estoque nao encontrado");
 
-  const nextQuantity =
-    input.tipo === "entrada"
-      ? item.quantidade + quantity
-      : input.tipo === "ajuste"
-        ? Math.max(0, quantity)
-        : Math.max(0, item.quantidade - quantity);
+  let nextQuantity: number;
 
-  const { error: updateError } = await supabase
-    .from("stock_items")
-    .update({ quantidade: nextQuantity })
-    .eq("id", input.itemId);
+  if (input.tipo === "saida" || input.tipo === "consumo_auto") {
+    // Phase 3.4: Consumo FIFO
+    const { error: rpcError } = await supabase.rpc("consume_stock_fifo", {
+      p_stock_item_id: input.itemId,
+      p_quantidade: quantity,
+      p_tipo: input.tipo,
+      p_observacao: input.observacao ?? null,
+      p_origem: input.origem ?? null,
+      p_criado_por: input.createdBy ?? null,
+    });
 
-  if (updateError) throw new Error(updateError.message);
+    if (rpcError) {
+      console.error("Falha ao consumir FIFO, fallback para logica padrao:", rpcError);
+      throw new Error(rpcError.message);
+    }
+    
+    nextQuantity = Math.max(0, item.quantidade - quantity);
+  } else {
+    // Entrada ou ajuste
+    nextQuantity =
+      input.tipo === "entrada"
+        ? item.quantidade + quantity
+        : Math.max(0, quantity);
 
-  const { error: movementError } = await supabase.from("stock_movements").insert({
-    item_id: input.itemId,
-    tipo: input.tipo,
-    quantidade: quantity,
-    observacao: input.observacao ?? null,
-    criado_por: input.createdBy ?? null,
-  });
+    const { error: updateError } = await supabase
+      .from("stock_items")
+      .update({ quantidade: nextQuantity })
+      .eq("id", input.itemId);
 
-  if (movementError) throw new Error(movementError.message);
+    if (updateError) throw new Error(updateError.message);
+
+    const { error: movementError } = await supabase.from("stock_movements").insert({
+      item_id: input.itemId,
+      stock_item_id: input.itemId,
+      lot_id: input.lotId ?? null,
+      tipo: input.tipo,
+      quantidade: quantity,
+      unidade: input.unidade ?? null,
+      custo_unitario_ref: input.custoUnitarioRef ?? null,
+      observacao: input.observacao ?? null,
+      origem: input.origem ?? null,
+      source_list_id: input.sourceListId ?? null,
+      source_list_item_id: input.sourceListItemId ?? null,
+      criado_por: input.createdBy ?? null,
+    });
+
+    if (movementError) throw new Error(movementError.message);
+  }
 
   let autoAddedToList = false;
 

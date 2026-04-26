@@ -186,9 +186,9 @@ export function HistoryPage() {
           ) : (
             <div className="stack-list">
               {history.map((list) => (
-                <article key={list.id} className="history-item">
+                <article key={list.id} className="history-item min-w-0 w-full overflow-hidden">
                   <div className="history-head">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <strong>Lista finalizada</strong>
                       <p>
                         {list.finalizada_em
@@ -220,15 +220,22 @@ export function HistoryPage() {
                             >
                               <div className="flex flex-col min-w-0 flex-1">
                                 <span className="font-medium truncate">{item.nome}</span>
-                                <span className="text-xs text-base-content/50">
+                                <span className="text-xs text-base-content/50 truncate">
                                   {item.quantidade} • {item.categoria}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                {item.preco !== null && (
-                                  <span className="font-bold text-xs text-primary">
-                                    R$ {item.preco.toFixed(2)}
-                                  </span>
+                                {(item.preco_total ?? item.preco) !== null && (
+                                  <div className="flex flex-col items-end">
+                                    <span className="font-bold text-xs text-primary">
+                                      R$ {((item.preco_total ?? item.preco) as number).toFixed(2)}
+                                    </span>
+                                    {item.preco_unitario != null && item.unidade && (
+                                      <span className="text-[10px] text-base-content/40 tabular-nums">
+                                        R$ {item.preco_unitario.toFixed(2)}/{item.unidade}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                                 <Button
                                   type="button"
@@ -248,12 +255,12 @@ export function HistoryPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-2 border-t border-base-300 pt-3">
-                    <label className="form-control">
-                      <span className="label-text text-xs">Editar data da compra</span>
+                  <div className="flex flex-col gap-1 border-t border-base-300 pt-3">
+                    <span className="text-xs text-base-content/70">Editar data da compra</span>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <input
                         type="date"
-                        className="input input-bordered input-sm"
+                        className="input input-bordered input-sm w-auto"
                         value={dateDrafts[list.id] ?? ""}
                         onChange={(event) =>
                           setDateDrafts((current) => ({
@@ -262,16 +269,16 @@ export function HistoryPage() {
                           }))
                         }
                       />
-                    </label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={editingDateListId !== null}
-                      onClick={() => void handleSavePurchaseDate(list.id)}
-                    >
-                      {editingDateListId === list.id ? "Salvando..." : "Salvar data"}
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={editingDateListId !== null}
+                        onClick={() => void handleSavePurchaseDate(list.id)}
+                      >
+                        {editingDateListId === list.id ? "Salvando..." : "Salvar data"}
+                      </Button>
+                    </div>
                   </div>
                   <div className="actions-row mt-2">
                     <Button

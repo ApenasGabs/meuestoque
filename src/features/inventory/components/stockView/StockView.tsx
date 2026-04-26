@@ -5,6 +5,7 @@ import { Drawer } from "../../../../components/Drawer/Drawer";
 import { Input } from "../../../../components/Input/Input";
 import type { InventoryCategory, InventoryProduct, StockFilter } from "../../types";
 import { CategorySection } from "../categorySection/CategorySection";
+import { ConsumptionHistoryDrawer } from "../consumptionHistory/ConsumptionHistoryDrawer";
 import { ProductFormModal } from "../productFormModal/ProductFormModal";
 
 interface StockViewProps {
@@ -44,12 +45,18 @@ export const StockView = ({
   const [pendingValidityDate, setPendingValidityDate] = useState<string>("");
   const [consumingProduct, setConsumingProduct] = useState<InventoryProduct | null>(null);
   const [customPortionCount, setCustomPortionCount] = useState<string>("1");
+  const [historyProduct, setHistoryProduct] = useState<InventoryProduct | null>(null);
   const hasFilters = filters.length > 0;
 
-  const pendingProducts = useMemo(
-    () => products.filter((product) => product.needsValidity),
-    [products],
-  );
+  const pendingProducts = useMemo(() => {
+    const pending = products.filter((product) => product.needsValidity);
+    if (!hasFilters) return pending;
+    return pending.filter((product) => {
+      const isLow = product.quantity > 0 && product.quantity <= product.minStock;
+      const isOut = product.quantity === 0;
+      return (filters.includes("low") && isLow) || (filters.includes("out") && isOut);
+    });
+  }, [products, hasFilters, filters]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -109,6 +116,16 @@ export const StockView = ({
 
   const lowStockCount = products.filter((product) => product.quantity <= product.minStock).length;
   const outOfStockCount = products.filter((product) => product.quantity === 0).length;
+  const expiringCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return products.filter((product) => {
+      if (!product.validityDate) return false;
+      const expiry = new Date(product.validityDate + "T00:00:00");
+      return expiry <= sevenDaysLater;
+    }).length;
+  }, [products]);
 
   return (
     <div className="flex flex-col h-full">
@@ -117,7 +134,7 @@ export const StockView = ({
           <div>
             <h2 className="text-base font-semibold">Estoque</h2>
             <p className="text-xs text-base-content/60">
-              {lowStockCount} baixo · {outOfStockCount} zerado
+              {lowStockCount} baixo · {outOfStockCount} zerado{expiringCount > 0 ? ` · ${expiringCount} vencendo` : ""}
             </p>
           </div>
           <Button variant="primary" size="sm" onClick={() => setOpenForm(true)}>
@@ -181,6 +198,7 @@ export const StockView = ({
               setPendingProduct(product);
               setPendingValidityDate(product.validityDate ?? "");
             }}
+            onViewHistory={(product) => setHistoryProduct(product)}
           />
         )}
 
@@ -216,6 +234,7 @@ export const StockView = ({
                   setEditingProduct(product);
                   setOpenForm(true);
                 }}
+                onViewHistory={(product) => setHistoryProduct(product)}
               />
             );
           })
@@ -352,6 +371,15 @@ export const StockView = ({
         }}
         onAddCategory={onAddCategory}
       />
+
+      {historyProduct && (
+        <ConsumptionHistoryDrawer
+          open={Boolean(historyProduct)}
+          onClose={() => setHistoryProduct(null)}
+          stockItemId={historyProduct.id}
+          productName={historyProduct.name}
+        />
+      )}
     </div>
   );
 };

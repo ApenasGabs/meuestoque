@@ -98,6 +98,11 @@ export const StockItemDetailsPage = () => {
             <h2>Estoque atual</h2>
             <p>
               <strong>{formatNumber(item.quantidade)}</strong> {item.unidade}
+              {item.pack_label && item.pack_size && (
+                <span className="ml-2 text-sm text-base-content/60">
+                  (equivale a <strong>{formatNumber(item.quantidade / item.pack_size)}</strong> {item.pack_label})
+                </span>
+              )}
             </p>
             <p className="muted">Minimo: {formatNumber(item.quantidade_minima)}</p>
             <p className="muted">
@@ -156,6 +161,9 @@ export const StockItemDetailsPage = () => {
                 <div key={lot.id} className="rounded-md border border-base-300 p-3">
                   <p>
                     Restante: <strong>{formatNumber(lot.quantidade_restante)}</strong> {lot.unidade}
+                    <span className="text-xs text-base-content/40 ml-1">
+                      (inicial: {formatNumber(lot.quantidade_inicial)})
+                    </span>
                   </p>
                   <p className="muted">
                     Compra: {new Date(lot.data_compra).toLocaleDateString("pt-BR")}
@@ -166,6 +174,19 @@ export const StockItemDetailsPage = () => {
                       ? new Date(lot.data_validade).toLocaleDateString("pt-BR")
                       : "Nao informada"}
                   </p>
+                  {(lot.custo_total != null || lot.custo_unitario != null) && (
+                    <p className="muted">
+                      Custo:{" "}
+                      {lot.custo_total != null && (
+                        <span className="font-medium">R$ {formatNumber(lot.custo_total)}</span>
+                      )}
+                      {lot.custo_unitario != null && (
+                        <span className="text-xs ml-1">
+                          (R$ {formatNumber(lot.custo_unitario)}/{lot.unidade})
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

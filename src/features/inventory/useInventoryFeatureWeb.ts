@@ -52,6 +52,12 @@ const mapStockItemToProduct = (item: StockItemRecord): InventoryProduct => ({
   categoryId: item.categoria || "Outros",
   validityDate: item.data_validade,
   needsValidity: !item.data_validade,
+  packLabel: item.pack_label ?? undefined,
+  packSize: item.pack_size ?? undefined,
+  autoAddToList: item.auto_adicionar_lista,
+  consumeFrequency: item.consumo_frequencia as "daily" | "weekly" | "monthly",
+  consumeValue: item.consumo_valor,
+  lastAutoConsumedAt: item.ultimo_consumo_auto_em,
 });
 
 /**
@@ -138,10 +144,12 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       quantidadeMinima: product.minStock,
       unidade: product.unit || "Un",
       tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
-      autoAdicionarLista: false,
-      consumoFrequencia: "weekly",
-      consumoValor: 0,
+      autoAdicionarLista: product.autoAddToList ?? false,
+      consumoFrequencia: product.consumeFrequency ?? "weekly",
+      consumoValor: product.consumeValue ?? 0,
       dataValidade: product.validityDate || null,
+      packLabel: product.packLabel,
+      packSize: product.packSize,
     });
 
     return saved.id;
@@ -169,10 +177,12 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
       quantidadeMinima: product.minStock,
       unidade: product.unit || "Un",
       tamanhoPorcao: Math.max(0.0001, product.portionSize ?? 1),
-      autoAdicionarLista: currentItem.auto_adicionar_lista,
-      consumoFrequencia: currentItem.consumo_frequencia,
-      consumoValor: currentItem.consumo_valor,
+      autoAdicionarLista: product.autoAddToList ?? currentItem.auto_adicionar_lista,
+      consumoFrequencia: product.consumeFrequency ?? currentItem.consumo_frequencia,
+      consumoValor: product.consumeValue ?? currentItem.consumo_valor,
       dataValidade: product.validityDate || null,
+      packLabel: product.packLabel,
+      packSize: product.packSize,
     });
   };
 
