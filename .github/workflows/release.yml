@@ -46,4 +46,4 @@ jobs:
 
       - name: Trigger Vercel Deploy
         if: success()
-        run: curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
