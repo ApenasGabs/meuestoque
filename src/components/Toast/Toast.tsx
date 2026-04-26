@@ -19,15 +19,17 @@ interface ToastProps {
 }
 
 /**
- * Componente de toast usando o padrão daisyUI com auto-dismiss
+ * Toast notification component with optional auto-dismiss behavior.
+ * 
+ * Uses daisyUI toast and alert patterns for consistent styling.
  *
- * @param children - Conteúdo do toast
- * @param type - Tipo visual do toast (info, success, warning, error)
- * @param position - Posição do toast na tela
- * @param visible - Se o toast deve estar visível
- * @param onDismiss - Callback ao dismissar o toast
- * @param autoDismissMs - Tempo em ms para auto-dismiss (padrão: 2500)
- * @param testId - ID para testes
+ * @param props.children - Content to be displayed inside the toast
+ * @param props.type - Semantic type (info, success, warning, error)
+ * @param props.position - Screen placement of the toast
+ * @param props.visible - Controls visibility of the component
+ * @param props.onDismiss - Callback executed when toast is hidden or auto-dismissed
+ * @param props.autoDismissMs - Duration in ms before auto-dismiss (default: 2500, set to 0 to disable)
+ * @param props.testId - Testing identifier
  */
 export const Toast = ({
   children,

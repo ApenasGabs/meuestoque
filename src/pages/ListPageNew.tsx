@@ -1,9 +1,9 @@
 import type { ReactElement, ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
 import { Button } from "../components/Button/Button";
-import { Modal, ModalActions } from "../components/Modal/Modal";
+import { Drawer } from "../components/Drawer/Drawer";
 import { Select } from "../components/Select/Select";
 import { Textarea } from "../components/Textarea/Textarea";
 import { Toast } from "../components/Toast/Toast";
@@ -19,7 +19,9 @@ import {
   loadListItems,
   toggleListItemPurchased,
   updateListItemPrice,
+  updateListItemUnitPrice,
   updateListItemQuantity,
+  updateListItemValidityDate,
   type ItemRecord,
 } from "../lib/webData";
 import { supabase } from "../lib/supabase";
@@ -31,8 +33,16 @@ import type { Unit } from "../types/inventory.types";
 import { toUnit } from "../types/inventory.types";
 
 /**
- * Shopping List Page with integrated inventory feature using latest UX.
- * Shows shopping items with smart input parser and real-time editing.
+ * Main shopping list page with integrated inventory intelligence.
+ * 
+ * Features:
+ * - Real-time sync with Supabase and optimistic UI updates
+ * - Smart item parser supporting "Name, Qty, Price" format
+ * - Automatic "Smart List" generation based on inventory minimum stock levels
+ * - Receipt/Text import engine with automatic detection
+ * - Unit and currency conversion (Total vs Unit price)
+ * - Expiry date collection during shopping checkout
+ * - Persistent active list management per group
  */
 export const ListPageNew = (): ReactElement => {
   const navigate = useNavigate();
@@ -44,6 +54,9 @@ export const ListPageNew = (): ReactElement => {
   const stockItems = useStockStore((state) => state.items);
 
   const [shoppingItems, setShoppingItems] = useState<ItemRecord[]>([]);
+  const shoppingItemsRef = useRef(shoppingItems);
+  shoppingItemsRef.current = shoppingItems;
+
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -186,6 +199,9 @@ export const ListPageNew = (): ReactElement => {
           checked: item.comprado,
           price: item.preco,
           isPriceStale: item.preco !== null && isPriceOlderThan30Days(item.criado_em),
+          pricePerUnit: item.preco_unitario,
+          totalPrice: item.preco_total,
+          validityDate: item.data_validade,
         };
       }),
     [isPriceOlderThan30Days, parseListQuantity, shoppingItems],
@@ -272,19 +288,35 @@ export const ListPageNew = (): ReactElement => {
 
   const handleToggleItemChecked = useCallback(
     async (itemId: string): Promise<void> => {
-      const targetItem = shoppingItems.find((item) => item.id === itemId);
+      const currentItems = shoppingItemsRef.current;
+      const targetItem = currentItems.find((item) => item.id === itemId);
       if (!targetItem || !listId) return;
+
+      const newPurchasedState = !targetItem.comprado;
+
+      // Optimistic update — flip the checked state locally before awaiting the network.
+      setShoppingItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId ? { ...item, comprado: newPurchasedState } : item,
+        ),
+      );
 
       setError(null);
 
       try {
-        await toggleListItemPurchased(itemId, !targetItem.comprado);
-        await refreshItems(listId);
+        await toggleListItemPurchased(itemId, newPurchasedState);
+        // No need to refreshItems — the Supabase real-time channel will sync.
       } catch (toggleError) {
+        // Rollback optimistic update on failure.
+        setShoppingItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId ? { ...item, comprado: targetItem.comprado } : item,
+          ),
+        );
         setError(toggleError instanceof Error ? toggleError.message : "Falha ao atualizar item");
       }
     },
-    [listId, refreshItems, shoppingItems],
+    [listId],
   );
 
   const handleRemoveItem = useCallback(
@@ -307,7 +339,7 @@ export const ListPageNew = (): ReactElement => {
     async (itemId: string, quantity: number): Promise<void> => {
       if (!listId) return;
 
-      const item = shoppingItems.find((i) => i.id === itemId);
+      const item = shoppingItemsRef.current.find((i) => i.id === itemId);
       if (!item) return;
 
       const parsed = parseListQuantity(item.quantidade);
@@ -321,14 +353,14 @@ export const ListPageNew = (): ReactElement => {
         setError(error instanceof Error ? error.message : "Falha ao atualizar quantidade");
       }
     },
-    [listId, parseListQuantity, refreshItems, shoppingItems],
+    [listId, parseListQuantity, refreshItems],
   );
 
   const handleGenerateSmartList = useCallback(async (): Promise<void> => {
     if (!listId) return;
 
     const listKeys = new Set(
-      shoppingItems.map((item) => {
+      shoppingItemsRef.current.map((item) => {
         const parsed = parseListQuantity(item.quantidade);
         return `${item.nome.trim().toLowerCase()}::${parsed.unit.toLowerCase()}`;
       }),
@@ -372,7 +404,7 @@ export const ListPageNew = (): ReactElement => {
     } finally {
       setSaving(false);
     }
-  }, [listId, parseListQuantity, refreshItems, shoppingItems, stockItems, userId]);
+  }, [listId, parseListQuantity, refreshItems, stockItems, userId]);
 
   const handleUpdateItemPrice = useCallback(
     async (itemId: string, value: number | null): Promise<void> => {
@@ -388,6 +420,69 @@ export const ListPageNew = (): ReactElement => {
       }
     },
     [listId, refreshItems],
+  );
+
+  const handleUpdateItemUnitPrice = useCallback(
+    async (itemId: string, unitPrice: number | null): Promise<void> => {
+      if (!listId) return;
+
+      const item = shoppingItemsRef.current.find((i) => i.id === itemId);
+      if (!item) return;
+
+      const parsed = parseListQuantity(item.quantidade);
+      setError(null);
+
+      try {
+        await updateListItemUnitPrice(itemId, unitPrice, parsed.quantity);
+        await refreshItems(listId);
+      } catch (priceError) {
+        setError(priceError instanceof Error ? priceError.message : "Falha ao atualizar preço");
+      }
+    },
+    [listId, parseListQuantity, refreshItems],
+  );
+
+  const fireUpdateItemPrice = useCallback(
+    (id: string, value: number | null): void => {
+      void handleUpdateItemPrice(id, value);
+    },
+    [handleUpdateItemPrice],
+  );
+
+  const fireUpdateItemUnitPrice = useCallback(
+    (id: string, value: number | null): void => {
+      void handleUpdateItemUnitPrice(id, value);
+    },
+    [handleUpdateItemUnitPrice],
+  );
+
+  const fireUpdateItemQuantity = useCallback(
+    (id: string, value: number): void => {
+      void handleUpdateItemQuantity(id, value);
+    },
+    [handleUpdateItemQuantity],
+  );
+
+  const handleUpdateValidityDate = useCallback(
+    async (itemId: string, validityDate: string | null): Promise<void> => {
+      if (!listId) return;
+
+      setError(null);
+      try {
+        await updateListItemValidityDate(itemId, validityDate);
+        await refreshItems(listId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Falha ao atualizar validade");
+      }
+    },
+    [listId, refreshItems],
+  );
+
+  const fireUpdateValidityDate = useCallback(
+    (id: string, date: string | null): void => {
+      void handleUpdateValidityDate(id, date);
+    },
+    [handleUpdateValidityDate],
   );
 
   const importPreview = useMemo(() => {
@@ -430,7 +525,7 @@ export const ListPageNew = (): ReactElement => {
   };
 
   const handleFinalizeShopping = useCallback(async (): Promise<void> => {
-    if (!listId || !groupId || shoppingItems.length === 0) {
+    if (!listId || !groupId || shoppingItemsRef.current.length === 0) {
       return;
     }
 
@@ -449,7 +544,7 @@ export const ListPageNew = (): ReactElement => {
     } finally {
       setSaving(false);
     }
-  }, [groupId, listId, refreshItems, setListId, shoppingItems.length]);
+  }, [groupId, listId, refreshItems, setListId]);
 
   if (!groupId) {
     return <Alert type="warning">Selecione um grupo para continuar</Alert>;
@@ -483,58 +578,68 @@ export const ListPageNew = (): ReactElement => {
           onRemove={handleRemoveItem}
           onGenerateSmartList={handleGenerateSmartList}
           onFinalizeShopping={handleFinalizeShopping}
-          onUpdateItemPrice={(id, value) => void handleUpdateItemPrice(id, value)}
-          onUpdateItemQuantity={(id, value) => void handleUpdateItemQuantity(id, value)}
+          onUpdateItemPrice={fireUpdateItemPrice}
+          onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
+          onUpdateItemQuantity={fireUpdateItemQuantity}
+          onUpdateValidityDate={fireUpdateValidityDate}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
         />
       </div>
 
       {importModalOpen && (
-        <Modal
+        <Drawer
           open={importModalOpen}
           onClose={() => setImportModalOpen(false)}
-          title="Importar compra para lista"
+          title="Importar compra"
+          subtitle="Cole o texto do recibo para adicionar itens rapidamente"
         >
           <div className="space-y-4">
             <Textarea
-              label="Cole o texto da compra"
+              label="Texto da compra"
               value={importText}
               onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
                 setImportText(event.target.value)
               }
-              rows={10}
-              placeholder="Cole o recibo da compra aqui..."
-              helperText="Importa nome, quantidade e preço total por item quando disponível."
+              rows={8}
+              placeholder="Ex: 2kg arroz, feijão 1kg..."
+              helperText="Detecta automaticamente nome, quantidade e preço."
+              className="text-sm"
             />
 
             <Select
-              label="Origem da compra"
+              label="Origem (opcional)"
               value={importSource}
               onChange={(event: ChangeEvent<HTMLSelectElement>) =>
                 setImportSource(event.target.value as StockImportSource)
               }
               options={[
-                { value: "auto", label: "Detectar automaticamente" },
+                { value: "auto", label: "Auto-detectar" },
                 { value: "tenda", label: "Tenda" },
                 { value: "pague-menos", label: "Pague Menos" },
               ]}
+              size="sm"
             />
 
-            <p className="text-xs text-base-content/60">
-              Itens detectados: {importPreview.length}
-              {importPreview.length > 0
-                ? ` (${importPreview
-                    .slice(0, 3)
-                    .map((item) => item.nome)
-                    .join(", ")}${importPreview.length > 3 ? ", ..." : ""})`
-                : ""}
-            </p>
+            <div className="bg-base-200/50 p-3 rounded-lg border border-base-300">
+              <p className="text-xs font-bold uppercase text-base-content/40 mb-2">Prévia da importação</p>
+              <p className="text-sm font-medium">
+                {importPreview.length > 0 
+                  ? `${importPreview.length} itens encontrados`
+                  : "Nenhum item detectado ainda"}
+              </p>
+              {importPreview.length > 0 && (
+                <p className="text-[10px] text-base-content/60 mt-1 line-clamp-2">
+                  {importPreview.map(item => item.nome).join(", ")}
+                </p>
+              )}
+            </div>
 
-            <ModalActions>
+            <div className="flex gap-2 pt-2">
               <Button
                 type="button"
                 variant="ghost"
+                className="flex-1"
                 onClick={() => setImportModalOpen(false)}
                 disabled={importing}
               >
@@ -543,14 +648,15 @@ export const ListPageNew = (): ReactElement => {
               <Button
                 type="button"
                 variant="primary"
+                className="flex-1"
                 onClick={() => void handleImportToList()}
                 disabled={importing || importPreview.length === 0}
               >
                 {importing ? "Importando..." : "Importar"}
               </Button>
-            </ModalActions>
+            </div>
           </div>
-        </Modal>
+        </Drawer>
       )}
     </div>
   );

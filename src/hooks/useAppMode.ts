@@ -2,8 +2,8 @@ import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 
 /**
- * Domínios mapeados por modo de uso.
- * Solo → meuestoque | Compartilhado → nossoestoque
+ * Mapped domains by usage mode.
+ * Solo → meuestoque | Shared → nossoestoque
  */
 const DOMAINS = {
   solo: "meuestoque.apenasgabs.dev",
@@ -13,25 +13,25 @@ const DOMAINS = {
 export type AppMode = "solo" | "shared";
 
 interface AppModeResult {
-  /** Modo atual do app baseado no groupId do usuário */
+  /** Current app mode based on the user's active groupId */
   mode: AppMode;
-  /** true quando o usuário está em um grupo compartilhado */
+  /** True when the user is currently in a shared group */
   isShared: boolean;
-  /** Título principal do app: "Meu Estoque" ou "Nosso Estoque" */
+  /** Primary app title: "Meu Estoque" or "Nosso Estoque" */
   appTitle: string;
-  /** Domínio esperado para o modo atual */
+  /** Target domain name expected for the current mode */
   targetDomain: string;
-  /** Prefixo possessivo: "Meu" ou "Nosso" */
+  /** Possessive prefix: "Meu" (My) or "Nosso" (Our) */
   prefix: string;
 }
 
 /**
- * Hook que centraliza a lógica de contexto dinâmico do app.
+ * Hook that centralizes the app's dynamic context logic.
  *
- * - Se o usuário não pertence a nenhum grupo → modo **solo** ("Meu Estoque")
- * - Se o usuário possui um groupId ativo → modo **shared** ("Nosso Estoque")
+ * - If the user doesn't belong to any group → **solo** mode ("Meu Estoque")
+ * - If the user has an active groupId → **shared** mode ("Nosso Estoque")
  *
- * Retorna textos, domínio-alvo e flags prontos para consumo pelos componentes.
+ * Returns formatted labels, target domains, and status flags ready for UI consumption.
  */
 export const useAppMode = (): AppModeResult => {
   const userId = useAuthStore((state) => state.userId);
@@ -50,8 +50,8 @@ export const useAppMode = (): AppModeResult => {
 };
 
 /**
- * Versão não-reativa para uso fora de componentes React.
- * Lê diretamente dos stores Zustand.
+ * Non-reactive version of the app mode logic for use outside of React components.
+ * Reads directly from Zustand stores.
  */
 export const getAppMode = (): AppModeResult => {
   const userId = useAuthStore.getState().userId;

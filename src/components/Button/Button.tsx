@@ -6,12 +6,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Componente de botão reutilizável com suporte a diferentes variantes e tamanhos
+ * Versatile button component with variant and size support.
+ * 
+ * Uses daisyUI button styles for consistent appearance.
  *
- * @param variant - Variante visual do botão (primary, secondary, accent, ghost)
- * @param size - Tamanho do botão (sm, md, lg)
- * @param children - Conteúdo do botão
- * @param className - Classes CSS adicionais
+ * @param props.variant - Visual style variant (primary, secondary, accent, or ghost)
+ * @param props.size - Size variant of the button
+ * @param props.children - Button label or content
+ * @param props.className - Additional CSS classes
  */
 export const Button = ({
   variant = "primary",

@@ -7,11 +7,13 @@ interface AlertProps {
 }
 
 /**
- * Componente de alerta com ícone
+ * Semantic alert component with integrated icon.
+ * 
+ * Uses daisyUI alert patterns for providing contextual feedback.
  *
- * @param children - Conteúdo do alerta
- * @param type - Tipo do alerta (info, success, warning, error)
- * @param testId - ID para testes
+ * @param props.children - Alert message or content
+ * @param props.type - Semantic type (info, success, warning, error)
+ * @param props.testId - Testing identifier
  */
 export const Alert = ({
   children,

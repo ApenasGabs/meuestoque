@@ -31,11 +31,36 @@ interface ShoppingListViewProps {
   onGenerateSmartList: () => void;
   onFinalizeShopping?: () => void;
   onUpdateItemPrice?: (id: string, value: number | null) => void;
+  onUpdateItemUnitPrice?: (id: string, value: number | null) => void;
   onUpdateItemQuantity?: (id: string, value: number) => void;
+  onUpdateValidityDate?: (id: string, date: string | null) => void;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
 }
 
+/**
+ * Container component for the Shopping List feature.
+ * 
+ * Features:
+ * - Smart input parser (Name, Qty, Price) for fast entry
+ * - Categorized list view with tabs
+ * - Automatic "Smart List" generation based on low stock
+ * - Total value calculation
+ * - Receipt import modal integration
+ * - Sticky header with list stats
+ * 
+ * @param props.products - Full list of products (for name matching)
+ * @param props.shoppingList - Items currently in the active list
+ * @param props.checkedCount - Number of items already in cart
+ * @param props.uncheckedCount - Number of items still pending
+ * @param props.finalizing - Loading state for finalization
+ * @param props.finalizeDisabled - Validation state for the finalize button
+ * @param props.onSmartAdd - Handler for the smart input parser
+ * @param props.onToggle - Handler for item purchased state
+ * @param props.onRemove - Handler for item deletion
+ * @param props.onGenerateSmartList - Handler for the smart list engine
+ * @param props.onFinalizeShopping - Handler for list completion workflow
+ */
 export const ShoppingListView = ({
   products,
   shoppingList,
@@ -49,7 +74,9 @@ export const ShoppingListView = ({
   onGenerateSmartList,
   onFinalizeShopping,
   onUpdateItemPrice,
+  onUpdateItemUnitPrice,
   onUpdateItemQuantity,
+  onUpdateValidityDate,
   onOpenImportModal,
   onViewHistory,
 }: ShoppingListViewProps): ReactElement => {
@@ -256,7 +283,9 @@ export const ShoppingListView = ({
                 onToggle={onToggle}
                 onRemove={onRemove}
                 onUpdatePrice={onUpdateItemPrice}
+                onUpdateUnitPrice={onUpdateItemUnitPrice}
                 onUpdateQuantity={onUpdateItemQuantity}
+                onUpdateValidityDate={onUpdateValidityDate}
               />
             );
           })

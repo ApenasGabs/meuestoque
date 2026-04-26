@@ -10,14 +10,16 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 /**
- * Componente de textarea com variantes e validação
+ * Multi-line text input component with variant and validation support.
+ * 
+ * Follows the same design pattern as Input and Select components.
  *
- * @param variant - Variante do textarea
- * @param size - Tamanho do textarea
- * @param label - Label do textarea
- * @param error - Mensagem de erro
- * @param helperText - Texto auxiliar
- * @param rows - Número de linhas
+ * @param props.variant - Visual style variant (bordered, filled, faded)
+ * @param props.size - Size variant of the textarea
+ * @param props.label - Optional label text displayed above the textarea
+ * @param props.error - Error message to display below the textarea
+ * @param props.helperText - Supplemental text to display when there's no error
+ * @param props.rows - Initial number of text rows to display
  */
 export const Textarea = ({
   variant = "bordered",

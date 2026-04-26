@@ -6,11 +6,13 @@ interface ExternalLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 /**
- * Link externo com segurança e acessibilidade
+ * Secure external link component.
+ * 
+ * Automatically adds rel="noreferrer" and target="_blank" for safety and accessibility.
  *
- * @param href - URL de destino
- * @param children - Conteúdo do link
- * @param className - Classes CSS adicionais
+ * @param props.href - Destination URL
+ * @param props.children - Link text or content
+ * @param props.className - Additional CSS classes
  */
 export const ExternalLink = ({
   href,

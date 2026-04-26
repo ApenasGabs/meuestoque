@@ -9,13 +9,15 @@ interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Componente de skeleton para estados de loading
+ * Skeleton component for displaying placeholder loading states.
+ * 
+ * Supports text lines, circular, and rectangular formats using daisyUI skeleton classes.
  *
- * @param variant - Formato do skeleton (text, circle, rect)
- * @param width - Largura customizada
- * @param height - Altura customizada
- * @param lines - Número de linhas de texto (apenas para variant=text)
- * @param className - Classes CSS adicionais
+ * @param props.variant - Visual shape (text, circle, rect)
+ * @param props.width - Custom CSS width
+ * @param props.height - Custom CSS height
+ * @param props.lines - Number of text lines (only applicable for variant="text")
+ * @param props.className - Additional CSS classes
  */
 export const Skeleton = ({
   variant = "text",
@@ -79,7 +81,7 @@ interface SkeletonCardProps {
 }
 
 /**
- * Skeleton pré-formatado no formato de card de produto/item
+ * Pre-formatted Skeleton variant mimicking a product or item card layout.
  */
 export const SkeletonCard = ({
   className = "",

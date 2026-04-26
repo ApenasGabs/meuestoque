@@ -21,6 +21,50 @@ interface ProductFormModalProps {
   onAddCategory: (name: string) => string;
 }
 
+/**
+ * Calculates estimated days until stock runs out based on consumption config.
+ */
+const calculateRunoutDays = (
+  quantity: number,
+  consumeValue: number,
+  consumeFrequency: "daily" | "weekly" | "monthly",
+  portionSize: number,
+): number | null => {
+  if (consumeValue <= 0 || quantity <= 0) return null;
+  const dailyConsumption =
+    consumeFrequency === "daily"
+      ? consumeValue * portionSize
+      : consumeFrequency === "weekly"
+        ? (consumeValue * portionSize) / 7
+        : (consumeValue * portionSize) / 30;
+  if (dailyConsumption <= 0) return null;
+  return Math.floor(quantity / dailyConsumption);
+};
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  daily: "por dia",
+  weekly: "por semana",
+  monthly: "por mês",
+};
+
+/**
+ * Modal/Drawer component for creating or editing inventory products.
+ * 
+ * Features:
+ * - Basic product info (name, quantity, min stock, unit)
+ * - Composite unit support (packs, boxes) with conversion factors
+ * - Auto-consumption configuration with runout prediction
+ * - Validity date management with "pending" state tracking
+ * - Category selection and creation
+ * - Price history integration for existing products
+ * 
+ * @param props.open - Whether the modal is visible
+ * @param props.product - Product data to edit, or null for new product
+ * @param props.categories - List of available categories
+ * @param props.onClose - Callback when modal is dismissed
+ * @param props.onSave - Callback when product is saved
+ * @param props.onAddCategory - Callback to create a new category
+ */
 export const ProductFormModal = ({
   open,
   product,
@@ -40,9 +84,31 @@ export const ProductFormModal = ({
   );
   const [validityDate, setValidityDate] = useState<string>(product?.validityDate ?? "");
   const [needsValidity, setNeedsValidity] = useState<boolean>(product?.needsValidity ?? !product);
+  const [packLabel, setPackLabel] = useState<string>(product?.packLabel ?? "");
+  const [packSize, setPackSize] = useState<string>(String(product?.packSize ?? 1));
   const [useNewCategory, setUseNewCategory] = useState<boolean>(false);
   const [newCategoryName, setNewCategoryName] = useState<string>("");
   const [customUnit, setCustomUnit] = useState<string>("");
+
+  // Auto-consumption state
+  const [autoConsumeEnabled, setAutoConsumeEnabled] = useState<boolean>(
+    (product?.consumeValue ?? 0) > 0,
+  );
+  const [consumeFrequency, setConsumeFrequency] = useState<"daily" | "weekly" | "monthly">(
+    product?.consumeFrequency ?? "daily",
+  );
+  const [consumeValue, setConsumeValue] = useState<string>(String(product?.consumeValue ?? 1));
+  const [autoAddToList, setAutoAddToList] = useState<boolean>(product?.autoAddToList ?? true);
+
+  // Runout prediction
+  const runoutDays = autoConsumeEnabled
+    ? calculateRunoutDays(
+        Number(quantity),
+        Number(consumeValue),
+        consumeFrequency,
+        Math.max(0.0001, Number(portionSize) || 1),
+      )
+    : null;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -68,6 +134,11 @@ export const ProductFormModal = ({
       categoryId: finalCategoryId,
       validityDate: validityDate.trim() || null,
       needsValidity,
+      packLabel: packLabel.trim() || undefined,
+      packSize: compositeUnit ? Math.max(0.0001, Number(packSize) || 1) : undefined,
+      autoAddToList: autoConsumeEnabled ? autoAddToList : false,
+      consumeFrequency,
+      consumeValue: autoConsumeEnabled ? Math.max(0, Number(consumeValue) || 0) : 0,
     };
 
     onSave(payload, product?.id);
@@ -139,17 +210,43 @@ export const ProductFormModal = ({
           </div>
         </div>
 
-        <Fieldset legend="Unidade composta">
+        <Fieldset legend="Unidade composta (Conversão de Embalagem)">
           <Checkbox
             checked={compositeUnit}
             onChange={(event) => setCompositeUnit(event.target.checked)}
-            label="Unidade composta"
+            label="Item usa unidade composta (ex: fardo, caixa)"
           />
-          <div>
+          {compositeUnit && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <Label htmlFor="product-pack-label">Embalagem</Label>
+                <Input
+                  id="product-pack-label"
+                  value={packLabel}
+                  onChange={(event) => setPackLabel(event.target.value)}
+                  placeholder="Ex: Fardo, Caixa"
+                />
+              </div>
+              <div>
+                <Label htmlFor="product-pack-size">
+                  Rendimento ({unit || "un"})
+                </Label>
+                <Input
+                  id="product-pack-size"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={packSize}
+                  onChange={(event) => setPackSize(event.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <div className="mt-3">
             <Label htmlFor="product-portion-size">
               {compositeUnit
-                ? "Fator de consumo (1 unidade consumida equivale a)"
-                : "Porção de consumo"}
+                ? "Fator de consumo (1 embalagem equivale a)"
+                : "Porção de consumo padrão"}
             </Label>
             <Input
               id="product-portion-size"
@@ -161,10 +258,89 @@ export const ProductFormModal = ({
             />
             <p className="text-xs text-base-content/60 mt-1">
               {compositeUnit
-                ? `Exemplo: 0.285 significa que ao consumir 1 un, baixa 0.285 ${unit || "un"} do estoque.`
+                ? `Exemplo: Se a embalagem rende 12 ${unit || "un"}, consumir 1 baixa 1/12 da embalagem (aprox 0.083).`
                 : `Consumo rápido sempre baixa este valor em ${unit || "un"}.`}
             </p>
           </div>
+        </Fieldset>
+
+        {/* === Auto-Consumption Section (Feature #11) === */}
+        <Fieldset legend="🤖 Consumo Automático">
+          <Checkbox
+            checked={autoConsumeEnabled}
+            onChange={(event) => setAutoConsumeEnabled(event.target.checked)}
+            label="Ativar consumo automático"
+          />
+          {autoConsumeEnabled && (
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="product-consume-value">Porções por ciclo</Label>
+                  <Input
+                    id="product-consume-value"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={consumeValue}
+                    onChange={(event) => setConsumeValue(event.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="product-consume-frequency">Frequência</Label>
+                  <Select
+                    id="product-consume-frequency"
+                    value={consumeFrequency}
+                    onChange={(event) =>
+                      setConsumeFrequency(
+                        event.target.value as "daily" | "weekly" | "monthly",
+                      )
+                    }
+                    options={[
+                      { value: "daily", label: "Diário" },
+                      { value: "weekly", label: "Semanal" },
+                      { value: "monthly", label: "Mensal" },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <Checkbox
+                checked={autoAddToList}
+                onChange={(event) => setAutoAddToList(event.target.checked)}
+                label="Adicionar à lista automaticamente quando estoque baixo"
+              />
+
+              {/* Smart prediction panel (Feature #13) */}
+              <div className="rounded-lg bg-base-200/50 border border-base-300 p-3 space-y-1">
+                <p className="text-xs text-base-content/70">
+                  📊 Este item consumirá{" "}
+                  <strong>
+                    {consumeValue} {compositeUnit ? "emb." : (unit === "outro" ? customUnit : unit) || "un"}.
+                  </strong>{" "}
+                  {FREQUENCY_LABELS[consumeFrequency]}.
+                </p>
+                {runoutDays !== null && (
+                  <p
+                    className={`text-xs font-medium ${
+                      runoutDays <= 3
+                        ? "text-error"
+                        : runoutDays <= 7
+                          ? "text-warning"
+                          : "text-success"
+                    }`}
+                  >
+                    {runoutDays <= 0
+                      ? "⚠️ Estoque insuficiente! Reponha agora."
+                      : runoutDays <= 3
+                        ? `⚡ Com ${quantity} em estoque, durará apenas ~${runoutDays} dia${runoutDays !== 1 ? "s" : ""}. Reponha logo!`
+                        : runoutDays <= 7
+                          ? `⏰ Com ${quantity} em estoque, durará ~${runoutDays} dias.`
+                          : `✅ Com ${quantity} em estoque, durará ~${runoutDays} dias.`}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </Fieldset>
 
         <Fieldset legend="Validade">

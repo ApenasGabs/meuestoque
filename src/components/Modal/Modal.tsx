@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactElement, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   open: boolean;
@@ -11,15 +12,17 @@ interface ModalProps {
 }
 
 /**
- * Componente de modal reutilizável baseado no dialog do daisyUI
- *
- * @param open - Se o modal deve estar visível
- * @param onClose - Callback ao fechar o modal (backdrop click ou ESC)
- * @param children - Conteúdo do modal
- * @param title - Título do modal
- * @param subtitle - Subtítulo/descrição do modal
- * @param className - Classes CSS adicionais para o modal-box
- * @param testId - ID para testes
+ * Reusable modal component based on daisyUI dialog.
+ * 
+ * Uses React Portals to prevent overflow issues on mobile devices and ensures
+ * proper accessibility by using the native <dialog> element.
+ * 
+ * @param props.open - Whether the modal is visible
+ * @param props.onClose - Callback when the modal is requested to close
+ * @param props.children - Modal content
+ * @param props.title - Optional title displayed in the header
+ * @param props.subtitle - Optional subtitle displayed below the title
+ * @param props.className - Additional CSS classes for the modal box
  */
 export const Modal = ({
   open,
@@ -29,8 +32,13 @@ export const Modal = ({
   subtitle,
   className = "",
   testId,
-}: ModalProps): ReactElement => {
+}: ModalProps): ReactElement | null => {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -38,8 +46,10 @@ export const Modal = ({
 
     if (open && !dialog.open) {
       dialog.showModal();
+      document.body.style.overflow = "hidden";
     } else if (!open && dialog.open) {
       dialog.close();
+      document.body.style.overflow = "";
     }
   }, [open]);
 
@@ -58,23 +68,35 @@ export const Modal = ({
     };
   }, [onClose]);
 
-  return (
-    <dialog ref={dialogRef} className="modal" data-testid={testId}>
-      <div className={`modal-box max-w-lg ${className}`.trim()}>
+  if (!mounted) return null;
+
+  return createPortal(
+    <dialog
+      ref={dialogRef}
+      className="modal backdrop-blur-sm"
+      data-testid={testId}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) onClose();
+      }}
+    >
+      <div className={`modal-box max-w-lg shadow-2xl border border-base-300 ${className}`.trim()}>
         {title && (
           <div className="mb-4">
-            <h3 className="font-bold text-lg">{title}</h3>
-            {subtitle && (
-              <p className="text-xs text-base-content/60">{subtitle}</p>
-            )}
+            <h3 className="font-bold text-xl tracking-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-base-content/60 mt-1">{subtitle}</p>}
           </div>
         )}
-        {children}
+        <div className="max-h-[70vh] overflow-y-auto scrollbar-hide overscroll-contain">
+          {children}
+        </div>
       </div>
       <form method="dialog" className="modal-backdrop">
-        <button type="submit">close</button>
+        <button type="button" onClick={onClose}>
+          close
+        </button>
       </form>
-    </dialog>
+    </dialog>,
+    document.body,
   );
 };
 
@@ -84,13 +106,11 @@ interface ModalActionsProps {
 }
 
 /**
- * Container para ações do modal (botões de confirmar/cancelar)
+ * Container for modal actions (typically confirm/cancel buttons).
+ * 
+ * @param props.children - Action elements (buttons)
+ * @param props.className - Additional CSS classes
  */
-export const ModalActions = ({
-  children,
-  className = "",
-}: ModalActionsProps): ReactElement => {
-  return (
-    <div className={`modal-action ${className}`.trim()}>{children}</div>
-  );
+export const ModalActions = ({ children, className = "" }: ModalActionsProps): ReactElement => {
+  return <div className={`modal-action ${className}`.trim()}>{children}</div>;
 };

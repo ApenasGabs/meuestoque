@@ -17,13 +17,15 @@ interface ProgressProps {
 }
 
 /**
- * Componente de barra de progresso com variantes
+ * Progress bar component with semantic variants.
+ * 
+ * Uses daisyUI progress styles for consistent feedback.
  *
- * @param value - Valor atual do progresso
- * @param max - Valor máximo (padrão: 100)
- * @param variant - Variante de cor
- * @param size - Tamanho da barra
- * @param className - Classes CSS adicionais
+ * @param props.value - Current progress value
+ * @param props.max - Maximum progress value (default: 100)
+ * @param props.variant - Semantic color variant
+ * @param props.size - Thickness/size variant of the bar
+ * @param props.className - Additional CSS classes
  */
 export const Progress = ({
   value,

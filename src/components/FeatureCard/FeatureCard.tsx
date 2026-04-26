@@ -10,14 +10,16 @@ interface FeatureCardProps {
 }
 
 /**
- * Card de feature com link externo
+ * Promotional card component for highlighting a feature or library.
+ * 
+ * Includes an external link and visual variant support.
  *
- * @param title - Título da feature
- * @param description - Descrição da feature
- * @param version - Versão da tecnologia
- * @param href - URL de destino
- * @param variant - Variante de cor do card
- * @param testId - ID para testes
+ * @param props.title - Feature name or title
+ * @param props.description - Short summary of the feature
+ * @param props.version - Version number of the technology
+ * @param props.href - Destination URL for the external link
+ * @param props.variant - Semantic color variant for the background
+ * @param props.testId - Testing identifier
  */
 export const FeatureCard = ({
   title,

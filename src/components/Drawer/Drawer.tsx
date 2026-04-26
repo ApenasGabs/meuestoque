@@ -1,5 +1,5 @@
-import { useEffect, useRef, useId, type ReactElement, type ReactNode } from "react";
-import { Button } from "../Button/Button";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface DrawerProps {
   open: boolean;
@@ -14,18 +14,19 @@ interface DrawerProps {
 }
 
 /**
- * Componente de drawer (painel lateral) baseado no daisyUI drawer
- * Usa um checkbox controlado para abrir/fechar o drawer.
- *
- * @param open - Se o drawer deve estar visível
- * @param onClose - Callback ao fechar o drawer (overlay click)
- * @param children - Conteúdo do drawer
- * @param title - Título do drawer
- * @param subtitle - Subtítulo/descrição
- * @param side - Lado do drawer ("start" = esquerda, "end" = direita)
- * @param width - Largura do drawer (padrão: "w-80")
- * @param className - Classes CSS adicionais para o conteúdo
- * @param testId - ID para testes
+ * Robust side menu (Drawer) component compatible with all mobile browsers (including iOS).
+ * 
+ * Avoids the standard daisyUI "checkbox hack" to ensure consistent behavior 
+ * across different touch devices and provides a clean overlay with animation.
+ * 
+ * @param props.open - Whether the drawer is currently visible
+ * @param props.onClose - Callback executed when the drawer is requested to close
+ * @param props.children - Drawer content
+ * @param props.title - Optional title displayed in the header
+ * @param props.subtitle - Optional subtitle displayed below the title
+ * @param props.side - Which side of the screen the drawer appears on (start/end)
+ * @param props.width - CSS width class for the side panel
+ * @param props.className - Additional CSS classes for the side panel
  */
 export const Drawer = ({
   open,
@@ -37,69 +38,103 @@ export const Drawer = ({
   width = "w-80 sm:w-96",
   className = "",
   testId,
-}: DrawerProps): ReactElement => {
-  const generatedId = useId();
-  const drawerId = `drawer-${generatedId}`;
-
-  const checkboxRef = useRef<HTMLInputElement>(null);
+}: DrawerProps): ReactElement | null => {
+  const [mounted, setMounted] = useState(false);
+  const [shouldRender, setShouldRender] = useState(open);
 
   useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.checked = open;
+    setMounted(true);
+  }, []);
+
+  // Controls rendering lifecycle to allow for exit animations
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+    } else {
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
-  const sideClass = side === "end" ? "drawer-end" : "";
+  // Handle Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
 
-  return (
+  // Prevents body scrolling when the drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  if (!mounted || (!open && !shouldRender)) return null;
+
+  const isRight = side === "end";
+
+  return createPortal(
     <div
-      className={`drawer ${sideClass} z-40 fixed inset-0 pointer-events-none`}
+      className={`fixed inset-0 z-[100] flex overflow-hidden ${open ? "" : "pointer-events-none"}`}
+      style={{ width: "100vw", left: 0 }}
       data-testid={testId}
     >
-      <input
-        id={drawerId}
-        ref={checkboxRef}
-        type="checkbox"
-        className="drawer-toggle"
-        checked={open}
-        onChange={(event) => {
-          if (!event.target.checked) {
-            onClose();
-          }
-        }}
+      {/* Overlay */}
+      <div
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ease-in-out ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
       />
-      <div className="drawer-side pointer-events-auto">
-        <label
-          htmlFor={drawerId}
-          aria-label="close sidebar"
-          className="drawer-overlay"
-        />
-        <div
-          className={`bg-base-100 min-h-full ${width} flex flex-col shadow-2xl ${className}`.trim()}
-        >
-          {title && (
-            <div className="flex items-center justify-between px-5 py-4 border-b border-base-300">
-              <div>
-                <h2 className="font-semibold text-sm">{title}</h2>
-                {subtitle && (
-                  <p className="text-xs text-base-content/60">{subtitle}</p>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                aria-label="Fechar"
-              >
-                ✕
-              </Button>
-            </div>
-          )}
-          <div className="flex-1 overflow-y-auto p-5">
-            {children}
+
+      {/* Side Panel */}
+      <div
+        className={`
+          fixed top-0 bottom-0 h-dvh ${width} max-w-[90vw] bg-base-100 shadow-2xl 
+          transition-transform duration-300 ease-in-out flex flex-col
+          ${isRight ? "right-0" : "left-0"}
+          ${open ? "translate-x-0" : isRight ? "translate-x-full" : "-translate-x-full"}
+          ${className}
+        `.trim()}
+        style={{
+          willChange: "transform",
+          transform: open 
+            ? "translate3d(0, 0, 0)" 
+            : isRight ? "translate3d(100%, 0, 0)" : "translate3d(-100%, 0, 0)"
+        }}
+      >
+        {(title || subtitle) && (
+          <div className="p-5 border-b border-base-300 bg-base-100/50 backdrop-blur-md sticky top-0 z-20">
+            {title && (
+              <h3 className="font-bold text-xl tracking-tight text-base-content">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="text-xs font-medium text-base-content/50 mt-1">
+                {subtitle}
+              </p>
+            )}
           </div>
+        )}
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-hide overscroll-contain">
+          {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+
+
+

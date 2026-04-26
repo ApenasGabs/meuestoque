@@ -7,11 +7,11 @@ interface DividerProps {
 }
 
 /**
- * Componente de divisor com orientação customizável
- *
- * @param children - Conteúdo do meio do divisor (texto)
- * @param variant - Orientação (horizontal ou vertical)
- * @param className - Classes CSS adicionais
+ * Visual separator component with optional text and orientation.
+ * 
+ * @param props.children - Optional text to display in the middle of the divider
+ * @param props.variant - Layout orientation (horizontal or vertical)
+ * @param props.className - Additional CSS classes
  */
 export const Divider = ({
   children,

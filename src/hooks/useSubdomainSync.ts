@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { useAppMode } from "./useAppMode";
 
 /**
- * Domínios de produção reconhecidos pelo app.
- * Apenas nesses hosts o hook tenta corrigir o subdomínio.
+ * Production domains recognized by the app.
+ * The hook only attempts to correct the subdomain on these hosts.
  */
 const KNOWN_HOSTS = new Set([
   "meuestoque.apenasgabs.dev",
@@ -14,44 +14,44 @@ const KNOWN_HOSTS = new Set([
 ]);
 
 /**
- * Hook que sincroniza o subdomínio (URL) com o modo atual do app
- * usando `window.history.replaceState`, sem causar reload (F5).
+ * Hook that synchronizes the subdomain (URL) with the current app mode
+ * using `window.history.replaceState`, without causing a page reload.
  *
- * Fluxo:
- * 1. Ao montar ou quando `mode` muda, verifica se o hostname atual
- *    é um dos domínios de produção conhecidos.
- * 2. Se estiver no domínio errado para o modo atual, faz
- *    `replaceState` trocando apenas o hostname.
- * 3. Também atualiza `document.title` de forma reativa.
+ * Workflow:
+ * 1. On mount or when `mode` changes, it checks if the current hostname
+ *    is one of the known production domains.
+ * 2. If it's on the wrong domain for the current mode, it performs a
+ *    `replaceState` updating only the hostname.
+ * 3. It also reactively updates `document.title`.
  *
- * Em localhost ou domínios de preview (Vercel), o hook não interfere na URL.
+ * The hook does not interfere with the URL on unknown hosts (like Vercel preview domains).
  */
 export const useSubdomainSync = (): void => {
   const { appTitle, targetDomain, mode } = useAppMode();
   const lastSyncedMode = useRef(mode);
 
   useEffect(() => {
-    // Sempre mantém o document.title atualizado
+    // Always keep document.title updated
     document.title = appTitle;
   }, [appTitle]);
 
   useEffect(() => {
-    // Evita re-runs desnecessários se o mode não mudou de fato
+    // Avoid unnecessary re-runs if mode hasn't actually changed
     if (lastSyncedMode.current === mode) return;
     lastSyncedMode.current = mode;
 
     const currentHost = window.location.hostname;
 
-    // Só sincroniza em hosts de produção reconhecidos
+    // Only synchronize on recognized production/local hosts
     if (!KNOWN_HOSTS.has(currentHost)) return;
 
-    // Se já está no domínio correto, nada a fazer
+    // If already on the correct domain, nothing to do
     if (currentHost === targetDomain) return;
 
-    // Monta a nova URL preservando path, search e hash
+    // Build the new URL preserving path, search, and hash
     const newUrl = `${window.location.protocol}//${targetDomain}${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-    // replaceState não causa reload — apenas atualiza a barra de endereço
+    // replaceState doesn't trigger a reload — it just updates the address bar
     window.history.replaceState(window.history.state, "", newUrl);
   }, [mode, targetDomain]);
 }

@@ -1,4 +1,7 @@
 # Logs
+*.png
+*.webp
+*.txt
 logs
 *.log
 npm-debug.log*
