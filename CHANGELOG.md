@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.8.0](https://github.com/ApenasGabs/meuestoque/compare/v1.7.0...v1.8.0) (2026-04-26)
+
+### ✨ Features
+
+* :sparkles: enhance Vercel deployment step with logging and environment variable usage ([f62ebc5](https://github.com/ApenasGabs/meuestoque/commit/f62ebc5a70177ca95fcb2e30154970526f763cc1))
+
 ## [1.7.0](https://github.com/ApenasGabs/meuestoque/compare/v1.6.1...v1.7.0) (2026-04-26)
 
 ### ✨ Features
