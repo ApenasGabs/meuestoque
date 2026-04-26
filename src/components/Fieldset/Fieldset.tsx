@@ -8,12 +8,14 @@ interface FieldsetProps extends FieldsetHTMLAttributes<HTMLFieldSetElement> {
 }
 
 /**
- * Componente de fieldset usando o padrão daisyUI para agrupar campos de formulário
+ * Fieldset component for grouping related form fields.
+ * 
+ * Uses daisyUI styles to provide a clean visual container with an optional legend.
  *
- * @param legend - Título do grupo de campos
- * @param description - Descrição auxiliar do grupo
- * @param children - Campos de formulário do grupo
- * @param className - Classes CSS adicionais
+ * @param props.legend - Title for the field group
+ * @param props.description - Optional helper text displayed below the legend
+ * @param props.children - Form elements to be grouped
+ * @param props.className - Additional CSS classes
  */
 export const Fieldset = ({
   legend,

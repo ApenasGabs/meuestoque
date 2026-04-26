@@ -17,11 +17,13 @@ interface RadioProps extends Omit<
 }
 
 /**
- * Componente de radio button com label e variantes
+ * Radio button component with integrated label and visual variants.
+ * 
+ * Uses daisyUI radio styles for consistent appearance.
  *
- * @param label - Label do radio
- * @param size - Tamanho do radio
- * @param color - Cor do radio
+ * @param props.label - Text or element to display alongside the radio button
+ * @param props.size - Size variant of the radio button
+ * @param props.color - Semantic color variant of the radio button
  */
 export const Radio = ({
   label,

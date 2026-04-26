@@ -33,8 +33,16 @@ import type { Unit } from "../types/inventory.types";
 import { toUnit } from "../types/inventory.types";
 
 /**
- * Shopping List Page with integrated inventory feature using latest UX.
- * Shows shopping items with smart input parser and real-time editing.
+ * Main shopping list page with integrated inventory intelligence.
+ * 
+ * Features:
+ * - Real-time sync with Supabase and optimistic UI updates
+ * - Smart item parser supporting "Name, Qty, Price" format
+ * - Automatic "Smart List" generation based on inventory minimum stock levels
+ * - Receipt/Text import engine with automatic detection
+ * - Unit and currency conversion (Total vs Unit price)
+ * - Expiry date collection during shopping checkout
+ * - Persistent active list management per group
  */
 export const ListPageNew = (): ReactElement => {
   const navigate = useNavigate();

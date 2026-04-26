@@ -18,6 +18,17 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 };
 
+/**
+ * Detailed view for a single inventory item.
+ * 
+ * Features:
+ * - Current stock status and unit conversion display
+ * - Consumption statistics (Daily, Weekly, Monthly averages)
+ * - Runout prediction based on historical consumption
+ * - Recent batch/lot tracking with cost analysis (Total vs Unit cost)
+ * - Recent movement history (Inventory ins/outs)
+ * - Real-time data fetching from Supabase
+ */
 export const StockItemDetailsPage = () => {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();

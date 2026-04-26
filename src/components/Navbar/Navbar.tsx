@@ -6,10 +6,13 @@ interface NavbarProps {
 }
 
 /**
- * Componente de barra de navegação
+ * Top navigation bar component.
+ * 
+ * Displays the application title and provides a slot for additional controls 
+ * such as theme selectors or user menus.
  *
- * @param title - Título exibido na navbar
- * @param children - Elementos adicionais (ex: seletor de tema)
+ * @param props.title - The title displayed in the navbar
+ * @param props.children - Additional elements to display on the right side
  */
 export const Navbar = ({ title, children }: NavbarProps): ReactElement => {
   return (

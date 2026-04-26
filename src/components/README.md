@@ -1,8 +1,8 @@
-# Componentes Base
+# Base Components
 
-Biblioteca de componentes reutilizáveis seguindo o padrão do daisyUI.
+Reusable component library following daisyUI patterns.
 
-## 📋 Índice
+## 📋 Table of Contents
 
 - [Button](#button)
 - [Badge](#badge)
@@ -28,17 +28,17 @@ Biblioteca de componentes reutilizáveis seguindo o padrão do daisyUI.
 
 ## Button
 
-Componente de botão com múltiplas variantes e tamanhos.
+Button component with multiple variants and sizes.
 
 ### Props
 
-- `variant`: `'primary' | 'secondary' | 'accent' | 'ghost'` (padrão: `'primary'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `variant`: `'primary' | 'secondary' | 'accent' | 'ghost'` (default: `'primary'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `disabled`: `boolean`
 - `className`: `string`
-- Todos os atributos padrão de `<button>`
+- All standard `<button>` attributes
 
-### Exemplo
+### Example
 
 ```tsx
 import { Button } from '@/components';
@@ -57,15 +57,15 @@ export const MyComponent = () => {
 
 ## Badge
 
-Componente de badge/label para destacar informações.
+Badge/label component for highlighting information.
 
 ### Props
 
-- `variant`: `'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (padrão: `'default'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `variant`: `'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (default: `'default'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `className`: `string`
 
-### Exemplo
+### Example
 
 ```tsx
 import { Badge } from '@/components';
@@ -83,18 +83,18 @@ export const MyComponent = () => {
 
 ## Input
 
-Componente de input com validação e variantes.
+Input component with validation and variants.
 
 ### Props
 
-- `variant`: `'bordered' | 'filled' | 'faded'` (padrão: `'bordered'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `variant`: `'bordered' | 'filled' | 'faded'` (default: `'bordered'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `label`: `string`
-- `error`: `string` (exibe mensagem de erro)
-- `helperText`: `string` (texto auxiliar)
-- Todos os atributos padrão de `<input>`
+- `error`: `string` (displays error message)
+- `helperText`: `string` (auxiliary text)
+- All standard `<input>` attributes
 
-### Exemplo
+### Example
 
 ```tsx
 import { Input } from '@/components';
@@ -118,30 +118,30 @@ export const MyComponent = () => {
 
 ## Textarea
 
-Componente de textarea com validação.
+Textarea component with validation.
 
 ### Props
 
-- `variant`: `'bordered' | 'filled' | 'faded'` (padrão: `'bordered'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `variant`: `'bordered' | 'filled' | 'faded'` (default: `'bordered'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `label`: `string`
 - `error`: `string`
 - `helperText`: `string`
-- `rows`: `number` (padrão: `4`)
-- Todos os atributos padrão de `<textarea>`
+- `rows`: `number` (default: `4`)
+- All standard `<textarea>` attributes
 
 ## Checkbox
 
-Componente de checkbox com label.
+Checkbox component with label.
 
 ### Props
 
 - `label`: `ReactNode`
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
-- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (padrão: `'primary'`)
-- Todos os atributos padrão de `<input type="checkbox">`
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
+- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (default: `'primary'`)
+- All standard `<input type="checkbox">` attributes
 
-### Exemplo
+### Example
 
 ```tsx
 import { Checkbox } from '@/components';
@@ -159,42 +159,42 @@ export const MyComponent = () => {
 
 ## Radio
 
-Componente de radio button com label.
+Radio button component with label.
 
 ### Props
 
 - `label`: `ReactNode`
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
-- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (padrão: `'primary'`)
-- Todos os atributos padrão de `<input type="radio">`
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
+- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (default: `'primary'`)
+- All standard `<input type="radio">` attributes
 
 ## Label
 
-Componente de label.
+Label component.
 
 ### Props
 
 - `children`: `ReactNode`
 - `required`: `boolean`
 - `disabled`: `boolean`
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
-- Todos os atributos padrão de `<label>`
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
+- All standard `<label>` attributes
 
 ## Progress
 
-Componente de barra de progresso.
+Progress bar component.
 
 ### Props
 
-- `value`: `number` (valor atual)
-- `max`: `number` (padrão: `100`)
-- `variant`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (padrão: `'primary'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `value`: `number` (current value)
+- `max`: `number` (default: `100`)
+- `variant`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (default: `'primary'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `striped`: `boolean`
 - `animated`: `boolean`
 - `className`: `string`
 
-### Exemplo
+### Example
 
 ```tsx
 import { Progress } from '@/components';
@@ -212,17 +212,17 @@ export const MyComponent = () => {
 
 ## Loading
 
-Componente de spinner/loading com múltiplas variantes.
+Spinner/loading component with multiple variants.
 
 ### Props
 
-- `variant`: `'spinner' | 'dots' | 'bars' | 'ring'` (padrão: `'spinner'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
-- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (padrão: `'primary'`)
+- `variant`: `'spinner' | 'dots' | 'bars' | 'ring'` (default: `'spinner'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
+- `color`: `'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'` (default: `'primary'`)
 - `label`: `string`
 - `className`: `string`
 
-### Exemplo
+### Example
 
 ```tsx
 import { Loading } from '@/components';
@@ -231,7 +231,7 @@ export const MyComponent = () => {
   return (
     <>
       <Loading />
-      <Loading variant="dots" label="Carregando..." />
+      <Loading variant="dots" label="Loading..." />
       <Loading variant="bars" size="lg" color="success" />
     </>
   );
@@ -240,15 +240,15 @@ export const MyComponent = () => {
 
 ## Alert
 
-Componente de alerta com ícone.
+Alert component with icon.
 
 ### Props
 
 - `children`: `ReactNode`
-- `type`: `'info' | 'success' | 'warning' | 'error'` (padrão: `'info'`)
+- `type`: `'info' | 'success' | 'warning' | 'error'` (default: `'info'`)
 - `testId`: `string`
 
-### Exemplo
+### Example
 
 ```tsx
 import { Alert } from '@/components';
@@ -256,10 +256,10 @@ import { Alert } from '@/components';
 export const MyComponent = () => {
   return (
     <>
-      <Alert type="info">Informação</Alert>
-      <Alert type="success">Sucesso!</Alert>
-      <Alert type="warning">Atenção</Alert>
-      <Alert type="error">Erro</Alert>
+      <Alert type="info">Information</Alert>
+      <Alert type="success">Success!</Alert>
+      <Alert type="warning">Attention</Alert>
+      <Alert type="error">Error</Alert>
     </>
   );
 }
@@ -267,17 +267,17 @@ export const MyComponent = () => {
 
 ## Divider
 
-Componente de divisor com suporte a texto centralizado.
+Divider component with support for centered text.
 
 ### Props
 
-- `children`: `ReactNode` (texto do meio)
-- `variant`: `'horizontal' | 'vertical'` (padrão: `'horizontal'`)
+- `children`: `ReactNode` (middle text)
+- `variant`: `'horizontal' | 'vertical'` (default: `'horizontal'`)
 - `className`: `string`
 
 ## Card
 
-Componente de card com composição.
+Card component with composition.
 
 ### Props
 
@@ -285,12 +285,12 @@ Componente de card com composição.
 - `className`: `string`
 - `testId`: `string`
 
-### Sub-componentes
+### Sub-components
 
-- `CardBody` - Corpo do card
-- `CardTitle` - Título do card
+- `CardBody` - Card body
+- `CardTitle` - Card title
 
-### Exemplo
+### Example
 
 ```tsx
 import { Card, CardBody, CardTitle } from '@/components';
@@ -299,8 +299,8 @@ export const MyComponent = () => {
   return (
     <Card>
       <CardBody centered>
-        <CardTitle>Meu Card</CardTitle>
-        <p>Conteúdo aqui</p>
+        <CardTitle>My Card</CardTitle>
+        <p>Content here</p>
       </CardBody>
     </Card>
   );
@@ -309,48 +309,48 @@ export const MyComponent = () => {
 
 ## Navbar
 
-Componente de barra de navegação.
+Navigation bar component.
 
 ### Props
 
 - `title`: `string`
-- `children`: `ReactNode` (elementos adicionais)
+- `children`: `ReactNode` (additional elements)
 
 ## Footer
 
-Componente de rodapé.
+Footer component.
 
-## 🎨 Usando os componentes
+## 🎨 Using the components
 
-### Importação
+### Importing
 
 ```tsx
-// Importar componentes individuais
+// Import individual components
 import { Button, Badge, Input } from '@/components';
 
-// Ou do arquivo de índice
+// Or from the index file
 import * as Components from '@/components';
 ```
 
-### Tipagem
+### Typing
 
-Todos os componentes são totalmente tipados com TypeScript e suportam IntelliSense completo.
+All components are fully typed with TypeScript and support full IntelliSense.
 
 ## Select
 
-Componente de select com variantes e validação, seguindo o padrão do Input.
+Select component with variants and validation, following the Input pattern.
 
 ### Props
 
-- `variant`: `'bordered' | 'filled' | 'faded'` (padrão: `'bordered'`)
-- `size`: `'sm' | 'md' | 'lg'` (padrão: `'md'`)
+- `variant`: `'bordered' | 'filled' | 'faded'` (default: `'bordered'`)
+- `size`: `'sm' | 'md' | 'lg'` (default: `'md'`)
 - `label`: `string`
 - `error`: `string`
 - `helperText`: `string`
-- `options`: `Array<{ value: string; label: string }>` (alternativa a children)
-- Todos os atributos padrão de `<select>`
+- `options`: `Array<{ value: string; label: string }>` (alternative to children)
+- All standard `<select>` attributes
 
-### Exemplo
+### Example
 
 ```tsx
 import { Select } from '@/components';
@@ -358,14 +358,14 @@ import { Select } from '@/components';
 export const MyComponent = () => {
   return (
     <>
-      <Select label="Unidade" options={[
+      <Select label="Unit" options={[
         { value: 'un', label: 'un' },
         { value: 'kg', label: 'kg' },
         { value: 'L', label: 'L' },
       ]} />
-      <Select label="Categoria">
-        <option value="a">Opção A</option>
-        <option value="b">Opção B</option>
+      <Select label="Category">
+        <option value="a">Option A</option>
+        <option value="b">Option B</option>
       </Select>
     </>
   );
@@ -374,22 +374,22 @@ export const MyComponent = () => {
 
 ## Modal
 
-Componente de modal usando o dialog nativo do HTML com classes daisyUI.
+Modal component using HTML native dialog with daisyUI classes.
 
 ### Props
 
-- `open`: `boolean` (se o modal está visível)
+- `open`: `boolean` (whether the modal is visible)
 - `onClose`: `() => void`
 - `title`: `string`
 - `subtitle`: `string`
 - `className`: `string`
 - `testId`: `string`
 
-### Sub-componentes
+### Sub-components
 
-- `ModalActions` - Container para botões de ação do modal
+- `ModalActions` - Container for modal action buttons
 
-### Exemplo
+### Example
 
 ```tsx
 import { Modal, ModalActions } from '@/components';
@@ -399,11 +399,11 @@ export const MyComponent = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <Modal open={open} onClose={() => setOpen(false)} title="Título">
-      <p>Conteúdo do modal</p>
+    <Modal open={open} onClose={() => setOpen(false)} title="Title">
+      <p>Modal content</p>
       <ModalActions>
-        <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-        <Button>Confirmar</Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+        <Button>Confirm</Button>
       </ModalActions>
     </Modal>
   );
@@ -412,18 +412,18 @@ export const MyComponent = () => {
 
 ## Toast
 
-Componente de toast com auto-dismiss usando o padrão daisyUI.
+Toast component with auto-dismiss using daisyUI pattern.
 
 ### Props
 
 - `visible`: `boolean`
-- `type`: `'info' | 'success' | 'warning' | 'error'` (padrão: `'success'`)
-- `position`: posição na tela (padrão: `'toast-top toast-end'`)
+- `type`: `'info' | 'success' | 'warning' | 'error'` (default: `'success'`)
+- `position`: screen position (default: `'toast-top toast-end'`)
 - `onDismiss`: `() => void`
-- `autoDismissMs`: `number` (padrão: `2500`)
+- `autoDismissMs`: `number` (default: `2500`)
 - `testId`: `string`
 
-### Exemplo
+### Example
 
 ```tsx
 import { Toast } from '@/components';
@@ -441,25 +441,25 @@ export const MyComponent = () => {
 
 ## Fieldset
 
-Componente de fieldset para agrupar campos de formulário.
+Fieldset component to group form fields.
 
 ### Props
 
-- `legend`: `string` (título do grupo)
+- `legend`: `string` (group title)
 - `description`: `string`
 - `className`: `string`
-- Todos os atributos padrão de `<fieldset>`
+- All standard `<fieldset>` attributes
 
-### Exemplo
+### Example
 
 ```tsx
 import { Fieldset } from '@/components';
 
 export const MyComponent = () => {
   return (
-    <Fieldset legend="Unidade composta">
-      <Checkbox label="Ativar" />
-      <Input label="Fator" />
+    <Fieldset legend="Compound unit">
+      <Checkbox label="Enable" />
+      <Input label="Factor" />
     </Fieldset>
   );
 }
@@ -467,47 +467,47 @@ export const MyComponent = () => {
 
 ## Skeleton
 
-Componente de skeleton para estados de loading.
+Skeleton component for loading states.
 
 ### Props
 
-- `variant`: `'text' | 'circle' | 'rect'` (padrão: `'text'`)
+- `variant`: `'text' | 'circle' | 'rect'` (default: `'text'`)
 - `width`: `string`
 - `height`: `string`
-- `lines`: `number` (para variant=text)
+- `lines`: `number` (for variant=text)
 
-### Sub-componentes
+### Sub-components
 
-- `SkeletonCard` - Skeleton pré-formatado no formato de card
+- `SkeletonCard` - Pre-formatted skeleton in card format
 
 ## Join
 
-Componente para agrupar itens com bordas compartilhadas.
+Component to group items with shared borders.
 
 ### Props
 
-- `direction`: `'horizontal' | 'vertical'` (padrão: `'horizontal'`)
+- `direction`: `'horizontal' | 'vertical'` (default: `'horizontal'`)
 - `className`: `string`
 
 ## Dock
 
-Componente de dock (bottom navigation bar).
+Dock component (bottom navigation bar).
 
 ### Props
 
 - `className`: `string`
 - `testId`: `string`
 
-### Sub-componentes
+### Sub-components
 
-- `DockItem` - Item individual do dock
+- `DockItem` - Individual dock item
   - `label`: `string | ReactElement`
   - `active`: `boolean`
   - `badgeCount`: `number`
   - `onClick`: `() => void`
   - `testId`: `string`
 
-## 📦 Estrutura
+## 📦 Structure
 
 ```
 src/components/

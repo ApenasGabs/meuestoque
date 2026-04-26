@@ -18,6 +18,26 @@ interface ShoppingListItemProps {
   onUpdateValidityDate?: (id: string, date: string | null) => void;
 }
 
+/**
+ * Individual item card for the shopping list.
+ * 
+ * Features:
+ * - Optimistic toggle for purchased state
+ * - Dual price input: Total price or Unit price (auto-converts)
+ * - Quantity adjustment with unit display
+ * - Pack/Box conversion hints
+ * - Validity date input (appears when item is checked)
+ * - Visual indicator for stale prices (older than 30 days)
+ * 
+ * @param props.item - The shopping list item record
+ * @param props.product - The associated product record for unit/pack info
+ * @param props.onToggle - Callback to toggle "purchased" state
+ * @param props.onRemove - Callback to remove item from list
+ * @param props.onUpdatePrice - Callback to update total price
+ * @param props.onUpdateUnitPrice - Callback to update price per unit
+ * @param props.onUpdateQuantity - Callback to update item quantity
+ * @param props.onUpdateValidityDate - Callback to update item validity
+ */
 export const ShoppingListItem = memo(function ShoppingListItem({
   item,
   product,

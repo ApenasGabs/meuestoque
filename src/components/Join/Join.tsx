@@ -7,11 +7,13 @@ interface JoinProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Componente Join para agrupar itens (botões, inputs, etc) com bordas compartilhadas
+ * Join component for grouping multiple items (buttons, inputs, etc.) with shared borders.
+ * 
+ * Uses daisyUI join patterns. Child items should typically have the "join-item" class.
  *
- * @param children - Itens a serem agrupados (devem ter classe "join-item")
- * @param direction - Direção do agrupamento (horizontal ou vertical)
- * @param className - Classes CSS adicionais
+ * @param props.children - Items to be grouped together
+ * @param props.direction - Layout direction (horizontal or vertical)
+ * @param props.className - Additional CSS classes
  */
 export const Join = ({
   children,

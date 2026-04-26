@@ -24,6 +24,31 @@ interface StockViewProps {
   onAddCategory: (name: string) => string;
 }
 
+/**
+ * Main container for the Inventory/Stock feature.
+ * 
+ * Features:
+ * - Real-time product search and status filtering (All, Low, Out)
+ * - Categorized product display with expandable sections
+ * - "Pending Validity" priority section for items missing expiry dates
+ * - Quick consumption actions and custom portion drawer
+ * - Product creation and editing (via ProductFormModal)
+ * - Direct "Add to Shopping List" integration
+ * - Consumption history visualization
+ * 
+ * @param props.products - List of inventory products
+ * @param props.categories - List of categories for grouping
+ * @param props.search - Current search query
+ * @param props.filters - Active status filters
+ * @param props.onSearchChange - Handler for search input
+ * @param props.onToggleFilter - Handler for status filters
+ * @param props.onClearFilters - Handler to reset filters
+ * @param props.onAddProduct - Handler for new product persistence
+ * @param props.onUpdateProduct - Handler for product updates
+ * @param props.onRemoveProduct - Handler for product deletion
+ * @param props.onConsumeProduct - Handler for item consumption
+ * @param props.onAddToShoppingList - Handler to add item to shopping list
+ */
 export const StockView = ({
   products,
   categories,

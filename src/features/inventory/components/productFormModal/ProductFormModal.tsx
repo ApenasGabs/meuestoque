@@ -47,6 +47,24 @@ const FREQUENCY_LABELS: Record<string, string> = {
   monthly: "por mês",
 };
 
+/**
+ * Modal/Drawer component for creating or editing inventory products.
+ * 
+ * Features:
+ * - Basic product info (name, quantity, min stock, unit)
+ * - Composite unit support (packs, boxes) with conversion factors
+ * - Auto-consumption configuration with runout prediction
+ * - Validity date management with "pending" state tracking
+ * - Category selection and creation
+ * - Price history integration for existing products
+ * 
+ * @param props.open - Whether the modal is visible
+ * @param props.product - Product data to edit, or null for new product
+ * @param props.categories - List of available categories
+ * @param props.onClose - Callback when modal is dismissed
+ * @param props.onSave - Callback when product is saved
+ * @param props.onAddCategory - Callback to create a new category
+ */
 export const ProductFormModal = ({
   open,
   product,

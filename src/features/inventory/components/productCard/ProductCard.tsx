@@ -18,6 +18,25 @@ interface ProductCardProps {
   onViewHistory?: (product: InventoryProduct) => void;
 }
 
+/**
+ * Interactive card component for inventory products.
+ * 
+ * Features:
+ * - Quick consumption button (-portion) with long-press for custom amount
+ * - Contextual badges: Low stock, Out of stock, Expiring soon, Auto-consume enabled
+ * - Stock level progress bar based on min_stock ratio
+ * - Auto-consumption runout prediction display
+ * - Pack/Box conversion display (e.g. "X units (Y packs)")
+ * - Action buttons: Edit, Delete, Add to Cart, View History
+ * - Swipe/Mobile-friendly long-press interactions
+ * 
+ * @param props.product - The product data to display
+ * @param props.onEdit - Callback to open edit form
+ * @param props.onAddToList - Callback to add item to shopping list
+ * @param props.onRemove - Callback to initiate deletion
+ * @param props.onConsume - Callback for quick consumption (click)
+ * @param props.onOpenCustomConsume - Callback for custom consumption (long-press)
+ */
 export const ProductCard = ({
   product,
   onEdit,

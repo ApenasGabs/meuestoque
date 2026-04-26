@@ -7,11 +7,13 @@ interface DockProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
- * Componente de dock (bottom navigation) seguindo o padrão daisyUI
+ * Bottom navigation dock component.
+ * 
+ * Provides a fixed navigation bar at the bottom of the screen, typical for mobile apps.
  *
- * @param children - Itens de navegação (DockItem)
- * @param className - Classes CSS adicionais
- * @param testId - ID para testes
+ * @param props.children - Navigation items (typically DockItem)
+ * @param props.className - Additional CSS classes
+ * @param props.testId - Testing identifier
  */
 export const Dock = ({
   children,
@@ -40,13 +42,13 @@ interface DockItemProps {
 }
 
 /**
- * Item individual do dock
- *
- * @param label - Texto ou ícone do item
- * @param active - Se este item está ativo
- * @param badgeCount - Contagem para exibir no badge
- * @param onClick - Callback ao clicar
- * @param testId - ID para testes
+ * Individual navigation item for the Dock component.
+ * 
+ * @param props.label - Text or icon content for the item
+ * @param props.active - Highlight state if this is the current route
+ * @param props.badgeCount - Optional numeric badge count to display
+ * @param props.onClick - Click handler for navigation
+ * @param props.testId - Testing identifier
  */
 export const DockItem = ({
   label,

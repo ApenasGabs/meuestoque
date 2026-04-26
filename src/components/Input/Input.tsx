@@ -12,13 +12,15 @@ interface InputProps extends Omit<
 }
 
 /**
- * Componente de input com variantes e validação
+ * Versatile input component with multiple variants and validation support.
+ * 
+ * Includes integrated labels, error messages, and helper texts using daisyUI styles.
  *
- * @param variant - Variante do input
- * @param size - Tamanho do input
- * @param label - Label do input
- * @param error - Mensagem de erro
- * @param helperText - Texto auxiliar
+ * @param props.variant - Visual style variant (bordered, filled, faded)
+ * @param props.size - Size variant of the input
+ * @param props.label - Optional label text displayed above the input
+ * @param props.error - Error message to display below the input (changes border color to error)
+ * @param props.helperText - Supplemental text to display when there's no error
  */
 export const Input = ({
   variant = "bordered",

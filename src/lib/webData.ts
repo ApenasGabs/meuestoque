@@ -48,7 +48,7 @@ export interface MemberRecord {
   nome: string;
 }
 
-export async function getCurrentUser(): Promise<UserSessionData | null> {
+export const getCurrentUser = async (): Promise<UserSessionData | null> => {
   const { data } = await supabase.auth.getUser();
   const user = data.user;
   if (!user) return null;
@@ -57,9 +57,9 @@ export async function getCurrentUser(): Promise<UserSessionData | null> {
     id: user.id,
     name: user.user_metadata?.nome ?? user.email ?? "",
   };
-}
+};
 
-export async function getSessionUser(): Promise<UserSessionData | null> {
+export const getSessionUser = async (): Promise<UserSessionData | null> => {
   const { data } = await supabase.auth.getSession();
   const user = data.session?.user;
   if (!user) return null;
@@ -68,9 +68,9 @@ export async function getSessionUser(): Promise<UserSessionData | null> {
     id: user.id,
     name: user.user_metadata?.nome ?? user.email ?? "",
   };
-}
+};
 
-export async function loadUserGroups(userId: string): Promise<GroupRecord[]> {
+export const loadUserGroups = async (userId: string): Promise<GroupRecord[]> => {
   const { data, error } = await supabase
     .from("groups")
     .select("id, nome, codigo_convite, group_members!inner(user_id)")
@@ -83,9 +83,9 @@ export async function loadUserGroups(userId: string): Promise<GroupRecord[]> {
     nome: group.nome,
     codigo_convite: group.codigo_convite,
   }));
-}
+};
 
-export async function restoreGroupContext(userId: string, savedGroupId: string | null) {
+export const restoreGroupContext = async (userId: string, savedGroupId: string | null) => {
   const groups = await loadUserGroups(userId);
   const activeGroup = pickActiveGroup(groups, savedGroupId);
 
@@ -109,9 +109,9 @@ export async function restoreGroupContext(userId: string, savedGroupId: string |
     group: activeGroup,
     listId: listData?.[0]?.id ?? null,
   };
-}
+};
 
-export async function loadMembers(groupId: string): Promise<MemberRecord[]> {
+export const loadMembers = async (groupId: string): Promise<MemberRecord[]> => {
   const { data: memberData, error: membersError } = await supabase
     .from("group_members")
     .select("user_id")
@@ -133,9 +133,9 @@ export async function loadMembers(groupId: string): Promise<MemberRecord[]> {
     id: profile.id,
     nome: profile.nome ?? "Usuário",
   }));
-}
+};
 
-export async function loadActiveList(groupId: string): Promise<ShoppingListRecord | null> {
+export const loadActiveList = async (groupId: string): Promise<ShoppingListRecord | null> => {
   // Query both ativa=true and status='active' to handle any data inconsistency.
   const { data, error } = await supabase
     .from("shopping_lists")
@@ -146,7 +146,7 @@ export async function loadActiveList(groupId: string): Promise<ShoppingListRecor
 
   if (error) throw new Error(error.message);
   return data?.[0] ?? null;
-}
+};
 
 const isActiveShoppingListUniqueViolation = (message: string): boolean => {
   const normalizedMessage = message.toLowerCase();
@@ -160,8 +160,11 @@ const isActiveShoppingListUniqueViolation = (message: string): boolean => {
 /**
  * Close any orphaned active lists for the group that may exist due to
  * data inconsistency between `ativa` and `status` columns.
+ *
+ * @param groupId - The group UUID
+ * @param excludeListId - Optional list ID to skip during update
  */
-async function closeOrphanedActiveLists(groupId: string, excludeListId?: string): Promise<void> {
+const closeOrphanedActiveLists = async (groupId: string, excludeListId?: string): Promise<void> => {
   let query = supabase
     .from("shopping_lists")
     .update({
@@ -177,7 +180,7 @@ async function closeOrphanedActiveLists(groupId: string, excludeListId?: string)
   }
 
   await query;
-}
+};
 
 export async function ensureActiveListForGroup(groupId: string): Promise<ShoppingListRecord> {
   const existing = await loadActiveList(groupId);
@@ -225,7 +228,9 @@ export async function ensureActiveListForGroup(groupId: string): Promise<Shoppin
 export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
-    .select("id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, product_id")
+    .select(
+      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, product_id",
+    )
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
 
@@ -285,9 +290,7 @@ export async function updateListItemUnitPrice(
   quantityNum: number,
 ): Promise<void> {
   const precoTotal =
-    unitPrice !== null && quantityNum > 0
-      ? Math.round(unitPrice * quantityNum * 100) / 100
-      : null;
+    unitPrice !== null && quantityNum > 0 ? Math.round(unitPrice * quantityNum * 100) / 100 : null;
 
   const { error } = await supabase
     .from("items")
@@ -299,12 +302,15 @@ export async function updateListItemUnitPrice(
 
 export async function updateListItemQuantity(itemId: string, quantity: string): Promise<void> {
   const parsed = parseListQuantityLabel(quantity);
-  const { error } = await supabase.from("items").update({ 
-    quantidade: quantity,
-    quantidade_raw: quantity,
-    quantidade_num: parsed.quantidade,
-    unidade: parsed.unidade
-  }).eq("id", itemId);
+  const { error } = await supabase
+    .from("items")
+    .update({
+      quantidade: quantity,
+      quantidade_raw: quantity,
+      quantidade_num: parsed.quantidade,
+      unidade: parsed.unidade,
+    })
+    .eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -315,8 +321,14 @@ export async function deleteListItem(itemId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function updateListItemValidityDate(itemId: string, validityDate: string | null): Promise<void> {
-  const { error } = await supabase.from("items").update({ data_validade: validityDate }).eq("id", itemId);
+export async function updateListItemValidityDate(
+  itemId: string,
+  validityDate: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("items")
+    .update({ data_validade: validityDate })
+    .eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -412,7 +424,9 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
   const { data: items, error: itemsError } = await supabase
     .from("items")
-    .select("id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, data_validade")
+    .select(
+      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, data_validade",
+    )
     .eq("list_id", listId);
 
   if (itemsError) throw new Error(itemsError.message);
@@ -459,10 +473,11 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
       if (!matchedStockItem) {
         matchedStockItem = stockItemsArr.find(
-          (si) => si.nome.trim().toLowerCase() === itemName && 
-                  si.pack_label?.trim().toLowerCase() === itemUnit
+          (si) =>
+            si.nome.trim().toLowerCase() === itemName &&
+            si.pack_label?.trim().toLowerCase() === itemUnit,
         );
-        
+
         if (matchedStockItem && matchedStockItem.pack_size) {
           isPackConversion = true;
           conversionFactor = matchedStockItem.pack_size;
@@ -482,7 +497,10 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         key,
         nome: boughtItem.nome,
         categoria: boughtItem.categoria,
-        unidade: isPackConversion && matchedStockItem ? (matchedStockItem.unidade as Unit) : (parsed.unidade as Unit),
+        unidade:
+          isPackConversion && matchedStockItem
+            ? (matchedStockItem.unidade as Unit)
+            : (parsed.unidade as Unit),
         quantidade: finalQuantity,
       });
     }
@@ -527,13 +545,14 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
       const stockItemsArr = Array.from(stockByKey.values());
       let matchedStockItem = stockItemsArr.find(
-        (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === itemUnit
+        (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === itemUnit,
       );
 
       if (!matchedStockItem) {
-         matchedStockItem = stockItemsArr.find(
-          (si) => si.nome.trim().toLowerCase() === itemName && 
-                  si.pack_label?.trim().toLowerCase() === itemUnit
+        matchedStockItem = stockItemsArr.find(
+          (si) =>
+            si.nome.trim().toLowerCase() === itemName &&
+            si.pack_label?.trim().toLowerCase() === itemUnit,
         );
         if (matchedStockItem && matchedStockItem.pack_size) {
           isPackConversion = true;
@@ -547,13 +566,15 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
       const finalUnit = matchedStockItem.unidade;
 
       const precoTotal = boughtItem.preco_total ?? boughtItem.preco ?? null;
-      const precoUnitario = boughtItem.preco_unitario ??
+      const precoUnitario =
+        boughtItem.preco_unitario ??
         (precoTotal != null && parsed.quantidade > 0
           ? Math.round((precoTotal / parsed.quantidade) * 100) / 100
           : null);
-      
-      const precoUnitarioConvertido = isPackConversion && precoTotal != null && finalQuantity > 0 
-          ? Math.round((precoTotal / finalQuantity) * 100) / 100 
+
+      const precoUnitarioConvertido =
+        isPackConversion && precoTotal != null && finalQuantity > 0
+          ? Math.round((precoTotal / finalQuantity) * 100) / 100
           : precoUnitario;
 
       try {
@@ -573,7 +594,9 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
           itemId: matchedStockItem.id,
           tipo: "entrada",
           quantidade: finalQuantity,
-          observacao: isPackConversion ? `Entrada por compra de ${parsed.quantidade} ${parsed.unidade} (convertido para ${finalUnit})` : "Entrada por finalização de compra",
+          observacao: isPackConversion
+            ? `Entrada por compra de ${parsed.quantidade} ${parsed.unidade} (convertido para ${finalUnit})`
+            : "Entrada por finalização de compra",
           createdBy: boughtItem.criado_por,
           lotId: lot.id,
           unidade: finalUnit,
@@ -1158,7 +1181,11 @@ export const getStockLotsByStockItem = async (stockItemId: string): Promise<Stoc
     return [];
   }
 };
-
+/**
+ * Fetches all available stock lots for a specific item, sorted by purchase date.
+ *
+ * @param stockItemId - The item UUID
+ */
 /**
  * Creates a stock lot for a given stock item.
  * The trigger `trg_sync_stock_item_quantity` will automatically
@@ -1189,6 +1216,12 @@ export const createStockLot = async (input: CreateStockLotInput): Promise<StockL
   return data as StockLotRecord;
 };
 
+/**
+ * Toggles whether a stock item should be added to the shopping list.
+ *
+ * @param itemId - The stock item UUID
+ * @param include - Whether it should be on the list
+ */
 export const setStockItemInShoppingList = async (
   itemId: string,
   include: boolean,
@@ -1218,6 +1251,14 @@ export interface RecordStockMovementResult {
   autoAddedToList: boolean;
 }
 
+/**
+ * Records a stock movement (in/out/adjustment) and updates item quantity.
+ *
+ * If it's a "saida" (exit) or "consumo_auto" (auto-consume), it uses FIFO logic
+ * to consume from existing lots via RPC.
+ *
+ * @param input - The movement details
+ */
 export const recordStockMovement = async (
   input: RecordStockMovementInput,
 ): Promise<RecordStockMovementResult> => {
@@ -1244,14 +1285,11 @@ export const recordStockMovement = async (
       console.error("Falha ao consumir FIFO, fallback para logica padrao:", rpcError);
       throw new Error(rpcError.message);
     }
-    
+
     nextQuantity = Math.max(0, item.quantidade - quantity);
   } else {
     // Entrada ou ajuste
-    nextQuantity =
-      input.tipo === "entrada"
-        ? item.quantidade + quantity
-        : Math.max(0, quantity);
+    nextQuantity = input.tipo === "entrada" ? item.quantidade + quantity : Math.max(0, quantity);
 
     const { error: updateError } = await supabase
       .from("stock_items")

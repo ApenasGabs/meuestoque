@@ -16,12 +16,14 @@ interface BadgeProps {
 }
 
 /**
- * Componente de badge/label com múltiplas variantes
- *
- * @param children - Conteúdo do badge
- * @param variant - Variante de cor do badge
- * @param size - Tamanho do badge
- * @param className - Classes CSS adicionais
+ * Badge component for displaying status, labels, or categories.
+ * 
+ * Supports various semantic colors and sizes based on daisyUI patterns.
+ * 
+ * @param props.children - Content to be displayed inside the badge
+ * @param props.variant - Color variant of the badge
+ * @param props.size - Size variant of the badge
+ * @param props.className - Additional CSS classes
  */
 export const Badge = ({
   children,

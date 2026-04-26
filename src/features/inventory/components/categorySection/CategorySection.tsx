@@ -17,6 +17,22 @@ interface CategorySectionProps {
   onViewHistory?: (product: InventoryProduct) => void;
 }
 
+/**
+ * Collapsible section for grouping products by category in the StockView.
+ * 
+ * Features:
+ * - Expand/Collapse toggle with sticky header
+ * - Summary badges for low stock and auto-consumption items
+ * - Responsive grid layout for product cards
+ * 
+ * @param props.name - The name of the category (or "Pendentes de Validade")
+ * @param props.products - List of products belonging to this category
+ * @param props.onEdit - Handler for editing a product
+ * @param props.onAddToList - Handler for adding to shopping list
+ * @param props.onRemove - Handler for product deletion
+ * @param props.onConsume - Handler for quick consumption (default portion)
+ * @param props.onOpenCustomConsume - Handler for opening the custom portion drawer
+ */
 export const CategorySection = ({
   name,
   products,

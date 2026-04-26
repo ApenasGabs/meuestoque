@@ -38,7 +38,7 @@ export const ComprasWebShell = () => {
   const ready = useSessionStore((state) => state.ready);
   const { appTitle } = useAppMode();
 
-  // Sincroniza subdomínio (meuestoque ↔ nossoestoque) e document.title
+  // Synchronizes subdomain and document.title based on app mode
   useSubdomainSync();
 
   const lowStockCount = stockItems.filter(

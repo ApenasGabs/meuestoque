@@ -14,8 +14,19 @@ interface DrawerProps {
 }
 
 /**
- * Componente de menu lateral (Drawer) robusto e compatível com iOS.
- * Evita o "checkbox hack" do daisyUI para garantir funcionamento em todos os navegadores mobile.
+ * Robust side menu (Drawer) component compatible with all mobile browsers (including iOS).
+ * 
+ * Avoids the standard daisyUI "checkbox hack" to ensure consistent behavior 
+ * across different touch devices and provides a clean overlay with animation.
+ * 
+ * @param props.open - Whether the drawer is currently visible
+ * @param props.onClose - Callback executed when the drawer is requested to close
+ * @param props.children - Drawer content
+ * @param props.title - Optional title displayed in the header
+ * @param props.subtitle - Optional subtitle displayed below the title
+ * @param props.side - Which side of the screen the drawer appears on (start/end)
+ * @param props.width - CSS width class for the side panel
+ * @param props.className - Additional CSS classes for the side panel
  */
 export const Drawer = ({
   open,
@@ -35,7 +46,7 @@ export const Drawer = ({
     setMounted(true);
   }, []);
 
-  // Controla o ciclo de vida da renderização para permitir animações de saída
+  // Controls rendering lifecycle to allow for exit animations
   useEffect(() => {
     if (open) {
       setShouldRender(true);
@@ -55,7 +66,7 @@ export const Drawer = ({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [open, onClose]);
 
-  // Bloqueia o scroll do body quando o drawer está aberto
+  // Prevents body scrolling when the drawer is open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";

@@ -25,8 +25,19 @@ const ORIGEM_LABELS: Record<string, string> = {
 };
 
 /**
- * Drawer showing the consumption/movement history for a specific stock item.
- * Groups movements by day and shows summary statistics.
+ * Drawer component that visualizes the movement and consumption history of a product.
+ * 
+ * Features:
+ * - Summary statistics cards (Consumption vs Additions in last 30 days)
+ * - Average consumption calculations (Daily, Weekly, Monthly)
+ * - Detailed list of movements grouped by date
+ * - Visual badges for different movement types (Entry, Exit, Auto-consume, Adjustment)
+ * - Real-time fetching from `stock_movements` table
+ * 
+ * @param props.open - Visibility state
+ * @param props.onClose - Close handler
+ * @param props.stockItemId - UUID of the stock item to query
+ * @param props.productName - Label to display in the header
  */
 export const ConsumptionHistoryDrawer = ({
   open,

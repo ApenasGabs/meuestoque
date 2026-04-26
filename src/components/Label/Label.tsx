@@ -8,12 +8,14 @@ interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
 }
 
 /**
- * Componente de label com variantes
+ * Label component for form inputs.
+ * 
+ * Provides consistent typography and optional "required" indicator.
  *
- * @param children - Conteúdo do label
- * @param required - Se o campo é obrigatório
- * @param disabled - Se o label está desabilitado
- * @param size - Tamanho do label
+ * @param props.children - Label text or content
+ * @param props.required - If true, displays a semantic asterisk
+ * @param props.disabled - If true, reduces opacity and changes cursor
+ * @param props.size - Text size variant
  */
 export const Label = ({
   children,

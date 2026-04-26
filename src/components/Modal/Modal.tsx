@@ -12,8 +12,17 @@ interface ModalProps {
 }
 
 /**
- * Componente de modal reutilizável baseado no dialog do daisyUI.
- * Utiliza Portals para evitar bugs de overflow em dispositivos móveis.
+ * Reusable modal component based on daisyUI dialog.
+ * 
+ * Uses React Portals to prevent overflow issues on mobile devices and ensures
+ * proper accessibility by using the native <dialog> element.
+ * 
+ * @param props.open - Whether the modal is visible
+ * @param props.onClose - Callback when the modal is requested to close
+ * @param props.children - Modal content
+ * @param props.title - Optional title displayed in the header
+ * @param props.subtitle - Optional subtitle displayed below the title
+ * @param props.className - Additional CSS classes for the modal box
  */
 export const Modal = ({
   open,
@@ -97,7 +106,10 @@ interface ModalActionsProps {
 }
 
 /**
- * Container para ações do modal (botões de confirmar/cancelar)
+ * Container for modal actions (typically confirm/cancel buttons).
+ * 
+ * @param props.children - Action elements (buttons)
+ * @param props.className - Additional CSS classes
  */
 export const ModalActions = ({ children, className = "" }: ModalActionsProps): ReactElement => {
   return <div className={`modal-action ${className}`.trim()}>{children}</div>;

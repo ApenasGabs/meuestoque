@@ -16,13 +16,15 @@ interface LoadingProps {
 }
 
 /**
- * Componente de loading/spinner com múltiplas variantes
+ * Loading indicator component with multiple animation styles.
+ * 
+ * Uses daisyUI loading patterns for different types of indicators.
  *
- * @param variant - Tipo de animação
- * @param size - Tamanho do spinner
- * @param color - Cor do spinner
- * @param label - Texto do loading
- * @param className - Classes CSS adicionais
+ * @param props.variant - Animation type (spinner, dots, bars, or ring)
+ * @param props.size - Size variant of the indicator
+ * @param props.color - Semantic color variant
+ * @param props.label - Optional text to display below the indicator
+ * @param props.className - Additional CSS classes for the container
  */
 export const Loading = ({
   variant = "spinner",

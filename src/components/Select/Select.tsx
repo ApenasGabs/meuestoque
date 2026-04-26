@@ -10,15 +10,17 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "siz
 }
 
 /**
- * Componente de select com variantes e validação, seguindo o padrão do Input
+ * Form select component with variants and validation support.
+ * 
+ * Follows the same design pattern as the Input component using daisyUI styles.
  *
- * @param variant - Variante do select
- * @param size - Tamanho do select
- * @param label - Label do select
- * @param error - Mensagem de erro
- * @param helperText - Texto auxiliar
- * @param options - Opções do select (alternativa a children)
- * @param children - Opções como children (alternativa a prop options)
+ * @param props.variant - Visual style variant of the select
+ * @param props.size - Size variant of the select
+ * @param props.label - Optional label text displayed above the select
+ * @param props.error - Error message to display below the select
+ * @param props.helperText - Supplemental text to display when there's no error
+ * @param props.options - Array of options to render (alternative to children)
+ * @param props.children - Option elements to render (alternative to options prop)
  */
 export const Select = ({
   variant = "bordered",

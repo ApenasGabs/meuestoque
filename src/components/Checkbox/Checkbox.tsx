@@ -17,11 +17,13 @@ interface CheckboxProps extends Omit<
 }
 
 /**
- * Componente de checkbox com label e variantes
- *
- * @param label - Label do checkbox
- * @param size - Tamanho do checkbox
- * @param color - Cor do checkbox
+ * Checkbox component with integrated label and multiple color/size variants.
+ * 
+ * Uses daisyUI checkbox styles.
+ * 
+ * @param props.label - Text or element to display alongside the checkbox
+ * @param props.size - Size variant of the checkbox
+ * @param props.color - Semantic color variant of the checkbox
  */
 export const Checkbox = ({
   label,

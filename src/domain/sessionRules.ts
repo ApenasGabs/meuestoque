@@ -25,11 +25,11 @@ export const shouldRedirectToList = (hasSession: boolean, hasGroup: boolean): bo
 };
 
 /**
- * Determina se o subdomínio atual precisa ser corrigido.
+ * Determines if the current subdomain needs to be synchronized based on the session state.
  *
- * @param currentHost - hostname atual do navegador
- * @param hasGroup - se o usuário está em um grupo compartilhado
- * @returns o domínio correto ou `null` se não houver necessidade de troca
+ * @param currentHost - The browser's current hostname
+ * @param hasGroup - Whether the user is currently member of a shared group
+ * @returns The target domain string if a redirect is needed, otherwise null
  */
 export const shouldSyncSubdomain = (currentHost: string, hasGroup: boolean): string | null => {
   const SOLO_DOMAIN = "meuestoque.apenasgabs.dev";

@@ -7,11 +7,13 @@ interface CardProps {
 }
 
 /**
- * Componente de card básico
+ * Basic layout card component.
+ * 
+ * Provides a consistent container with border and shadow.
  *
- * @param children - Conteúdo do card
- * @param className - Classes CSS adicionais
- * @param testId - ID para testes
+ * @param props.children - Card content
+ * @param props.className - Additional CSS classes
+ * @param props.testId - Testing identifier
  */
 export const Card = ({ children, className = "", testId }: CardProps): ReactElement => {
   return (
@@ -31,11 +33,13 @@ interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Componente do corpo do card
+ * Main content container for the Card component.
+ * 
+ * Includes padding and optional centering logic.
  *
- * @param children - Conteúdo do corpo
- * @param centered - Se deve centralizar o conteúdo
- * @param className - Classes CSS adicionais
+ * @param props.children - Body content
+ * @param props.centered - If true, centers content vertically and horizontally
+ * @param props.className - Additional CSS classes
  */
 export const CardBody = ({
   children,
@@ -58,10 +62,10 @@ interface CardTitleProps {
 }
 
 /**
- * Componente do título do card
- *
- * @param children - Conteúdo do título
- * @param className - Classes CSS adicionais
+ * Formatted title for the Card component.
+ * 
+ * @param props.children - Title text or content
+ * @param props.className - Additional CSS classes
  */
 export const CardTitle = ({ children, className = "" }: CardTitleProps): ReactElement => {
   return <h2 className={`text-2xl font-bold mb-4 ${className}`.trim()}>{children}</h2>;
