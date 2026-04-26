@@ -24,6 +24,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 
+
 export const ProfilePage = (): ReactElement => {
   const navigate = useNavigate();
   const userName = useAuthStore((state) => state.userName);
@@ -202,7 +203,7 @@ export const ProfilePage = (): ReactElement => {
         </CardBody>
       </Card>
 
-      <Card className="card form">
+      <Card className="card form mb-4">
         <CardBody>
           <h2>Trocar grupo</h2>
           {allGroups.length === 0 ? (
@@ -227,6 +228,51 @@ export const ProfilePage = (): ReactElement => {
               ))}
             </div>
           )}
+        </CardBody>
+      </Card>
+
+      <Card className="card form">
+        <CardBody>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="!mb-0">Sobre o App</h2>
+            <Badge variant="accent" className="font-mono text-xs">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.7.0'}</Badge>
+          </div>
+          
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-base-content/80">Últimas Atualizações</h3>
+            <div className="stack-list max-h-64 overflow-y-auto pr-2">
+              {(typeof __APP_CHANGELOG__ !== 'undefined' ? __APP_CHANGELOG__ : []).map((entry) => (
+                <article key={entry.version} className="border border-base-200 p-3 rounded-lg bg-base-100/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <strong className="text-primary font-mono text-sm">v{entry.version}</strong>
+                    <span className="text-xs text-base-content/60">{entry.date}</span>
+                  </div>
+                  
+                  {entry.features && entry.features.length > 0 && (
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-success mb-1 block">✨ Novidades</span>
+                      <ul className="list-disc list-inside text-sm text-base-content/80 space-y-1">
+                        {entry.features.map((feature: string, idx: number) => (
+                          <li key={idx} className="leading-tight">{feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {entry.fixes && entry.fixes.length > 0 && (
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-warning mb-1 block">🐛 Correções</span>
+                      <ul className="list-disc list-inside text-sm text-base-content/80 space-y-1">
+                        {entry.fixes.map((fix: string, idx: number) => (
+                          <li key={idx} className="leading-tight">{fix}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </div>
         </CardBody>
       </Card>
     </main>
