@@ -1,0 +1,37 @@
+---
+schema_version: 1
+metadata:
+  name: meuestoque codelinter rules
+  version: 1.0.0
+  generated_at: YYYY-MM-DD
+immutable: true
+allowed_locations:
+  - .
+  - .github/rules
+maintainers:
+  - ApenasGabs
+rules:
+  - id: EXAMPLE-001
+    title: Detectar chaves de API (exemplo)
+    description: "Detecta strings que se parecem com chaves privadas (ex: sk_...)"
+    pattern: sk_[A-Za-z0-9]{16,}
+    files:
+      - "**/*"
+    severity: error
+    action: report
+    rationale: Evitar vazamento de credenciais em código
+  - id: EXAMPLE-002
+    title: Proibir atribuição a innerHTML (exemplo)
+    description: Detectar atribuições a `innerHTML` que podem causar XSS
+    pattern: innerHTML\s*=
+    files:
+      - "**/*.ts"
+      - "**/*.tsx"
+    severity: warning
+    action: warn
+    rationale: Prevenir vulnerabilidades XSS
+notes:
+  - Não editar este arquivo por bots; alterações devem ser feitas por
+    mantenedores.
+  - "Para propor mudança: abra uma issue descrevendo o motivo e a regra
+    proposta."
