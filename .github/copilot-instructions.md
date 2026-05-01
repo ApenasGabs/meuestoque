@@ -245,14 +245,16 @@ export const MyButton = ({ children, onClick }: ButtonProps): ReactElement => {
 ## Documentação
 
 ### Documentação Gerada por IA - PADRÃO ESTRITO
-Toda vez que você (a IA) for documentar a conclusão de uma tarefa no `AI_KNOWLEDGE_BASE.md` ou gerar um *artifact* de resumo, você **DEVE** obrigatoriamente usar este formato estruturado:
+
+Toda vez que você (a IA) for documentar a conclusão de uma tarefa no `AI_KNOWLEDGE_BASE.md` ou gerar um _artifact_ de resumo, você **DEVE** obrigatoriamente usar este formato estruturado:
+
 - **Gráfico Mermaid**: Visualize o fluxo ou a arquitetura.
 - **Tabelas Markdown**: Liste todos os arquivos criados ou modificados.
 - **Lógica de Decisão**: Bloco de código em texto puro explicando as regras.
 - **Comportamento da Feature**: Explicação em bullet points.
 - **Checklist de Aceite**: Confirmação do que foi entregue.
 
-*(Nunca escreva apenas parágrafos longos, use sempre os recursos visuais acima)*
+_(Nunca escreva apenas parágrafos longos, use sempre os recursos visuais acima)_
 
 ### JSDoc - OBRIGATÓRIO
 
@@ -436,14 +438,14 @@ git commit -m "build: 📦 adiciona eslint-plugin-tailwindcss"
    ```
 
 3. **Fazer pull** - Sincronize com o remoto ANTES de commitar
-   
+
    ```bash
    # Se estiver trabalhando em uma feature branch
    git pull origin feature/minha-feature
-   
+
    # Se estiver na develop
    git pull origin develop
-   
+
    # Com rebase se houver conflitos
    git pull --rebase origin feature/minha-feature
    ```
@@ -562,3 +564,17 @@ git push origin main
 - Sugerir instalação de dependência
 - Identificar breaking change
 - Encontrar bug existente no código
+
+## Rule Files
+
+Siga estas regras ao gerenciar os arquivos de regras do repositório:
+
+- **Arquivos especiais**: Este repositório usa dois arquivos de regras: `.clinerules` e `.codelinterrules`. Eles podem existir na raiz do repositório ou em `.github/rules/`.
+- **Responsabilidade**: Somente mantenedores do repositório devem criar, modificar ou remover esses arquivos.
+- **Proibição para IA**: Agentes ou ferramentas de IA **não devem** gerar, editar, ou propor edições diretas a `.clinerules` ou `.codelinterrules`. Para sugerir mudanças, abra uma issue ou crie um Pull Request para revisão por mantenedores.
+- **Fonte única de verdade**: As instruções de gerenciamento de arquivos de regras estão definidas nesta seção em `/.github/copilot-instructions.md` e no `AI_KNOWLEDGE_BASE.md`. Quando um arquivo de regras menciona "single source of truth", significa que estas são as referências canônicas para o processo.
+- **Local e formato**: Coloque os arquivos apenas nas localizações indicadas; siga o formato e schema adotados pelos mantenedores. Não espalhe cópias em outros diretórios.
+
+**Proibição de alterações**: As regras declaradas em `.clinerules` e `.codelinterrules` são consideradas imutáveis. Não modifique essas regras em nenhuma circunstância.
+
+Se houver necessidade de discutir uma possível mudança (por exemplo, erro claro ou conflito operacional), abra uma issue descrevendo o problema; apenas os mantenedores do projeto podem avaliar e aplicar qualquer mudança após consenso. Agentes de IA não devem abrir PRs ou editar esses arquivos.

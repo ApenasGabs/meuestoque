@@ -13,7 +13,7 @@
 ## File Structure
 
 - `.clinerules`: Rule file for the codelinter.
-- `.codelinterrules`: (If present) Additional codelinter rules.
+- `.clinerules`: Rule file for the Cline AI coding assistant.
 - `.github/copilot-instructions.md`: Instructions for managing rule files.
 - `.github/rules/` (Optional): Directory for additional rule files.
 
