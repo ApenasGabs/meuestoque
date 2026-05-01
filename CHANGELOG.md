@@ -5,6 +5,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.9.0](https://github.com/ApenasGabs/meuestoque/compare/v1.8.0...v1.9.0) (2026-05-01)
+
+### ✨ Features
+
+* :sparkles: add .codelinterrules file with initial rules and guidelines ([e6b3600](https://github.com/ApenasGabs/meuestoque/commit/e6b3600a6d3a2008373f27213d04e9fe13a7248f))
+
+### 🐛 Bug Fixes
+
+* :bug: correct file name in .clinerules for codelinter reference ([462633c](https://github.com/ApenasGabs/meuestoque/commit/462633c2b852263c110b23979a6691a3a8669115))
+
+### 🔧 Chores
+
+* :books: add .clinerules configuration for standardized agent behavior ([260cc88](https://github.com/ApenasGabs/meuestoque/commit/260cc8828c4cedcf0368d88a972492e254fdfd43))
+* :books: format .codelinterrules for consistency and clarity ([68bc9d1](https://github.com/ApenasGabs/meuestoque/commit/68bc9d160ecec47db7f60d8fe7a36d52c027a2aa))
+
 ## [1.8.0](https://github.com/ApenasGabs/meuestoque/compare/v1.7.0...v1.8.0) (2026-04-26)
 
 ### ✨ Features
