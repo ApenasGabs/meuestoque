@@ -1,0 +1,20 @@
+## Rules
+
+1. **Never generate `.clinerules` or `.codelinterrules`**: These files must always be created by the user following the instructions in `.github/copilot-instructions.md`.
+2. **Don't modify `.clinerules` or `.codelinterrules`**: Never rewrite, update, or extend these files. Their content and format are strictly managed by the user.
+3. **Don't override existing rules**: If a rule is already present in `.clinerules` or `.codelinterrules`, do not suggest adding a similar or duplicate rule.
+4. **Don't suggest changing the rules**: Never propose modifications to the existing rules or suggest adding new rules to these files.
+5. **Don't generate `.clinerules` or `.codelinterrules` in `.github`**: These files should only be generated in the root directory or `.github/rules/` as specified by the user, never in `.github`.
+
+## Context
+
+`./.github/copilot-instructions.md` is the **single source of truth** for all rule management instructions. Always follow those instructions. Never override them with custom rules.
+
+## File Structure
+
+- `.clinerules`: Rule file for the codelinter.
+- `.codelinterrules`: (If present) Additional codelinter rules.
+- `.github/copilot-instructions.md`: Instructions for managing rule files.
+- `.github/rules/` (Optional): Directory for additional rule files.
+
+Always follow the structure defined in `.github/copilot-instructions.md`.
