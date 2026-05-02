@@ -6,10 +6,23 @@
 
 Para facilitar a leitura e não estourar seu contexto, quebramos as especificações da aplicação em arquivos menores na pasta `docs/ai/`:
 
-1. 👉 **`.github/copilot-instructions.md`** - Regras gerais, padrões de código, linting, tipos e estilo.
-2. 👉 **`docs/ai/01_ARCHITECTURE_AND_DATA.md`** - Detalhes do Supabase, migrations V2 e o fluxo RPC.
-3. 👉 **`docs/ai/02_UX_AND_BUSINESS_RULES.md`** - Regras da interface, Chips, Parser de Listas e Unidade Composta.
-4. 👉 **`docs/ai/03_COMPONENTS.md`** - Resumo dos nossos componentes UI com Tailwind/daisyUI.
+1. 👉 **`.github/copilot-instructions.md`** — Regras gerais, padrões de código, linting, tipos e estilo.
+2. 👉 **`docs/ai/01_ARCHITECTURE_AND_DATA.md`** — Arquitetura, Supabase e fluxo RPC.
+3. 👉 **`docs/ai/02_UX_AND_BUSINESS_RULES.md`** — UX, Chips, Parser, Unidade Composta, Bulk Mode.
+4. 👉 **`docs/ai/03_COMPONENTS.md`** — Componentes UI (Tailwind/daisyUI).
+5. 👉 **`docs/ai/04_RPC_CONTRACTS.md`** — Contratos das funções Postgres.
+6. 👉 **`docs/ai/05_DATABASE_MAP.md`** — Índice para o ER diagrama em `docs/database_map.md`.
+7. 👉 **`docs/ai/feature-*.md`** — Documentação dedicada por feature (ex: `feature-bulk-expiration.md`).
+
+Documentação fora de `docs/ai/`:
+
+- **`README.md`** — overview do projeto e setup rápido.
+- **`docs/SETUP.md`** — setup completo com Supabase + migrations.
+- **`docs/FEATURES.md`** — visão de produto/funcionalidades.
+- **`docs/GLOSSARY.md`** — termos canônicos do domínio.
+- **`docs/STACK_DIAGRAM.md`** — visão runtime React → Supabase.
+- **`docs/adr/`** — Architectural Decision Records.
+- **`docs/internal/`** — espaço para conteúdo não-técnico (interno).
 
 ---
 

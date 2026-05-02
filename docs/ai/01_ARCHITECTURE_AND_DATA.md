@@ -2,6 +2,14 @@
 
 Este documento reflete a estrutura do banco de dados e arquitetura da aplicação como ela **realmente está implementada**, com ênfase nas migrações do "Modelo V2" e Integração Supabase.
 
+> Documentos relacionados:
+> - [`02_UX_AND_BUSINESS_RULES.md`](./02_UX_AND_BUSINESS_RULES.md) — regras de UX e negócio.
+> - [`03_COMPONENTS.md`](./03_COMPONENTS.md) — componentes reutilizáveis.
+> - [`04_RPC_CONTRACTS.md`](./04_RPC_CONTRACTS.md) — contratos das RPCs.
+> - [`05_DATABASE_MAP.md`](./05_DATABASE_MAP.md) — mapa detalhado tabela-a-tabela.
+> - [`feature-bulk-expiration.md`](./feature-bulk-expiration.md) — feature de validade em massa.
+> - [`../STACK_DIAGRAM.md`](../STACK_DIAGRAM.md) — visão runtime.
+
 ## Visão Geral do Banco de Dados (Supabase)
 
 A aplicação utiliza o Supabase para backend as a service, provendo Auth e Banco de Dados (PostgreSQL). O modelo foi evoluído para suportar rastreabilidade completa e conversão de unidades (ex: comprar por quilo, consumir por unidade).

@@ -1,213 +1,120 @@
-# Guia de Configuração do Meu Estoque
+# Setup do Meu Estoque
 
-Este documento lista todas as configurações necessárias ao usar este Meu Estoque.
+Guia para preparar um ambiente de desenvolvimento local funcional, conectado ao Supabase.
 
-## 1. Configuração Inicial
+## 1. Pré-requisitos
 
-### Clonar o Meu Estoque
+- **Node.js v24+**.
+- **npm** (ou `pnpm`/`yarn`, scripts assumem `npm`).
+- **Conta no Supabase** com um projeto criado.
+- **Supabase CLI** opcional, mas necessário para rodar migrations localmente.
+- (Opcional) `git` e `gh` (GitHub CLI).
 
-```bash
-# Usando GitHub CLI
-gh repo create meu-projeto --Meu Estoque ApenasGabs/meuestoque --clone
-
-# Ou manualmente
-git clone https://github.com/ApenasGabs/meuestoque.git meu-projeto
-cd meu-projeto
-```
-
-### Instalar Dependências
+## 2. Clonar e instalar
 
 ```bash
+git clone https://github.com/ApenasGabs/meuestoque.git
+cd meuestoque
 npm install
-# ou
-yarn install
-# ou
-pnpm install
 ```
 
-## 2. Configuração do Projeto
-
-### Atualizar package.json
-
-```json
-{
-  "name": "seu-projeto",
-  "version": "0.1.0",
-  "description": "Sua descrição",
-  "author": "Seu Nome",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/seu-usuario/seu-projeto"
-  }
-}
-```
-
-### Atualizar README.md
-
-- [ ] Alterar título do projeto
-- [ ] Atualizar descrição
-- [ ] Modificar badges se necessário
-- [ ] Atualizar links de repositório
-
-## 3. GitHub Actions / CI/CD
-
-### Configurar Permissões
-
-**Para Releases Automáticas:**
-
-1. Vá em **Settings** → **Actions** → **General**
-2. Em "Workflow permissions":
-   - ✅ Selecione **Read and write permissions**
-   - ✅ Marque **Allow GitHub Actions to create and approve pull requests**
-
-### Secrets Necessários
-
-**Opcional - Deploy:**
-Se for fazer deploy, adicione em **Settings** → **Secrets**:
-
-- `VERCEL_TOKEN` (para Vercel)
-- `NETLIFY_AUTH_TOKEN` (para Netlify)
-- etc.
-
-## 4. Configuração de Testes
-
-### Playwright (E2E)
-
-Instalar browsers:
+## 3. Variáveis de ambiente
 
 ```bash
-npx playwright install
+cp .env.example .env
 ```
 
-Para CI, já está configurado no workflow.
+Variáveis essenciais (em `.env` na raiz):
 
-### Vitest (Unit)
+| Variável | Descrição |
+|---|---|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase. |
+| `VITE_SUPABASE_ANON_KEY` | Anon key pública do projeto. |
 
-Funciona out-of-the-box, sem configuração adicional.
+> Não comite chaves reais. O `.env` está no `.gitignore`.
 
-## 5. ESLint e Prettier
+As variáveis `TABLET_*`, `PLAYWRIGHT_APP_URL`, `E2E_*` são apenas para E2E remoto.
 
-### Configurar IDE
+## 4. Banco de dados (Supabase)
 
-**VS Code:**
-Instale extensões:
+O schema é versionado em `supabase/migrations/`.
 
-- ESLint
-- Prettier
-- Tailwind CSS IntelliSense
+### Opção A — Supabase CLI (recomendado)
 
-**.vscode/settings.json** (recomendado):
+```bash
+supabase link --project-ref <seu-ref>
+supabase db push
+```
+
+### Opção B — SQL Editor
+
+Cole cada arquivo de `supabase/migrations/` no SQL Editor do dashboard, na ordem cronológica.
+
+### Opção C — Banco local (Docker)
+
+```bash
+supabase start
+supabase db reset
+```
+
+### Validação
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name IN ('product_catalog','stock_items','items')
+  AND column_name IN ('perecivel','validade_padrao_dias',
+                      'data_validade_alerta','validade_nao_aplica',
+                      'data_validade','nao_aplica_validade');
+
+SELECT proname FROM pg_proc
+WHERE proname IN ('rpc_finalize_shopping_list','rpc_bulk_update_stock_validity','is_group_member');
+```
+
+Detalhes das RPCs em [`docs/ai/04_RPC_CONTRACTS.md`](./ai/04_RPC_CONTRACTS.md).
+
+## 5. Primeiro grupo de teste
+
+1. `npm run dev` e abra `http://localhost:5173`.
+2. Registre uma conta.
+3. Crie um grupo (gera `codigo_convite`).
+4. Convide outros usuários colando o código.
+5. Cadastre produtos para validar lista → finalização → estoque.
+
+## 6. Scripts úteis
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Servidor Vite em watch. |
+| `npm run build` | Type-check + build. |
+| `npm run preview` | Servir o build. |
+| `npm run lint` | ESLint. |
+| `npm run lint:fix` | ESLint com autofix. |
+| `npm run test` | Vitest em watch. |
+| `npm run test:coverage` | Cobertura. |
+| `npm run e2e` | Playwright E2E. |
+| `npm run e2e:ui` | Playwright com UI. |
+
+## 7. IDE recomendada
+
+VS Code com ESLint, Prettier, Tailwind CSS IntelliSense.
 
 ```json
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  }
+  "editor.codeActionsOnSave": { "source.fixAll.eslint": true }
 }
 ```
 
-## 6. Tailwind CSS v4
+## 8. Convenções
 
-⚠️ **Importante:** Este Meu Estoque usa Tailwind CSS v4 (beta).
+- Conventional Commits.
+- Branches: `feature/*`, `fix/*`, `docs/*`.
+- Releases via Semantic Release ao mergear na `main`.
 
-### Plugin ESLint Temporariamente Desabilitado
+## 9. Próximos passos
 
-O `eslint-plugin-tailwindcss` está comentado em `eslint.config.js` devido à incompatibilidade com Tailwind v4.
-
-**Reativar quando houver versão compatível:**
-
-1. Descomentar import e configuração em `eslint.config.js`
-2. Reinstalar plugin: `npm install -D eslint-plugin-tailwindcss`
-
-## 7. GitHub Copilot
-
-### Instruções Customizadas
-
-O arquivo `.github/copilot-instructions.md` contém regras específicas:
-
-- Tipagem TypeScript estrita
-- Padrões de código
-- Commits convencionais
-- Priorização de componentes daisyUI
-
-**Personalize conforme seu time.**
-
-## 8. Primeira Release
-
-### Opção A: Automática
-
-Faça merge na `main` com commits `feat:` ou `fix:`, a release será criada automaticamente.
-
-### Opção B: Manual
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-## 9. Deploy
-
-### Vercel (Recomendado)
-
-```bash
-npm install -g vercel
-vercel
-```
-
-Ou conecte repositório em [vercel.com](https://vercel.com).
-
-### Netlify
-
-```bash
-npm install -g netlify-cli
-netlify init
-```
-
-### Build Manual
-
-```bash
-npm run build
-# Arquivos em /dist
-```
-
-## 10. Checklist Final
-
-Antes de começar a desenvolver:
-
-- [ ] Dependências instaladas
-- [ ] package.json atualizado
-- [ ] README.md personalizado
-- [ ] GitHub Actions permissões configuradas
-- [ ] Playwright browsers instalados
-- [ ] IDE configurado (ESLint, Prettier)
-- [ ] Primeira release criada
-- [ ] Deploy configurado (se necessário)
-
-## Estrutura do Projeto
-
-```
-/
-├── .github/
-│   ├── copilot-instructions.md  # Regras do Copilot
-│   └── workflows/               # CI/CD pipelines
-├── docs/                        # Documentação
-├── e2e/                         # Testes E2E (Playwright)
-├── public/                      # Assets estáticos
-├── src/
-│   ├── components/              # Componentes React
-│   ├── __tests__/               # Testes unitários
-│   └── App.tsx                  # Componente principal
-├── .releaserc.json              # Config Semantic Release
-├── playwright.config.ts         # Config Playwright
-├── vitest.config.ts            # Config Vitest
-├── tailwind.config.js          # Config Tailwind
-└── vite.config.ts              # Config Vite
-```
-
-## Suporte
-
-- [Documentação Completa](./README.md)
-- [Sistema de Release](./RELEASE.md)
-- [Issues no GitHub](https://github.com/ApenasGabs/meuestoque/issues)
+- [`docs/FEATURES.md`](./FEATURES.md) — visão de produto.
+- [`docs/ai/01_ARCHITECTURE_AND_DATA.md`](./ai/01_ARCHITECTURE_AND_DATA.md) — arquitetura.
+- [`docs/GLOSSARY.md`](./GLOSSARY.md) — termos do domínio.
+- [`docs/adr/`](./adr/) — decisões arquiteturais.
