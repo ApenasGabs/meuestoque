@@ -40,6 +40,7 @@ export interface InventoryShoppingListItem {
   pricePerUnit?: number | null;
   totalPrice?: number | null;
   validityDate?: string | null;
+  naoAplicaValidade?: boolean;
 }
 
 export type InventoryTab = "stock" | "list" | "settings";

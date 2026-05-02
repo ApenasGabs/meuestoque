@@ -33,7 +33,7 @@ interface ShoppingListViewProps {
   onUpdateItemPrice?: (id: string, value: number | null) => void;
   onUpdateItemUnitPrice?: (id: string, value: number | null) => void;
   onUpdateItemQuantity?: (id: string, value: number) => void;
-  onUpdateValidityDate?: (id: string, date: string | null) => void;
+  onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
 }

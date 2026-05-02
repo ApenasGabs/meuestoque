@@ -15,7 +15,7 @@ interface ShoppingListItemProps {
   onUpdatePrice?: (id: string, value: number | null) => void;
   onUpdateUnitPrice?: (id: string, value: number | null) => void;
   onUpdateQuantity?: (id: string, value: number) => void;
-  onUpdateValidityDate?: (id: string, date: string | null) => void;
+  onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
 }
 
 /**
@@ -234,15 +234,25 @@ export const ShoppingListItem = memo(function ShoppingListItem({
 
             {/* Validity Date Input when checked */}
             {item.checked && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs uppercase font-bold text-base-content/50">Validade:</span>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={item.validityDate || ""}
-                  onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null)}
-                  className="max-w-[150px] text-xs h-7"
-                />
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-bold text-base-content/50">Validade:</span>
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={item.validityDate || ""}
+                    onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                    className="max-w-[150px] text-xs h-7"
+                    disabled={item.naoAplicaValidade}
+                  />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer mt-1 sm:mt-0">
+                  <Checkbox 
+                    checked={item.naoAplicaValidade || false}
+                    onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
+                  />
+                  <span className="text-xs text-base-content/80">Não se aplica</span>
+                </label>
               </div>
             )}
           </div>

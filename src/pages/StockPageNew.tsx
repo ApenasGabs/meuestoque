@@ -136,6 +136,19 @@ export const StockPageNew = (): ReactElement => {
           onConsumeProduct={(product, portions) => void handleConsumeProduct(product, portions)}
           onAddToShoppingList={handleAddToShoppingList}
           onAddCategory={handleAddCategory}
+          onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
+            try {
+              const { bulkUpdateStockValidity } = await import("../lib/webData");
+              await bulkUpdateStockValidity(itemIds, validityDate, naoAplica);
+              setToast({ message: `${itemIds.length} item(ns) atualizado(s)!`, type: "success" });
+              void fetchItems(groupId);
+            } catch (err) {
+              setToast({
+                message: err instanceof Error ? err.message : "Falha ao atualizar validade",
+                type: "error",
+              });
+            }
+          }}
         />
       </div>
 

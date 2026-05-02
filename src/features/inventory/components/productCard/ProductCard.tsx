@@ -6,6 +6,8 @@ import { Card, CardBody } from "../../../../components/Card/Card";
 import { Drawer } from "../../../../components/Drawer/Drawer";
 import type { InventoryProduct } from "../../types";
 import { EditOutlined, ShoppingCartOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useBulkStore } from "../../../../stores/bulkStore";
+import { Checkbox } from "../../../../components/Checkbox/Checkbox";
 
 interface ProductCardProps {
   product: InventoryProduct;
@@ -49,7 +51,12 @@ export const ProductCard = ({
 }: ProductCardProps): ReactElement => {
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef<boolean>(false);
+  const cardLongPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardLongPressTriggeredRef = useRef<boolean>(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
+
+  const { isBulkMode, isSelected, toggleItemSelection, enterBulkMode } = useBulkStore();
+  const selected = isSelected(product.id);
 
   const isOut = product.quantity === 0;
   const isLow = product.quantity > 0 && product.quantity <= product.minStock;
@@ -130,21 +137,56 @@ export const ProductCard = ({
 
   return (
     <Card
-      className={`shadow-none ${onCardClick ? "cursor-pointer" : ""} ${isPendingValidity ? "border-error/60 bg-error/5" : isOut ? "border-error/50 bg-error/5" : isLow ? "border-warning/50 bg-warning/5" : expiryInfo?.variant === "error" ? "border-error/50 bg-error/5" : expiryInfo?.variant === "warning" ? "border-warning/50 bg-warning/5" : "border-base-300"}`}
+      className={`shadow-none ${onCardClick || isBulkMode ? "cursor-pointer" : ""} ${selected ? "border-primary bg-primary/5" : isPendingValidity ? "border-error/60 bg-error/5" : isOut ? "border-error/50 bg-error/5" : isLow ? "border-warning/50 bg-warning/5" : expiryInfo?.variant === "error" ? "border-error/50 bg-error/5" : expiryInfo?.variant === "warning" ? "border-warning/50 bg-warning/5" : "border-base-300"}`}
       testId={`product-card-${product.id}`}
     >
       <CardBody
         className="p-2 overflow-x-auto"
         onClick={() => {
-          if (onCardClick) {
+          if (cardLongPressTriggeredRef.current) {
+            cardLongPressTriggeredRef.current = false;
+            return;
+          }
+          if (isBulkMode) {
+            toggleItemSelection(product.id);
+          } else if (onCardClick) {
             onCardClick(product);
+          }
+        }}
+        onPointerDown={() => {
+          cardLongPressTriggeredRef.current = false;
+          cardLongPressTimeoutRef.current = setTimeout(() => {
+            cardLongPressTriggeredRef.current = true;
+            if (!isBulkMode) {
+              enterBulkMode(product.id);
+            }
+          }, 500);
+        }}
+        onPointerUp={() => {
+          if (cardLongPressTimeoutRef.current) clearTimeout(cardLongPressTimeoutRef.current);
+        }}
+        onPointerCancel={() => {
+          if (cardLongPressTimeoutRef.current) clearTimeout(cardLongPressTimeoutRef.current);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!isBulkMode) {
+            enterBulkMode(product.id);
           }
         }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-medium truncate max-w-[120px] xs:max-w-40">{product.name}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isBulkMode && (
+                <Checkbox
+                  checked={selected}
+                  onChange={() => toggleItemSelection(product.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-sm font-medium truncate max-w-[120px] xs:max-w-40">{product.name}</p>
               <div className="flex flex-wrap gap-1">
                 {isPendingValidity && (
                   <Badge variant="error" size="sm">
@@ -172,6 +214,7 @@ export const ProductCard = ({
                   </Badge>
                 )}
               </div>
+            </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {product.unit && (

@@ -25,6 +25,12 @@ A aplicação foi construída sobre TailwindCSS e daisyUI, mas possui uma camada
   - `Divider`
   - `Navbar`, `Footer`
 
+## Componentes de Domínio Específico
+Além dos componentes base, o projeto possui componentes focados no negócio (localizados em `src/features/inventory/components/`):
+- **`ProductCard`**: Card de exibição do estoque. Agora suporta um modo de seleção ativado via Zustand (`useBulkStore`) que interage nativamente com `Long Press` / `Context Menu` (botão direito) para renderizar checkboxes sem poluir a UI principal.
+- **`StockView`**: Gerencia o grid de produtos e o **Bulk Mode Header / Action Bar** de forma dinâmica quando há itens selecionados, delegando as chamadas em massa (`onBulkUpdateValidity`) para o Page component.
+- **`ShoppingListItem`**: Exibe itens em compras e agora possui integração nativa para a flag de "Não Perecível" (Não se aplica validade) diretamente no input de datas.
+
 ## Acessibilidade (A11y)
 Quase todos os componentes acima foram projetados pensando em A11y:
 - Passam o `role` adequado (ex: `role="alert"` em Alerts).

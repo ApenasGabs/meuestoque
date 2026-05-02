@@ -7,6 +7,8 @@ import type { InventoryCategory, InventoryProduct, StockFilter } from "../../typ
 import { CategorySection } from "../categorySection/CategorySection";
 import { ConsumptionHistoryDrawer } from "../consumptionHistory/ConsumptionHistoryDrawer";
 import { ProductFormModal } from "../productFormModal/ProductFormModal";
+import { useBulkStore } from "../../../../stores/bulkStore";
+import { XOutlined } from "@ant-design/icons";
 
 interface StockViewProps {
   products: InventoryProduct[];
@@ -22,11 +24,16 @@ interface StockViewProps {
   onConsumeProduct?: (product: InventoryProduct, portions?: number) => void;
   onAddToShoppingList: (product: InventoryProduct) => void;
   onAddCategory: (name: string) => string;
+  onBulkUpdateValidity?: (
+    itemIds: string[],
+    validityDate: string | null,
+    naoAplica: boolean,
+  ) => Promise<void>;
 }
 
 /**
  * Main container for the Inventory/Stock feature.
- * 
+ *
  * Features:
  * - Real-time product search and status filtering (All, Low, Out)
  * - Categorized product display with expandable sections
@@ -35,7 +42,7 @@ interface StockViewProps {
  * - Product creation and editing (via ProductFormModal)
  * - Direct "Add to Shopping List" integration
  * - Consumption history visualization
- * 
+ *
  * @param props.products - List of inventory products
  * @param props.categories - List of categories for grouping
  * @param props.search - Current search query
@@ -63,6 +70,7 @@ export const StockView = ({
   onConsumeProduct = () => undefined,
   onAddToShoppingList,
   onAddCategory,
+  onBulkUpdateValidity,
 }: StockViewProps): ReactElement => {
   const [openForm, setOpenForm] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
@@ -71,6 +79,15 @@ export const StockView = ({
   const [consumingProduct, setConsumingProduct] = useState<InventoryProduct | null>(null);
   const [customPortionCount, setCustomPortionCount] = useState<string>("1");
   const [historyProduct, setHistoryProduct] = useState<InventoryProduct | null>(null);
+
+  const { isBulkMode, selectedItems, exitBulkMode } = useBulkStore();
+  const [bulkDateDrawerOpen, setBulkDateDrawerOpen] = useState(false);
+  const [bulkWarningOpen, setBulkWarningOpen] = useState(false);
+  const [bulkValidityDate, setBulkValidityDate] = useState("");
+  const [overwriteConflictMode, setOverwriteConflictMode] = useState<
+    "only_missing" | "overwrite_all"
+  >("only_missing");
+
   const hasFilters = filters.length > 0;
 
   const pendingProducts = useMemo(() => {
@@ -152,55 +169,134 @@ export const StockView = ({
     }).length;
   }, [products]);
 
+  const selectedProductsDetails = useMemo(() => {
+    return products.filter((p) => selectedItems.includes(p.id));
+  }, [products, selectedItems]);
+
+  const isCleaningSuggested = useMemo(() => {
+    if (selectedProductsDetails.length === 0) return false;
+    const cleaningCount = selectedProductsDetails.filter(
+      (p) =>
+        p.categoryId?.toLowerCase() === "limpeza" || p.categoryId?.toLowerCase() === "🧹 limpeza",
+    ).length;
+    return cleaningCount / selectedProductsDetails.length >= 0.8;
+  }, [selectedProductsDetails]);
+
+  const isIncompatibleCategories = useMemo(() => {
+    if (selectedProductsDetails.length === 0) return false;
+    const isFood = (cat?: string | null) =>
+      cat ? /hortifruti|carnes|latic|graos|bebidas|padaria|comida/i.test(cat) : false;
+    const isCleaning = (cat?: string | null) => (cat ? /limpeza|higiene/i.test(cat) : false);
+    const hasFood = selectedProductsDetails.some((p) => isFood(p.categoryId));
+    const hasCleaning = selectedProductsDetails.some((p) => isCleaning(p.categoryId));
+    return hasFood && hasCleaning;
+  }, [selectedProductsDetails]);
+
+  const existingDatesCount = selectedProductsDetails.filter((p) => p.validityDate).length;
+  const missingDatesCount = selectedProductsDetails.length - existingDatesCount;
+
+  const handleBulkSetDateClick = () => {
+    if (existingDatesCount > 0) {
+      setOverwriteConflictMode("only_missing");
+      setBulkWarningOpen(true);
+    } else {
+      setBulkDateDrawerOpen(true);
+    }
+  };
+
+  const handleBulkSetDate = () => {
+    if (!bulkValidityDate) return;
+    let finalItems = selectedItems;
+    if (existingDatesCount > 0 && overwriteConflictMode === "only_missing") {
+      finalItems = selectedProductsDetails.filter((p) => !p.validityDate).map((p) => p.id);
+    }
+    if (finalItems.length === 0) {
+      setBulkDateDrawerOpen(false);
+      setBulkValidityDate("");
+      exitBulkMode();
+      return;
+    }
+    onBulkUpdateValidity?.(finalItems, bulkValidityDate, false).then(() => {
+      setBulkDateDrawerOpen(false);
+      setBulkValidityDate("");
+      exitBulkMode();
+    });
+  };
+
+  const handleBulkNaoAplica = () => {
+    onBulkUpdateValidity?.(selectedItems, null, true).then(() => {
+      exitBulkMode();
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur space-y-3 sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold">Estoque</h2>
-            <p className="text-xs text-base-content/60">
-              {lowStockCount} baixo · {outOfStockCount} zerado{expiringCount > 0 ? ` · ${expiringCount} vencendo` : ""}
-            </p>
+        {isBulkMode ? (
+          <div className="flex items-center justify-between gap-3 h-10">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={exitBulkMode}
+                className="p-0 w-8 h-8 min-h-8"
+              >
+                <XOutlined />
+              </Button>
+              <h2 className="text-base font-semibold">{selectedItems.length} selecionados</h2>
+            </div>
           </div>
-          <Button variant="primary" size="sm" onClick={() => setOpenForm(true)}>
-            Novo produto
-          </Button>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold">Estoque</h2>
+                <p className="text-xs text-base-content/60">
+                  {lowStockCount} baixo · {outOfStockCount} zerado
+                  {expiringCount > 0 ? ` · ${expiringCount} vencendo` : ""}
+                </p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => setOpenForm(true)}>
+                Novo produto
+              </Button>
+            </div>
 
-        <div className="flex gap-2">
-          <Input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Buscar produto"
-          />
-        </div>
+            <div className="flex gap-2">
+              <Input
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Buscar produto"
+              />
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={hasFilters ? "ghost" : "primary"}
-            size="sm"
-            className="rounded-full"
-            onClick={onClearFilters}
-          >
-            Todos
-          </Button>
-          <Button
-            variant={filters.includes("low") ? "primary" : "ghost"}
-            size="sm"
-            className="rounded-full"
-            onClick={() => onToggleFilter("low")}
-          >
-            Baixos
-          </Button>
-          <Button
-            variant={filters.includes("out") ? "primary" : "ghost"}
-            size="sm"
-            className="rounded-full"
-            onClick={() => onToggleFilter("out")}
-          >
-            Zerados
-          </Button>
-        </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={hasFilters ? "ghost" : "primary"}
+                size="sm"
+                className="rounded-full"
+                onClick={onClearFilters}
+              >
+                Todos
+              </Button>
+              <Button
+                variant={filters.includes("low") ? "primary" : "ghost"}
+                size="sm"
+                className="rounded-full"
+                onClick={() => onToggleFilter("low")}
+              >
+                Baixos
+              </Button>
+              <Button
+                variant={filters.includes("out") ? "primary" : "ghost"}
+                size="sm"
+                className="rounded-full"
+                onClick={() => onToggleFilter("out")}
+              >
+                Zerados
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-28">
@@ -404,6 +500,139 @@ export const StockView = ({
           stockItemId={historyProduct.id}
           productName={historyProduct.name}
         />
+      )}
+
+      {isBulkMode && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-slide-up">
+          <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
+            <div className="flex-1 relative group">
+              <Button
+                variant="secondary"
+                className="w-full relative"
+                onClick={handleBulkNaoAplica}
+                disabled={selectedItems.length === 0 || isIncompatibleCategories}
+              >
+                Não se aplica
+                {isCleaningSuggested && !isIncompatibleCategories && (
+                  <span className="absolute -top-2 -right-2 bg-info text-info-content text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                    Recomendado
+                  </span>
+                )}
+              </Button>
+              {isIncompatibleCategories && (
+                <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-base-300 text-xs rounded shadow-lg text-center left-1/2 -translate-x-1/2">
+                  Selecione apenas itens do mesmo tipo (ex: só limpeza ou só alimentos).
+                </div>
+              )}
+            </div>
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={handleBulkSetDateClick}
+              disabled={selectedItems.length === 0}
+            >
+              Definir Validade
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {bulkDateDrawerOpen && (
+        <Drawer
+          open={bulkDateDrawerOpen}
+          onClose={() => setBulkDateDrawerOpen(false)}
+          title="Definir Validade"
+          subtitle={`${selectedItems.length} itens selecionados`}
+        >
+          <div className="space-y-4">
+            <Input
+              type="date"
+              label="Data de validade"
+              value={bulkValidityDate}
+              onChange={(e) => setBulkValidityDate(e.target.value)}
+            />
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setBulkDateDrawerOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                className="flex-1"
+                onClick={handleBulkSetDate}
+                disabled={!bulkValidityDate}
+              >
+                Salvar validade
+              </Button>
+            </div>
+          </div>
+        </Drawer>
+      )}
+      {bulkWarningOpen && (
+        <Drawer
+          open={bulkWarningOpen}
+          onClose={() => setBulkWarningOpen(false)}
+          title="Atenção"
+          subtitle="Itens com validade"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-base-content/80">
+              {existingDatesCount}{" "}
+              {existingDatesCount === 1 ? "item já possui" : "itens já possuem"} uma data de
+              validade definida.
+            </p>
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="overwriteConflictMode"
+                  className="radio radio-primary radio-sm"
+                  checked={overwriteConflictMode === "only_missing"}
+                  onChange={() => setOverwriteConflictMode("only_missing")}
+                />
+                <span className="text-sm">Aplicar apenas aos {missingDatesCount} sem data</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="overwriteConflictMode"
+                  className="radio radio-primary radio-sm"
+                  checked={overwriteConflictMode === "overwrite_all"}
+                  onChange={() => setOverwriteConflictMode("overwrite_all")}
+                />
+                <span className="text-sm">
+                  Substituir para todos os {selectedProductsDetails.length} itens
+                </span>
+              </label>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setBulkWarningOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                className="flex-1"
+                onClick={() => {
+                  setBulkWarningOpen(false);
+                  setBulkDateDrawerOpen(true);
+                }}
+              >
+                Continuar
+              </Button>
+            </div>
+          </div>
+        </Drawer>
       )}
     </div>
   );
