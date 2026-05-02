@@ -173,24 +173,37 @@ export const StockView = ({
     return products.filter((p) => selectedItems.includes(p.id));
   }, [products, selectedItems]);
 
+  // Resolve category name from categoryId (UUID) via categories lookup.
+  // Necessary because product.categoryId is a UUID, not a human-readable name.
+  const getCategoryName = (categoryId?: string | null): string | null => {
+    if (!categoryId) return null;
+    const category = categories.find((c) => c.id === categoryId);
+    return category?.name ?? null;
+  };
+
   const isCleaningSuggested = useMemo(() => {
     if (selectedProductsDetails.length === 0) return false;
-    const cleaningCount = selectedProductsDetails.filter(
-      (p) =>
-        p.categoryId?.toLowerCase() === "limpeza" || p.categoryId?.toLowerCase() === "🧹 limpeza",
-    ).length;
+    const cleaningCount = selectedProductsDetails.filter((p) => {
+      const name = getCategoryName(p.categoryId)?.toLowerCase() ?? "";
+      return /limpeza|higiene/i.test(name);
+    }).length;
     return cleaningCount / selectedProductsDetails.length >= 0.8;
-  }, [selectedProductsDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductsDetails, categories]);
 
   const isIncompatibleCategories = useMemo(() => {
     if (selectedProductsDetails.length === 0) return false;
-    const isFood = (cat?: string | null) =>
-      cat ? /hortifruti|carnes|latic|graos|bebidas|padaria|comida/i.test(cat) : false;
-    const isCleaning = (cat?: string | null) => (cat ? /limpeza|higiene/i.test(cat) : false);
-    const hasFood = selectedProductsDetails.some((p) => isFood(p.categoryId));
-    const hasCleaning = selectedProductsDetails.some((p) => isCleaning(p.categoryId));
+    const isFood = (name: string) =>
+      /hortifruti|carnes|latic|graos|grãos|bebidas|padaria|comida|aliment/i.test(name);
+    const isCleaning = (name: string) => /limpeza|higiene/i.test(name);
+    const names = selectedProductsDetails
+      .map((p) => getCategoryName(p.categoryId)?.toLowerCase() ?? "")
+      .filter((n) => n.length > 0);
+    const hasFood = names.some(isFood);
+    const hasCleaning = names.some(isCleaning);
     return hasFood && hasCleaning;
-  }, [selectedProductsDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductsDetails, categories]);
 
   const existingDatesCount = selectedProductsDetails.filter((p) => p.validityDate).length;
   const missingDatesCount = selectedProductsDetails.length - existingDatesCount;
@@ -216,17 +229,25 @@ export const StockView = ({
       exitBulkMode();
       return;
     }
-    onBulkUpdateValidity?.(finalItems, bulkValidityDate, false).then(() => {
-      setBulkDateDrawerOpen(false);
-      setBulkValidityDate("");
-      exitBulkMode();
-    });
+    onBulkUpdateValidity?.(finalItems, bulkValidityDate, false)
+      .then(() => {
+        setBulkDateDrawerOpen(false);
+        setBulkValidityDate("");
+        exitBulkMode();
+      })
+      .catch((err) => {
+        console.error("Falha ao atualizar validade em lote:", err);
+      });
   };
 
   const handleBulkNaoAplica = () => {
-    onBulkUpdateValidity?.(selectedItems, null, true).then(() => {
-      exitBulkMode();
-    });
+    onBulkUpdateValidity?.(selectedItems, null, true)
+      .then(() => {
+        exitBulkMode();
+      })
+      .catch((err) => {
+        console.error("Falha ao marcar itens como não perecíveis:", err);
+      });
   };
 
   return (

@@ -364,6 +364,6 @@ BEGIN
 
   return next;
 END;
-55;
+$$;
 
 COMMIT;

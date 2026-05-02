@@ -187,34 +187,34 @@ export const ProductCard = ({
               )}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <p className="text-sm font-medium truncate max-w-[120px] xs:max-w-40">{product.name}</p>
-              <div className="flex flex-wrap gap-1">
-                {isPendingValidity && (
-                  <Badge variant="error" size="sm">
-                    Pendente Validade
-                  </Badge>
-                )}
-                {isOut && (
-                  <Badge variant="error" size="sm">
-                    Zerado
-                  </Badge>
-                )}
-                {isLow && !isOut && (
-                  <Badge variant="warning" size="sm">
-                    Baixo
-                  </Badge>
-                )}
-                {expiryInfo && !isPendingValidity && (
-                  <Badge variant={expiryInfo.variant} size="sm">
-                    {expiryInfo.label}
-                  </Badge>
-                )}
-                {autoConsumeLabel && (
-                  <Badge variant="info" size="sm">
-                    {autoConsumeLabel}
-                  </Badge>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {isPendingValidity && (
+                    <Badge variant="error" size="sm">
+                      Pendente Validade
+                    </Badge>
+                  )}
+                  {isOut && (
+                    <Badge variant="error" size="sm">
+                      Zerado
+                    </Badge>
+                  )}
+                  {isLow && !isOut && (
+                    <Badge variant="warning" size="sm">
+                      Baixo
+                    </Badge>
+                  )}
+                  {expiryInfo && !isPendingValidity && (
+                    <Badge variant={expiryInfo.variant} size="sm">
+                      {expiryInfo.label}
+                    </Badge>
+                  )}
+                  {autoConsumeLabel && (
+                    <Badge variant="info" size="sm">
+                      {autoConsumeLabel}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {product.unit && (

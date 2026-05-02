@@ -8,6 +8,7 @@ import type { InventoryProduct } from "../features/inventory/types";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 import { Toast } from "../components/Toast/Toast";
+import { bulkUpdateStockValidity } from "../lib/webData";
 
 /**
  * New Stock Page with integrated inventory feature using latest UX
@@ -138,7 +139,6 @@ export const StockPageNew = (): ReactElement => {
           onAddCategory={handleAddCategory}
           onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
             try {
-              const { bulkUpdateStockValidity } = await import("../lib/webData");
               await bulkUpdateStockValidity(itemIds, validityDate, naoAplica);
               setToast({ message: `${itemIds.length} item(ns) atualizado(s)!`, type: "success" });
               void fetchItems(groupId);
