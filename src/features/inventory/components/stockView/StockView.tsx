@@ -80,7 +80,9 @@ export const StockView = ({
   const [customPortionCount, setCustomPortionCount] = useState<string>("1");
   const [historyProduct, setHistoryProduct] = useState<InventoryProduct | null>(null);
 
-  const { isBulkMode, selectedItems, exitBulkMode } = useBulkStore();
+  const { isBulkMode, selectedItems, scope, exitBulkMode } = useBulkStore();
+  // Only render inventory bulk UI when scope matches; prevents UI bleed if shopping list bulk-mode is active.
+  const inventoryBulk = isBulkMode && scope === "inventory";
   const [bulkDateDrawerOpen, setBulkDateDrawerOpen] = useState(false);
   const [bulkWarningOpen, setBulkWarningOpen] = useState(false);
   const [bulkValidityDate, setBulkValidityDate] = useState("");
@@ -183,9 +185,10 @@ export const StockView = ({
 
   const isCleaningSuggested = useMemo(() => {
     if (selectedProductsDetails.length === 0) return false;
+    // Spec: "Limpeza" only (not Higiene) - >= 80% threshold injects "Recomendado".
     const cleaningCount = selectedProductsDetails.filter((p) => {
       const name = getCategoryName(p.categoryId)?.toLowerCase() ?? "";
-      return /limpeza|higiene/i.test(name);
+      return /\blimpeza\b/.test(name);
     }).length;
     return cleaningCount / selectedProductsDetails.length >= 0.8;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -253,7 +256,7 @@ export const StockView = ({
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur space-y-3 sticky top-0 z-10">
-        {isBulkMode ? (
+        {inventoryBulk ? (
           <div className="flex items-center justify-between gap-3 h-10">
             <div className="flex items-center gap-2">
               <Button
@@ -523,7 +526,7 @@ export const StockView = ({
         />
       )}
 
-      {isBulkMode && (
+      {inventoryBulk && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-slide-up">
           <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
             <div className="flex-1 relative group">

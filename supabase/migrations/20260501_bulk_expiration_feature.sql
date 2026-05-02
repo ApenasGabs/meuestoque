@@ -1,10 +1,14 @@
 BEGIN;
 
 -- 1. Schema Updates: Support for persistent "Does not apply" state and catalog learning
+-- Note: perecivel and data_validade_alerta are part of the spec; using IF NOT EXISTS
+-- so the migration is idempotent regardless of prior schema state.
 ALTER TABLE public.product_catalog 
+  ADD COLUMN IF NOT EXISTS perecivel BOOLEAN DEFAULT true,
   ADD COLUMN IF NOT EXISTS validade_padrao_dias INT NULL;
 
 ALTER TABLE public.stock_items 
+  ADD COLUMN IF NOT EXISTS data_validade_alerta DATE NULL,
   ADD COLUMN IF NOT EXISTS validade_nao_aplica BOOLEAN DEFAULT false;
 
 -- Support setting expiration data directly on shopping list items
@@ -232,6 +236,13 @@ BEGIN
         data_validade = r.data_validade,
         validade_nao_aplica = false
       where id = v_stock_item_id;
+
+      -- Catalog learning: store the typical shelf life (days between purchase and expiration)
+      -- so future purchases of the same product can suggest a default validity date.
+      update public.product_catalog
+      set validade_padrao_dias = greatest(1, (r.data_validade - p_purchase_date)::int)
+      where id = v_product_id
+        and (r.data_validade - p_purchase_date) > 0;
     else
       -- Neither provided and perishable: mark as pending (data_validade_alerta = NULL)
       if v_perecivel then

@@ -158,7 +158,7 @@ export const ProductCard = ({
           cardLongPressTimeoutRef.current = setTimeout(() => {
             cardLongPressTriggeredRef.current = true;
             if (!isBulkMode) {
-              enterBulkMode(product.id);
+              enterBulkMode("inventory", product.id);
             }
           }, 500);
         }}
@@ -171,7 +171,7 @@ export const ProductCard = ({
         onContextMenu={(e) => {
           e.preventDefault();
           if (!isBulkMode) {
-            enterBulkMode(product.id);
+            enterBulkMode("inventory", product.id);
           }
         }}
       >
