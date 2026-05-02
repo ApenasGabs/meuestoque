@@ -65,6 +65,8 @@ erDiagram
         numeric preco_total "🔴 existe mas nunca preenchido"
         timestamptz comprado_em
         uuid criado_por FK
+        date data_validade
+        boolean nao_aplica_validade
         timestamptz criado_em
         timestamptz atualizado_em
     }
@@ -117,7 +119,8 @@ erDiagram
         numeric consumo_valor
         date data_compra
         date data_validade "🔴 deveria vir do lote mais próximo"
-        date data_validade_alerta "🔴 nunca calculado"
+        date data_validade_alerta "✅ Atualizado no fechamento/bulk mode"
+        boolean validade_nao_aplica "✅ Para itens não perecíveis"
         timestamptz ultimo_consumo_auto_em
         timestamptz criado_em
         timestamptz atualizado_em
@@ -148,7 +151,7 @@ erDiagram
         uuid source_list_id FK
         uuid source_list_item_id FK
         uuid criado_por FK
-        text tipo "entrada | saida | ajuste | consumo_auto"
+        text tipo "entrada | saida | ajuste | consumo_auto | ajuste_validade_bulk"
         text origem "list_finalize | quick_consume | import | adjustment"
         numeric quantidade
         text unidade
@@ -247,6 +250,8 @@ Toda mudança de quantidade (entrada da lista, consumo manual, auto-consumo) ger
 | `preco_unitario` | 🔴 | **existe, nunca preenchido** — R$/Kg ou R$/embalagem |
 | `preco_total` | 🔴 | **existe, nunca preenchido** — `quantidade_num × preco_unitario` |
 | `product_id` | 🔴 | FK existe, nunca vinculada na UI |
+| `data_validade` | ✅ | Preenchido via UI antes da finalização |
+| `nao_aplica_validade` | ✅ | Preenchido via UI para itens não perecíveis |
 
 ### `product_unit_conversion` — Conversão de unidades
 | Status | Observação |
@@ -259,7 +264,8 @@ Toda mudança de quantidade (entrada da lista, consumo manual, auto-consumo) ger
 | `quantidade` | 🟡 | atualizado manualmente, deveria = `SUM(lots.quantidade_restante)` |
 | `quantidade_atual` | 🔴 | duplicado de `quantidade`, sempre iguais |
 | `data_validade` | 🔴 | deveria refletir o lote mais próximo de vencer |
-| `data_validade_alerta` | 🔴 | nunca calculado nem exibido |
+| `data_validade_alerta` | ✅ | Atualizado ativamente pela Bulk Update RPC e fechamento da lista |
+| `validade_nao_aplica` | ✅ | Define se o item requer controle de validade (não perecíveis) |
 | `product_id` | 🔴 | FK para catálogo nunca vinculada |
 | `updated_at` | 🔴 | duplicado de `atualizado_em` |
 

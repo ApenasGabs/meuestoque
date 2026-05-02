@@ -202,6 +202,7 @@ export const ListPageNew = (): ReactElement => {
           pricePerUnit: item.preco_unitario,
           totalPrice: item.preco_total,
           validityDate: item.data_validade,
+          naoAplicaValidade: item.nao_aplica_validade,
         };
       }),
     [isPriceOlderThan30Days, parseListQuantity, shoppingItems],
@@ -464,12 +465,12 @@ export const ListPageNew = (): ReactElement => {
   );
 
   const handleUpdateValidityDate = useCallback(
-    async (itemId: string, validityDate: string | null): Promise<void> => {
+    async (itemId: string, validityDate: string | null, naoAplicaValidade?: boolean): Promise<void> => {
       if (!listId) return;
 
       setError(null);
       try {
-        await updateListItemValidityDate(itemId, validityDate);
+        await updateListItemValidityDate(itemId, validityDate, naoAplicaValidade);
         await refreshItems(listId);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Falha ao atualizar validade");
@@ -479,8 +480,8 @@ export const ListPageNew = (): ReactElement => {
   );
 
   const fireUpdateValidityDate = useCallback(
-    (id: string, date: string | null): void => {
-      void handleUpdateValidityDate(id, date);
+    (id: string, date: string | null, naoAplica?: boolean): void => {
+      void handleUpdateValidityDate(id, date, naoAplica);
     },
     [handleUpdateValidityDate],
   );
@@ -582,6 +583,20 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
           onUpdateItemQuantity={fireUpdateItemQuantity}
           onUpdateValidityDate={fireUpdateValidityDate}
+          onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
+            // Shopping list items use the per-item RPC since there is no
+            // bulk RPC for the items table; the list is small enough that
+            // sequential updates are acceptable.
+            for (const id of itemIds) {
+              await updateListItemValidityDate(
+                id,
+                naoAplica ? null : validityDate,
+                naoAplica,
+              );
+            }
+            if (listId) await refreshItems(listId);
+            setNotice(`${itemIds.length} item(ns) atualizado(s).`);
+          }}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
         />

@@ -11,13 +11,16 @@ A aplicação utiliza o Supabase para backend as a service, provendo Auth e Banc
 1. **`product_catalog`**: O catálogo mestre de produtos de um grupo.
    - Todo item adicionado gera uma entrada única de (nome, unidade) aqui.
    - Contém a "porção padrão" consumida e o tipo da unidade (`simple` ou `composite`).
+   - Flag `perecivel` (boolean) usada para aprendizado automático (ex: itens de limpeza não expiram).
 
 2. **`stock_items`**: O estoque consolidado.
    - Reflete a *quantidade atual* em estoque de um produto em um grupo.
    - Contém alertas de vencimento (`data_validade_alerta`) e flags de auto-adição à lista (`auto_adicionar_lista`).
+   - Flag `validade_nao_aplica` permite dispensar validade para um item de estoque específico.
 
 3. **`shopping_lists` e `items`**:
    - Uma *lista de compras ativa* por grupo (status: `active`).
+   - Itens agora suportam a definição prévia de `data_validade` ou `nao_aplica_validade` antes mesmo do fechamento da lista.
    - Ao finalizar compras, os itens marcados vão para o estoque, a lista atual vira `closed`, e uma nova lista `active` é gerada com os itens pendentes.
 
 4. **`stock_lots`**: Lotes de compra (Rastreabilidade Financeira).

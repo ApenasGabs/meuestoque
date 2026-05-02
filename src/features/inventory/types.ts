@@ -30,6 +30,11 @@ export interface InventoryCategory {
   order: number;
 }
 
+export interface InventoryProductBulkFlags {
+  /** True when the stock item was marked "Não se aplica" (non-perishable) */
+  naoAplicaValidade?: boolean;
+}
+
 export interface InventoryShoppingListItem {
   id: string;
   productId: string;
@@ -40,6 +45,7 @@ export interface InventoryShoppingListItem {
   pricePerUnit?: number | null;
   totalPrice?: number | null;
   validityDate?: string | null;
+  naoAplicaValidade?: boolean;
 }
 
 export type InventoryTab = "stock" | "list" | "settings";

@@ -22,6 +22,12 @@ O aplicativo funciona em dois modos:
 - Clique longo permite "Consumir customizado".
 - Clicar no card do produto abre uma "Bottom Sheet" contendo a edição complexa (mudança de unidade, categoria, porção, correção de estoque).
 
+### Seleção em Massa (Bulk Mode) e Validade
+- O usuário pode realizar um `Long Press` (Clique longo/clique direito) em qualquer card do estoque para ativar a **Seleção em Massa**.
+- Na barra inferior fixada (Action Bar), o usuário pode definir a **Validade em Massa** ou marcar múltiplos itens como **"Não se aplica"** (não perecíveis).
+- **Prevenção de Erros:** Misturar categorias incompatíveis (ex: Alimentos + Limpeza) desabilita a opção "Não se aplica" para evitar corrupção lógica do catálogo.
+- **Conflito de Datas:** Caso itens selecionados já possuam data, o sistema avisa e permite "Sobrescrever Todos" ou "Aplicar apenas aos sem data".
+
 ## 3. Categorização em Chips (Sticky Filters)
 
 O sistema abandonou o Dropdown em favor de **Chips** selecionáveis:

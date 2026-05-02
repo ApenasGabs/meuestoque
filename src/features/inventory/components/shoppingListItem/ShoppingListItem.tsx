@@ -1,10 +1,11 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
 import { Checkbox } from "../../../../components/Checkbox/Checkbox";
 import { Input } from "../../../../components/Input/Input";
+import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
 interface ShoppingListItemProps {
@@ -15,7 +16,7 @@ interface ShoppingListItemProps {
   onUpdatePrice?: (id: string, value: number | null) => void;
   onUpdateUnitPrice?: (id: string, value: number | null) => void;
   onUpdateQuantity?: (id: string, value: number) => void;
-  onUpdateValidityDate?: (id: string, date: string | null) => void;
+  onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
 }
 
 /**
@@ -48,6 +49,13 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   onUpdateQuantity,
   onUpdateValidityDate,
 }: ShoppingListItemProps): ReactElement {
+  // ── Bulk mode plumbing for the shopping list (Spec Epic 1) ──
+  const { isBulkMode, scope, isSelected, toggleItemSelection, enterBulkMode } = useBulkStore();
+  const listBulk = isBulkMode && scope === "shopping_list";
+  const selected = isSelected(item.id);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef<boolean>(false);
+
   // ── Price mode: 'total' = user enters full price; 'unit' = user enters R$/unit ──
   const [priceMode, setPriceMode] = useState<"total" | "unit">(
     item.pricePerUnit != null ? "unit" : "total",
@@ -143,15 +151,62 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   const displayUnit = product.packLabel || baseUnit;
   const hasPack = Boolean(product.packLabel && product.packSize);
 
+  const handleLongPressStart = (): void => {
+    longPressTriggeredRef.current = false;
+    longPressTimeoutRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      if (!isBulkMode) {
+        enterBulkMode("shopping_list", item.id);
+      }
+    }, 500);
+  };
+  const handleLongPressEnd = (): void => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
   return (
-    <Card className={`shadow-none ${item.checked ? "opacity-70 border-base-300" : "border-base-300"}`}>
-      <CardBody className="p-3">
+    <Card
+      className={`shadow-none ${selected ? "border-primary bg-primary/5" : item.checked ? "opacity-70 border-base-300" : "border-base-300"}`}
+      onPointerDown={handleLongPressStart}
+      onPointerUp={handleLongPressEnd}
+      onPointerCancel={handleLongPressEnd}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (!isBulkMode) {
+          enterBulkMode("shopping_list", item.id);
+        }
+      }}
+    >
+      <CardBody
+        className="p-3"
+        onClick={() => {
+          if (longPressTriggeredRef.current) {
+            longPressTriggeredRef.current = false;
+            return;
+          }
+          if (listBulk) {
+            toggleItemSelection(item.id);
+          }
+        }}
+      >
         <div className="flex items-start gap-3">
-          <Checkbox
-            checked={item.checked}
-            onChange={() => onToggle(item.id)}
-            aria-label={`Marcar ${product.name}`}
-          />
+          {listBulk ? (
+            <Checkbox
+              checked={selected}
+              onChange={() => toggleItemSelection(item.id)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Selecionar ${product.name}`}
+            />
+          ) : (
+            <Checkbox
+              checked={item.checked}
+              onChange={() => onToggle(item.id)}
+              aria-label={`Marcar ${product.name}`}
+            />
+          )}
 
           <div className="flex-1 min-w-0">
             {/* Product name + badge */}
@@ -164,6 +219,17 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               {item.checked && (
                 <Badge variant="success" size="sm">
                   No carrinho
+                </Badge>
+              )}
+              {/* Visual chip showing pre-set validity (Epic 2 / Spec §4) */}
+              {item.naoAplicaValidade && (
+                <Badge variant="info" size="sm">
+                  ♾️ Sem validade
+                </Badge>
+              )}
+              {!item.naoAplicaValidade && item.validityDate && (
+                <Badge variant="info" size="sm">
+                  📅 {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
                 </Badge>
               )}
             </div>
@@ -234,15 +300,25 @@ export const ShoppingListItem = memo(function ShoppingListItem({
 
             {/* Validity Date Input when checked */}
             {item.checked && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs uppercase font-bold text-base-content/50">Validade:</span>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={item.validityDate || ""}
-                  onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null)}
-                  className="max-w-[150px] text-xs h-7"
-                />
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-bold text-base-content/50">Validade:</span>
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={item.validityDate || ""}
+                    onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                    className="max-w-[150px] text-xs h-7"
+                    disabled={item.naoAplicaValidade}
+                  />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer mt-1 sm:mt-0">
+                  <Checkbox 
+                    checked={item.naoAplicaValidade || false}
+                    onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
+                  />
+                  <span className="text-xs text-base-content/80">Não se aplica</span>
+                </label>
               </div>
             )}
           </div>

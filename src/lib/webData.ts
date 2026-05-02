@@ -33,6 +33,7 @@ export interface ItemRecord {
   list_id: string;
   criado_em: string | null;
   data_validade?: string | null;
+  nao_aplica_validade?: boolean;
   product_id?: string | null;
 }
 
@@ -229,7 +230,7 @@ export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, product_id",
+      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id",
     )
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
@@ -321,13 +322,29 @@ export async function deleteListItem(itemId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Updates the expiration date or sets the non-perishable flag for an item in the active shopping list.
+ * This is used to persist temporary validity choices before checkout.
+ *
+ * @param itemId - The UUID of the shopping list item.
+ * @param validityDate - The expiration date in YYYY-MM-DD format, or null to clear.
+ * @param naoAplicaValidade - Optional flag indicating the item does not expire.
+ */
 export async function updateListItemValidityDate(
   itemId: string,
   validityDate: string | null,
+  naoAplicaValidade?: boolean,
 ): Promise<void> {
+  const updateData: { data_validade: string | null; nao_aplica_validade?: boolean } = {
+    data_validade: validityDate,
+  };
+  if (naoAplicaValidade !== undefined) {
+    updateData.nao_aplica_validade = naoAplicaValidade;
+  }
+  
   const { error } = await supabase
     .from("items")
-    .update({ data_validade: validityDate })
+    .update(updateData)
     .eq("id", itemId);
 
   if (error) throw new Error(error.message);
@@ -897,6 +914,8 @@ export interface StockItemRecord {
   consumo_valor: number;
   data_compra: string | null;
   data_validade: string | null;
+  data_validade_alerta: string | null;
+  validade_nao_aplica: boolean;
   ultimo_consumo_auto_em: string | null;
   criado_em: string;
   atualizado_em: string;
@@ -909,7 +928,7 @@ export interface StockMovementRecord {
   item_id: string;
   stock_item_id: string | null;
   lot_id: string | null;
-  tipo: "entrada" | "saida" | "ajuste" | "consumo_auto";
+  tipo: "entrada" | "saida" | "ajuste" | "consumo_auto" | "ajuste_validade_bulk";
   quantidade: number;
   unidade: string | null;
   custo_unitario_ref: number | null;
@@ -969,7 +988,7 @@ export interface UpsertStockItemInput {
 
 export interface RecordStockMovementInput {
   itemId: string;
-  tipo: "entrada" | "saida" | "ajuste" | "consumo_auto";
+  tipo: "entrada" | "saida" | "ajuste" | "consumo_auto" | "ajuste_validade_bulk";
   quantidade: number;
   observacao?: string;
   createdBy?: string | null;
@@ -1372,3 +1391,60 @@ export const getStockConsumptionSummary = async (
     consumedLast30Days,
   };
 };
+/**
+ * Performs a bulk update of the expiration date or non-perishable flag across multiple stock items.
+ * Uses a backend RPC to ensure all updates happen within a single transaction,
+ * preventing race conditions and generating the appropriate 'ajuste_validade_bulk' stock movements.
+ *
+ * @param itemIds - An array of stock item UUIDs to update.
+ * @param validityDate - The new expiration date (YYYY-MM-DD), or null if clearing/not applicable.
+ * @param naoAplica - If true, marks the items as non-perishable (validade_nao_aplica = true) and updates the global product catalog. Defaults to false.
+ */
+export async function bulkUpdateStockValidity(
+  itemIds: string[],
+  validityDate: string | null,
+  naoAplica: boolean = false,
+): Promise<void> {
+  const { error } = await supabase.rpc("rpc_bulk_update_stock_validity", {
+    p_item_ids: itemIds,
+    p_data_validade: validityDate,
+    p_nao_aplica: naoAplica,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Re-enables expiration tracking for a single stock item that was previously marked as
+ * "Não se aplica" (non-perishable). Also flips the catalog learning flag back to perishable
+ * so future purchases of this product require a validity date again.
+ *
+ * This is the single-item "undo" complement to the bulk "Não se aplica" action.
+ *
+ * @param stockItemId - The UUID of the stock item to revert.
+ */
+export async function setStockItemPerishable(stockItemId: string): Promise<void> {
+  const { data: stockItem, error: fetchError } = await supabase
+    .from("stock_items")
+    .select("product_id")
+    .eq("id", stockItemId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error: updateError } = await supabase
+    .from("stock_items")
+    .update({ validade_nao_aplica: false })
+    .eq("id", stockItemId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  if (stockItem?.product_id) {
+    const { error: catalogError } = await supabase
+      .from("product_catalog")
+      .update({ perecivel: true })
+      .eq("id", stockItem.product_id);
+
+    if (catalogError) throw new Error(catalogError.message);
+  }
+}

@@ -19,6 +19,11 @@ interface ProductFormModalProps {
   onClose: () => void;
   onSave: (product: Omit<InventoryProduct, "id">, productId?: string) => void;
   onAddCategory: (name: string) => string;
+  /**
+   * Optional callback invoked when the user explicitly re-enables expiration tracking
+   * for a stock item that was previously flagged as "Não se aplica" (Spec Gap 7 — Undo).
+   */
+  onMarkPerishable?: (productId: string) => Promise<void> | void;
 }
 
 /**
@@ -72,6 +77,7 @@ export const ProductFormModal = ({
   onClose,
   onSave,
   onAddCategory,
+  onMarkPerishable,
 }: ProductFormModalProps): ReactElement => {
   const [name, setName] = useState<string>(product?.name ?? "");
   const [quantity, setQuantity] = useState<string>(String(product?.quantity ?? 0));
@@ -344,6 +350,28 @@ export const ProductFormModal = ({
         </Fieldset>
 
         <Fieldset legend="Validade">
+          {/* Undo flow: if the item was marked "Não se aplica" via bulk action, allow
+              the user to revert and start tracking validity again. */}
+          {product?.naoAplicaValidade && onMarkPerishable && (
+            <div className="mb-3 p-3 rounded-lg border border-info/40 bg-info/5 space-y-2">
+              <p className="text-xs text-base-content/80">
+                Este item está marcado como <strong>não perecível</strong>. Voltar a controlar
+                validade reativa os alertas para este produto.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (product?.id) {
+                    void onMarkPerishable(product.id);
+                  }
+                }}
+              >
+                Tratar como perecível novamente
+              </Button>
+            </div>
+          )}
           <Checkbox
             checked={needsValidity}
             onChange={(event) => setNeedsValidity(event.target.checked)}

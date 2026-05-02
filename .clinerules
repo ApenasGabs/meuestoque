@@ -1,20 +1,16 @@
-## Rules
+# ⚠️ CRITICAL INSTRUCTIONS: READ FIRST
+1. **SINGLE SOURCE OF TRUTH:** You MUST read and strictly follow all instructions in `./.github/copilot-instructions.md` before writing any code or starting a task.
+2. **KNOWLEDGE BASE:** Always review `AI_KNOWLEDGE_BASE.md` to understand the current project context.
 
-1. **Never generate `.clinerules` or `.codelinterrules`**: These files must always be created by the user following the instructions in `.github/copilot-instructions.md`.
-2. **Don't modify `.clinerules` or `.codelinterrules`**: Never rewrite, update, or extend these files. Their content and format are strictly managed by the user.
-3. **Don't override existing rules**: If a rule is already present in `.clinerules` or `.codelinterrules`, do not suggest adding a similar or duplicate rule.
-4. **Don't suggest changing the rules**: Never propose modifications to the existing rules or suggest adding new rules to these files.
-5. **Don't generate `.clinerules` or `.codelinterrules` in `.github`**: These files should only be generated in the root directory or `.github/rules/` as specified by the user, never in `.github`.
+# 🏁 MANDATORY DEFINITION OF DONE (DoD)
+A task is NEVER complete just because the code works and tests pass. Before asking for final approval, you MUST:
+1. **Review Knowledge Base:** Analyze which files in the `docs/ai/` directory are impacted by your code changes.
+2. **Auto-Update Docs:** Directly modify the relevant files (e.g., `01_ARCHITECTURE_AND_DATA.md`, `02_UX_AND_BUSINESS_RULES.md`, `03_COMPONENTS.md`) to reflect the new business logic, component props, or architectural changes you just made.
+3. **Document New Features:** If you built a new feature, create a corresponding documentation file inside `docs/ai/` (e.g., `feature-[name].md`) detailing its behavior.
+4. **Final Report:** In your final response message, explicitly list which `.md` files in the `docs/` directory you created or updated.
 
-## Context
-
-`./.github/copilot-instructions.md` is the **single source of truth** for all rule management instructions. Always follow those instructions. Never override them with custom rules.
-
-## File Structure
-
-- `.codelinterrules`: Rule file for the codelinter.
-- `.clinerules`: Rule file for the Cline AI coding assistant.
-- `.github/copilot-instructions.md`: Instructions for managing rule files.
-- `.github/rules/` (Optional): Directory for additional rule files.
-
-Always follow the structure defined in `.github/copilot-instructions.md`.
+# 🔒 RULE FILE PROTECTIONS
+1. **Never modify, rewrite, or extend** `.clinerules` or `.codelinterrules`.
+2. **Never suggest changes** to existing rules in these files.
+3. **Do not generate** `.clinerules` or `.codelinterrules` in `.github`.
+4. These files are strictly managed by the user. Always respect the file structure defined in `.github/copilot-instructions.md`.
