@@ -1,8 +1,9 @@
 # Mapa do Banco de Dados — Meu Estoque
 
 > [!NOTE]
-> Mapa baseado em **inspeção direta do schema Supabase** (não apenas das migrations versionadas).
-> Este documento reflete o estado **real** do banco em produção.
+> Mapa gerado em **02/05/2026** com base em inspeção direta do schema Supabase
+> (ver `docs/supabase_inspection_results_20260502.md`).
+> Este documento reflete o estado **real** do banco, não apenas as migrations versionadas.
 
 > [!IMPORTANT]
 > ⚠️ **Drift detectado entre migrations e banco real.** Algumas estruturas existem
@@ -416,43 +417,32 @@ Estes itens estão na migration **versionada mas NÃO aplicada** ao banco real:
 
 ## Plano de Implementação
 
-O plano detalhado de reconciliação será acompanhado via **issues no GitLab**.
-Resumo das frentes:
+### 🗄️ Banco (Supabase) — Reconciliação de drift
+- [ ] Criar migration retroativa para `groups`, `group_members`, `profiles`, `items` (base)
+- [ ] Criar migration para `rate_limits`
+- [ ] Criar migration para `stock_items.pack_size` e `pack_label`
+- [ ] Criar migrations para `consume_stock_fifo`, `sync_stock_item_quantity`, `sync_stock_item_validade`, `set_atualizado_em_stock_items`, `create_group`, `join_group_by_code`
+- [ ] Renomear `fator_consumo_em_estoque` → `fator_consumo_padrao` na migration original (ou criar correção)
+- [ ] Aplicar `20260501100000_fix_fkey_auth_users.sql` no banco real
+- [ ] Remover índices duplicados (`idx_shopping_lists_active_group`, `idx_stock_items_group_product`, `idx_product_catalog_unique`)
+- [ ] Remover política RLS duplicada `Acesso via produto` em `product_unit_conversion`
 
-### 🗄️ Reconciliação de drift no Supabase
+### 🗄️ Banco — Limpeza de campos legados
+- [ ] Drop `stock_items.quantidade_atual` (duplicado de `quantidade`)
+- [ ] Drop `stock_items.updated_at` (duplicado de `atualizado_em`)
+- [ ] Drop `stock_movements.item_id` (legado, usar só `stock_item_id`)
 
-- Migrations retroativas para tabelas-base (`groups`, `group_members`, `profiles`, `items`, `rate_limits`).
-- Migration retroativa para colunas não versionadas (`stock_items.pack_size`, `pack_label`).
-- Migrations para funções e triggers existentes mas não versionados (`consume_stock_fifo`, `sync_stock_item_quantity`, `sync_stock_item_validade`, `set_atualizado_em_stock_items`, `create_group`, `join_group_by_code`).
-- Aplicar `20260501100000_fix_fkey_auth_users.sql` no banco real.
-- Reconciliar nome `fator_consumo_em_estoque` vs `fator_consumo_padrao`.
-- Remover índices duplicados (`idx_*` vs `ux_*`) em 3 tabelas.
-- Remover política RLS duplicada `Acesso via produto`.
+### 🖥️ App — Preço
+- [ ] UI: campo `preco_unitario` (R$/Kg ou R$/embalagem) na lista
+- [ ] UI: `preco_total = quantidade_num × preco_unitario` calculado automaticamente
 
-### 🗄️ Limpeza de campos legados
+### 🖥️ App — Lotes
+- [ ] Fallback JS (fora da RPC): criar `stock_lots` com custo e validade
+- [ ] Finalização: consultar `product_unit_conversion` quando houver
+- [ ] UI estoque: exibir lotes ativos (validade + quantidade restante)
+- [ ] UI estoque: alertas de lotes próximos de vencer
+- [ ] Consumo: usar `consume_stock_fifo` no fluxo manual
 
-- `DROP COLUMN stock_items.quantidade_atual` (duplicado).
-- `DROP COLUMN stock_items.updated_at` (duplicado).
-- `DROP COLUMN stock_movements.item_id` (legado).
-
-### 🖥️ Frente de App
-
-- Preço unitário na UI da lista, com cálculo automático do total.
-- Fallback JS criando `stock_lots` quando a RPC não estiver disponível.
-- Consulta a `product_unit_conversion` na finalização.
-- Exibição de lotes ativos no estoque (data + quantidade restante).
-- Alertas de lotes próximos de vencer.
-- Uso de `consume_stock_fifo` no fluxo manual.
-- UI de cadastro com `pack_size` + `pack_label`.
-- Sugestão de `data_validade` baseada em `product_catalog.validade_padrao_dias`.
-
-> Cada um destes itens deve virar uma issue dedicada para acompanhamento.
-
----
-
-## Referências
-
-- [`docs/ai/01_ARCHITECTURE_AND_DATA.md`](./ai/01_ARCHITECTURE_AND_DATA.md) — visão de arquitetura.
-- [`docs/ai/04_RPC_CONTRACTS.md`](./ai/04_RPC_CONTRACTS.md) — contratos das RPCs (em `docs/restructure`).
-- [`docs/ai/feature-bulk-expiration.md`](./ai/feature-bulk-expiration.md) — feature de validade em massa.
-- [`docs/adr/`](./adr/) — decisões arquiteturais (em `docs/restructure`).
+### 🖥️ App — Cadastro de produto
+- [ ] Campo `pack_size` + `pack_label` na UI → alimenta conversão
+- [ ] Sugerir `data_validade` automaticamente usando `product_catalog.validade_padrao_dias`
