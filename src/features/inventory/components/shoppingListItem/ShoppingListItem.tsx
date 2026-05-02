@@ -173,7 +173,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
       onPointerDown={handleLongPressStart}
       onPointerUp={handleLongPressEnd}
       onPointerCancel={handleLongPressEnd}
-      onContextMenu={(e) => {
+      onContextMenu={(e: React.MouseEvent) => {
         e.preventDefault();
         if (!isBulkMode) {
           enterBulkMode("shopping_list", item.id);

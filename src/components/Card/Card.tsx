@@ -1,23 +1,23 @@
 import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
-interface CardProps {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
-  className?: string;
   testId?: string;
 }
 
 /**
  * Basic layout card component.
- * 
+ *
  * Provides a consistent container with border and shadow.
  *
  * @param props.children - Card content
  * @param props.className - Additional CSS classes
  * @param props.testId - Testing identifier
  */
-export const Card = ({ children, className = "", testId }: CardProps): ReactElement => {
+export const Card = ({ children, className = "", testId, ...props }: CardProps): ReactElement => {
   return (
     <div
+      {...props}
       className={`rounded-lg border border-base-300 bg-base-100 shadow-lg ${className}`.trim()}
       data-testid={testId}
     >
@@ -34,7 +34,7 @@ interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * Main content container for the Card component.
- * 
+ *
  * Includes padding and optional centering logic.
  *
  * @param props.children - Body content
@@ -63,7 +63,7 @@ interface CardTitleProps {
 
 /**
  * Formatted title for the Card component.
- * 
+ *
  * @param props.children - Title text or content
  * @param props.className - Additional CSS classes
  */
