@@ -48,7 +48,7 @@ interface ShoppingListViewProps {
 
 /**
  * Container component for the Shopping List feature.
- * 
+ *
  * Features:
  * - Smart input parser (Name, Qty, Price) for fast entry
  * - Categorized list view with tabs
@@ -56,7 +56,7 @@ interface ShoppingListViewProps {
  * - Total value calculation
  * - Receipt import modal integration
  * - Sticky header with list stats
- * 
+ *
  * @param props.products - Full list of products (for name matching)
  * @param props.shoppingList - Items currently in the active list
  * @param props.checkedCount - Number of items already in cart
@@ -264,117 +264,119 @@ export const ShoppingListView = ({
           </div>
         )}
         {!listBulk && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold">Lista de Compras</h2>
-            <p className="text-xs text-base-content/60">
-              {uncheckedCount} pendentes · {checkedCount} comprados
-              {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={onGenerateSmartList}>
-              Lista inteligente
-            </Button>
-            {onOpenImportModal && (
-              <Button variant="ghost" size="sm" onClick={onOpenImportModal}>
-                Importar compra
-              </Button>
-            )}
-            {onViewHistory && (
-              <Button variant="ghost" size="sm" onClick={onViewHistory}>
-                Histórico
-              </Button>
-            )}
-          </div>
-        </div>
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold">Lista de Compras</h2>
+                <p className="text-xs text-base-content/60">
+                  {uncheckedCount} pendentes · {checkedCount} comprados
+                  {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" size="sm" onClick={onGenerateSmartList}>
+                  Lista inteligente
+                </Button>
+                {onOpenImportModal && (
+                  <Button variant="ghost" size="sm" onClick={onOpenImportModal}>
+                    Importar compra
+                  </Button>
+                )}
+                {onViewHistory && (
+                  <Button variant="ghost" size="sm" onClick={onViewHistory}>
+                    Histórico
+                  </Button>
+                )}
+              </div>
+            </div>
 
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="smart-shopping-input">Adicionar item rápido</Label>
-            <Input
-              id="smart-shopping-input"
-              value={smartInput}
-              onChange={(event) => setSmartInput(event.target.value)}
-              onKeyDown={handleSmartKeyDown}
-              placeholder="Nome, quantidade, valor"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/70">
-            <Badge variant={parsedDraft.name ? "info" : "default"} size="sm">
-              {parsedDraft.name || "Digite o nome"}
-            </Badge>
-            <Badge variant="secondary" size="sm">
-              Qtd {parsedDraft.quantity}
-            </Badge>
-
-            <Badge variant="warning" size="sm">
-              R$ {parsedDraft?.price?.toFixed(2).replace(".", ",") || 0}
-            </Badge>
-            {parsedDraft.hasQuantity && (
-              <div className="flex items-center gap-2">
-                <Label htmlFor="smart-unit" className="text-xs">
-                  Unidade
-                </Label>
-                <Select
-                  id="smart-unit"
-                  size="sm"
-                  value={selectedUnit}
-                  onChange={(event) => setSelectedUnit(toUnit(event.target.value))}
-                  options={[
-                    { value: "Kg", label: "Kg" },
-                    { value: "L", label: "L" },
-                    { value: "Un", label: "Un" },
-                    { value: "cx", label: "cx" },
-                    { value: "pct", label: "pct" },
-                  ]}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="smart-shopping-input">Adicionar item rápido</Label>
+                <Input
+                  id="smart-shopping-input"
+                  value={smartInput}
+                  onChange={(event) => setSmartInput(event.target.value)}
+                  onKeyDown={handleSmartKeyDown}
+                  placeholder="Nome, quantidade, valor"
                 />
               </div>
-            )}
 
-            {(parsedDraft.hasQuantity || smartInput.includes(",")) && (
-              <div className="flex items-center gap-2">
-                <Label htmlFor="smart-category" className="text-xs">
-                  Categoria
-                </Label>
-                <Select
-                  id="smart-category"
-                  size="sm"
-                  value={selectedCategoryForDraft}
-                  onChange={(event) => setSelectedCategoryForDraft(event.target.value)}
-                  options={categories
-                    .filter((c) => c !== "Todos")
-                    .map((c) => ({
-                      value: c,
-                      label: c,
-                    }))}
-                />
+              <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/70">
+                <Badge variant={parsedDraft.name ? "info" : "default"} size="sm">
+                  {parsedDraft.name || "Digite o nome"}
+                </Badge>
+                <Badge variant="secondary" size="sm">
+                  Qtd {parsedDraft.quantity}
+                </Badge>
+
+                <Badge variant="warning" size="sm">
+                  R$ {parsedDraft?.price?.toFixed(2).replace(".", ",") || 0}
+                </Badge>
+                {parsedDraft.hasQuantity && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="smart-unit" className="text-xs">
+                      Unidade
+                    </Label>
+                    <Select
+                      id="smart-unit"
+                      size="sm"
+                      value={selectedUnit}
+                      onChange={(event) => setSelectedUnit(toUnit(event.target.value))}
+                      options={[
+                        { value: "Kg", label: "Kg" },
+                        { value: "L", label: "L" },
+                        { value: "Un", label: "Un" },
+                        { value: "cx", label: "cx" },
+                        { value: "pct", label: "pct" },
+                      ]}
+                    />
+                  </div>
+                )}
+
+                {(parsedDraft.hasQuantity || smartInput.includes(",")) && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="smart-category" className="text-xs">
+                      Categoria
+                    </Label>
+                    <Select
+                      id="smart-category"
+                      size="sm"
+                      value={selectedCategoryForDraft}
+                      onChange={(event) => setSelectedCategoryForDraft(event.target.value)}
+                      options={categories
+                        .filter((c) => c !== "Todos")
+                        .map((c) => ({
+                          value: c,
+                          label: c,
+                        }))}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="flex items-end">
-            <Button variant="primary" className="w-full" onClick={handleSmartSubmit}>
-              Adicionar
-            </Button>
-          </div>
-        </div>
+              <div className="flex items-end">
+                <Button variant="primary" className="w-full" onClick={handleSmartSubmit}>
+                  Adicionar
+                </Button>
+              </div>
+            </div>
 
-        <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide -mx-2 px-2">
-          {categories.map((cat) => (
-            <Button
-              key={cat}
-              variant={selectedCategory === cat ? "primary" : "ghost"}
-              size="sm"
-              className="whitespace-nowrap rounded-full font-medium"
-              onClick={() => setSelectedCategory(cat)}
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
-        </>)}
+            <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide -mx-2 px-2">
+              {categories.map((cat) => (
+                <Button
+                  key={cat}
+                  variant={selectedCategory === cat ? "primary" : "ghost"}
+                  size="sm"
+                  className="whitespace-nowrap rounded-full font-medium"
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </Button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-28">
@@ -503,8 +505,8 @@ export const ShoppingListView = ({
           <div className="space-y-4">
             <p className="text-sm text-base-content/80">
               {existingDatesCount}{" "}
-              {existingDatesCount === 1 ? "item já possui" : "itens já possuem"} uma definição
-              de validade.
+              {existingDatesCount === 1 ? "item já possui" : "itens já possuem"} uma definição de
+              validade.
             </p>
             <div className="flex flex-col gap-3">
               <label className="flex items-center gap-2 cursor-pointer">

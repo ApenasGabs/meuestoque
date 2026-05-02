@@ -39,18 +39,15 @@ export const Drawer = ({
   className = "",
   testId,
 }: DrawerProps): ReactElement | null => {
-  const [mounted, setMounted] = useState(false);
   const [shouldRender, setShouldRender] = useState(open);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  if (open && !shouldRender) {
+    setShouldRender(true);
+  }
 
   // Controls rendering lifecycle to allow for exit animations
   useEffect(() => {
-    if (open) {
-      setShouldRender(true);
-    } else {
+    if (!open) {
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }
@@ -78,7 +75,7 @@ export const Drawer = ({
     };
   }, [open]);
 
-  if (!mounted || (!open && !shouldRender)) return null;
+  if (!open && !shouldRender) return null;
 
   const isRight = side === "end";
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useEffect, useRef, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
@@ -34,11 +34,6 @@ export const Modal = ({
   testId,
 }: ModalProps): ReactElement | null => {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -68,7 +63,6 @@ export const Modal = ({
     };
   }, [onClose]);
 
-  if (!mounted) return null;
 
   return createPortal(
     <dialog
