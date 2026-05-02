@@ -30,6 +30,11 @@ export interface InventoryCategory {
   order: number;
 }
 
+export interface InventoryProductBulkFlags {
+  /** True when the stock item was marked "Não se aplica" (non-perishable) */
+  naoAplicaValidade?: boolean;
+}
+
 export interface InventoryShoppingListItem {
   id: string;
   productId: string;

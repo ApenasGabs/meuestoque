@@ -8,7 +8,7 @@ import type { InventoryProduct } from "../features/inventory/types";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 import { Toast } from "../components/Toast/Toast";
-import { bulkUpdateStockValidity } from "../lib/webData";
+import { bulkUpdateStockValidity, setStockItemPerishable } from "../lib/webData";
 
 /**
  * New Stock Page with integrated inventory feature using latest UX

@@ -583,6 +583,20 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
           onUpdateItemQuantity={fireUpdateItemQuantity}
           onUpdateValidityDate={fireUpdateValidityDate}
+          onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
+            // Shopping list items use the per-item RPC since there is no
+            // bulk RPC for the items table; the list is small enough that
+            // sequential updates are acceptable.
+            for (const id of itemIds) {
+              await updateListItemValidityDate(
+                id,
+                naoAplica ? null : validityDate,
+                naoAplica,
+              );
+            }
+            if (listId) await refreshItems(listId);
+            setNotice(`${itemIds.length} item(ns) atualizado(s).`);
+          }}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
         />

@@ -1413,3 +1413,38 @@ export async function bulkUpdateStockValidity(
 
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Re-enables expiration tracking for a single stock item that was previously marked as
+ * "Não se aplica" (non-perishable). Also flips the catalog learning flag back to perishable
+ * so future purchases of this product require a validity date again.
+ *
+ * This is the single-item "undo" complement to the bulk "Não se aplica" action.
+ *
+ * @param stockItemId - The UUID of the stock item to revert.
+ */
+export async function setStockItemPerishable(stockItemId: string): Promise<void> {
+  const { data: stockItem, error: fetchError } = await supabase
+    .from("stock_items")
+    .select("product_id")
+    .eq("id", stockItemId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error: updateError } = await supabase
+    .from("stock_items")
+    .update({ validade_nao_aplica: false })
+    .eq("id", stockItemId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  if (stockItem?.product_id) {
+    const { error: catalogError } = await supabase
+      .from("product_catalog")
+      .update({ perecivel: true })
+      .eq("id", stockItem.product_id);
+
+    if (catalogError) throw new Error(catalogError.message);
+  }
+}
