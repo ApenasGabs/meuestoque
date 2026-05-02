@@ -5,6 +5,18 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.0](https://github.com/ApenasGabs/meuestoque/compare/v1.9.0...v1.10.0) (2026-05-02)
+
+### ✨ Features
+
+* :sparkles: implement bulk expiration management, non-perishable item support, and database schema updates for inventory tracking. ([bf0ccf7](https://github.com/ApenasGabs/meuestoque/commit/bf0ccf7b5c1e84b56df218331f24fa6656211ff0))
+* add shopping list bulk action bar and non-perishable undo ([9d0575e](https://github.com/ApenasGabs/meuestoque/commit/9d0575e34e38a6956d270d1b4d964cb814e4c97f))
+* address remaining spec gaps for bulk expiration ([e6279b5](https://github.com/ApenasGabs/meuestoque/commit/e6279b5e681446921ae8330a53e0ee8fe79c5608))
+
+### 🐛 Bug Fixes
+
+* corrige bugs bloqueadores e melhorias no bulk expiration ([d070189](https://github.com/ApenasGabs/meuestoque/commit/d070189956a1518e66c5481f6a2b6189f14ece86))
+
 ## [1.9.0](https://github.com/ApenasGabs/meuestoque/compare/v1.8.0...v1.9.0) (2026-05-01)
 
 ### ✨ Features
