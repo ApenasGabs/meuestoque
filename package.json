@@ -25,6 +25,12 @@
     "e2e:remote:logout": "bash scripts/run-e2e.sh test -remote logout",
     "e2e:remote:failshot": "bash scripts/run-e2e.sh test -remote failshot",
     "e2e:theme:tablet": "bash scripts/run-e2e.sh test -remote theme",
+    "e2e:auth": "npx playwright test e2e/scenarios/auth.spec.ts",
+    "e2e:groups": "npx playwright test e2e/scenarios/groups.spec.ts",
+    "e2e:list": "npx playwright test e2e/scenarios/list.spec.ts",
+    "e2e:stock": "npx playwright test e2e/scenarios/stock.spec.ts",
+    "e2e:flows": "npx playwright test e2e/scenarios/flows.spec.ts",
+    "e2e:all": "npx playwright test e2e/scenarios/",
     "preview": "vite preview"
   },
   "dependencies": {
