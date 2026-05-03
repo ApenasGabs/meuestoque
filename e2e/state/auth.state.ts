@@ -37,9 +37,13 @@ export const seedTestUser = async (
   }
 
   // Ensure profile row exists (trigger may handle this, but we guarantee it)
-  await supabaseAdmin
+  const { error: profileError } = await supabaseAdmin
     .from("profiles")
     .upsert({ id: data.user.id, nome: name }, { onConflict: "id" });
+
+  if (profileError) {
+    throw new Error(`seedTestUser (profile upsert): ${profileError.message}`);
+  }
 
   return { userId: data.user.id, email };
 };

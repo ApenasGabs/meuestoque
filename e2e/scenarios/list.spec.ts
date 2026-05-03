@@ -33,11 +33,10 @@ test.describe("Shopping List - Lista de Compras", () => {
   test.beforeEach(async () => {
     await resetGroupData(groupId);
     // Re-create a single active list after reset.
-    // seedListWithItems will reuse this list instead of creating a second one.
-    const { supabaseAdmin } = await import("../config/supabaseAdmin");
-    await supabaseAdmin
-      .from("shopping_lists")
-      .insert({ group_id: groupId, ativa: true, status: "active" });
+    // Tests that call seedListWithItems will reuse this list (it queries for
+    // an existing active list before creating) — no duplicate active lists.
+    const { seedActiveList } = await import("../state/list.state");
+    await seedActiveList(groupId);
   });
 
   // --- LST-01 (P0): Adicionar item via smart input ---

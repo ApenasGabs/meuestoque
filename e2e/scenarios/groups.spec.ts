@@ -136,9 +136,8 @@ test.describe("Groups - Gestão de Grupos", () => {
 
     test.afterAll(async () => {
       await cleanupAll(userId, group1Id);
-      // group2 cleanup (user membership already cleaned via cleanupTestUser)
-      const { supabaseAdmin } = await import("../config/supabaseAdmin");
-      await supabaseAdmin.from("groups").delete().eq("id", group2Id);
+      const { cleanupGroup } = await import("../state/group.state");
+      await cleanupGroup(group2Id);
     });
 
     test("deve trocar de grupo e ir para /list", async ({ page }) => {
@@ -201,8 +200,8 @@ test.describe("Groups - Gestão de Grupos", () => {
 
     test.afterAll(async () => {
       await cleanupAll(userId, group1Id);
-      const { supabaseAdmin } = await import("../config/supabaseAdmin");
-      await supabaseAdmin.from("groups").delete().eq("id", group2Id);
+      const { cleanupGroup } = await import("../state/group.state");
+      await cleanupGroup(group2Id);
     });
 
     test("deve listar ambos os grupos do usuário", async ({ page }) => {

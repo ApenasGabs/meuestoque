@@ -138,8 +138,11 @@ test.describe("Flows - Fluxos Cross-Domain", () => {
 
     test.afterAll(async () => {
       await cleanupAll(userId, group1Id);
-      const { supabaseAdmin } = await import("../config/supabaseAdmin");
-      await supabaseAdmin.from("groups").delete().eq("id", group2Id);
+      // Clean stock/catalog data before deleting the group to avoid orphaned rows
+      const { cleanupGroupStock } = await import("../state/stock.state");
+      await cleanupGroupStock(group2Id);
+      const { cleanupGroup } = await import("../state/group.state");
+      await cleanupGroup(group2Id);
     });
 
     test("deve isolar estoque entre grupos", async ({ page }) => {

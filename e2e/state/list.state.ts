@@ -175,7 +175,13 @@ export const seedFinalizedList = async (
     comprado: true,
   }));
 
-  await supabaseAdmin.from("items").insert(itemsToInsert);
+  const { error: itemsError } = await supabaseAdmin
+    .from("items")
+    .insert(itemsToInsert);
+
+  if (itemsError) {
+    throw new Error(`seedFinalizedList (items): ${itemsError.message}`);
+  }
 
   return { listId: listData.id };
 };
