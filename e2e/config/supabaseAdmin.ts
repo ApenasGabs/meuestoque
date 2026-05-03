@@ -41,4 +41,10 @@ const createAdminClient = (): SupabaseClient => {
   });
 };
 
-export const supabaseAdmin = createAdminClient();
+let _client: SupabaseClient | null = null;
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!_client) _client = createAdminClient();
+    return (_client as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});

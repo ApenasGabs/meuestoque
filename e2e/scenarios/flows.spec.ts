@@ -50,7 +50,6 @@ test.describe("Flows - Fluxos Cross-Domain", () => {
 
       // 3. Finalize shopping
       await ListScreen.clickFinalizeShopping(page);
-      await page.waitForTimeout(5000);
 
       // 4. Verify in stock
       await StockScreen.navigateToStock(page);

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../config/supabaseAdmin";
+import { seedTestUser, getAuthSession } from "./auth.state";
 
 interface SeedGroupResult {
   groupId: string;
@@ -82,25 +83,8 @@ export const seedFullContext = async (
   userName: string,
   groupName: string
 ): Promise<SeedFullContextResult> => {
-  // 1. Create user via admin API
-  const { data: userData, error: userError } =
-    await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { nome: userName },
-    });
-
-  if (userError) {
-    throw new Error(`seedFullContext (user): ${userError.message}`);
-  }
-
-  const userId = userData.user.id;
-
-  // 2. Ensure profile
-  await supabaseAdmin
-    .from("profiles")
-    .upsert({ id: userId, nome: userName }, { onConflict: "id" });
+  // 1. Create user and ensure profile via delegated state
+  const { userId } = await seedTestUser(email, password, userName);
 
   // 3. Create group
   const { data: groupData, error: groupError } = await supabaseAdmin
@@ -133,12 +117,7 @@ export const seedFullContext = async (
   }
 
   // 6. Get auth session for browser injection
-  const { data: sessionData, error: sessionError } =
-    await supabaseAdmin.auth.signInWithPassword({ email, password });
-
-  if (sessionError) {
-    throw new Error(`seedFullContext (session): ${sessionError.message}`);
-  }
+  const { accessToken, refreshToken } = await getAuthSession(email, password);
 
   return {
     userId,
@@ -146,8 +125,8 @@ export const seedFullContext = async (
     groupId,
     listId: listData.id,
     inviteCode,
-    accessToken: sessionData.session.access_token,
-    refreshToken: sessionData.session.refresh_token,
+    accessToken,
+    refreshToken,
   };
 };
 

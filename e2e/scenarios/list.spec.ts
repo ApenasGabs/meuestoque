@@ -116,8 +116,7 @@ test.describe("Shopping List - Lista de Compras", () => {
     await ListScreen.clickFinalizeShopping(page);
 
     // After finalization: new list created, old items gone
-    await page.waitForTimeout(3000);
-    await ListScreen.verifyListHeadingVisible(page);
+    await expect(page.getByRole("heading", { name: "Lista de Compras" })).toBeVisible({ timeout: 10000 });
   });
 
   // --- LST-14 (P2): Contador de pendentes reflete na header ---

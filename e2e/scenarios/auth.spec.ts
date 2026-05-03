@@ -80,8 +80,10 @@ test.describe("Auth - Autenticação", () => {
       if (shouldCleanup) {
         try {
           const { supabaseAdmin } = await import("../config/supabaseAdmin");
-          const { data } = await supabaseAdmin.auth.admin.listUsers();
-          const createdUser = data?.users?.find((u) => u.email === email);
+          const { data } = await supabaseAdmin.auth.admin.listUsers({
+            filter: `email.eq.${email}`,
+          } as unknown as { page?: number; perPage?: number; filter?: string });
+          const createdUser = data?.users?.[0];
           if (createdUser) {
             await cleanupTestUser(createdUser.id);
           }
