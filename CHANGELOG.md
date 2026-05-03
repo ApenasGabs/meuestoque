@@ -5,6 +5,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.12.0](https://github.com/ApenasGabs/meuestoque/compare/v1.11.0...v1.12.0) (2026-05-03)
+
+### ✨ Features
+
+* :wrench: Implement expiration date bulk actions and related API updates ([857d776](https://github.com/ApenasGabs/meuestoque/commit/857d7761cc7963158c51efaa403cd41ef5d5e487))
+
+### 🐛 Bug Fixes
+
+* 🐛 Add null guard for validity date in bulk update function ([eec39bd](https://github.com/ApenasGabs/meuestoque/commit/eec39bd8a0481aeb72c93a2a350ab0458d176f17))
+* 🐛 Remove unnecessary null guard for validity date in bulk expiration migration ([4ebffe2](https://github.com/ApenasGabs/meuestoque/commit/4ebffe2e95e9e1e32662e6567d61c4c8edb24175))
+
+### ♻️ Refactoring
+
+* :broom: consolidate multiple historical migrations into a single initial schema definition ([de04dc7](https://github.com/ApenasGabs/meuestoque/commit/de04dc7b2eedcbf9ecee17a0887e302afb21b1a7))
+
 ## [1.11.0](https://github.com/ApenasGabs/meuestoque/compare/v1.10.0...v1.11.0) (2026-05-03)
 
 ### ✨ Features
