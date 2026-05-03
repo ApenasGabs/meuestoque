@@ -2085,6 +2085,10 @@ commit;
 -- ====================================================================
 BEGIN;
 
+  -- Null guard: validade obrigatória se não for marcado como não perecível
+  IF NOT p_nao_aplica AND p_data_validade IS NULL THEN
+    RAISE EXCEPTION 'p_data_validade is required when p_nao_aplica is false';
+  END IF;
 -- 1. Schema Updates: Support for persistent "Does not apply" state and catalog learning
 -- Note: perecivel and data_validade_alerta are part of the spec; using IF NOT EXISTS
 -- so the migration is idempotent regardless of prior schema state.
