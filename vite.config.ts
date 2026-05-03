@@ -5,7 +5,14 @@ import { defineConfig } from "vite";
 
 const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
 
-let parsedChangelog: any[] = [];
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  features: string[];
+  fixes: string[];
+}
+
+let parsedChangelog: ChangelogEntry[] = [];
 try {
   const changelogMarkdown = fs.readFileSync("./CHANGELOG.md", "utf-8");
   const releases = changelogMarkdown.split("## [").slice(1);
@@ -20,9 +27,9 @@ try {
     const version = versionMatch[1];
     const date = dateMatch ? dateMatch[1] : "";
 
-    const features = [];
-    const fixes = [];
-    let currentSection = null;
+    const features: string[] = [];
+    const fixes: string[] = [];
+    let currentSection: "features" | "fixes" | null = null;
 
     for (const line of rest) {
       if (line.startsWith("### ")) {
@@ -49,7 +56,7 @@ try {
     }
 
     return { version, date, features, fixes };
-  }).filter(Boolean).slice(0, 5);
+  }).filter((entry): entry is ChangelogEntry => entry !== null).slice(0, 5);
 } catch (err) {
   console.warn("Failed to parse CHANGELOG.md", err);
 }

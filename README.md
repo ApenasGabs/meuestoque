@@ -38,23 +38,39 @@ A aplicação conta com uma esteira robusta de testes e automação, garantindo 
 * Node.js (v24+)
 * Gerenciador de pacotes (npm/yarn/pnpm)
 * Instância/Projeto configurado no Supabase
+* Supabase CLI (recomendado para aplicar migrations)
 
 ### Instalação
 
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/ApenasGabs/meuestoque.git
+cd meuestoque
 
 # 2. Instale as dependências
 npm install
 
 # 3. Configure as variáveis de ambiente (.env)
-# Necessário adicionar as chaves públicas do Supabase
+# Preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
 cp .env.example .env
 
-# 4. Inicie o servidor de desenvolvimento
+# 4. Aplique as migrations no seu projeto Supabase
+supabase link --project-ref <seu-ref>
+supabase db push
+
+# 5. Inicie o servidor de desenvolvimento
 npm run dev
 ```
+
+Guia completo de setup (incluindo banco local via Docker e validações pós-deploy) em [`docs/SETUP.md`](./docs/SETUP.md).
+
+### Documentação
+
+- [Visão de produto](./docs/FEATURES.md)
+- [Arquitetura e dados](./docs/ai/01_ARCHITECTURE_AND_DATA.md)
+- [Contratos de RPC](./docs/ai/04_RPC_CONTRACTS.md)
+- [Glossário](./docs/GLOSSARY.md)
+- [Decisões arquiteturais (ADR)](./docs/adr/)
 
 ### Scripts de Desenvolvimento
 

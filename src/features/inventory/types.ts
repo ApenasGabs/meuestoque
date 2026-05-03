@@ -1,6 +1,6 @@
 import type { Unit } from "../../types/inventory.types";
 
-export interface InventoryProduct {
+export interface InventoryProduct extends InventoryProductBulkFlags {
   id: string;
   name: string;
   quantity: number;
@@ -12,6 +12,8 @@ export interface InventoryProduct {
   categoryId: string;
   validityDate?: string | null;
   needsValidity?: boolean;
+  /** True when the product was marked "Não se aplica" (non-perishable) */
+  naoAplicaValidade?: boolean;
   packLabel?: string;
   packSize?: number;
   /** Auto-consumption: whether to add to shopping list when below minimum */
