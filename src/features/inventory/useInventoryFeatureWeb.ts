@@ -51,7 +51,7 @@ const mapStockItemToProduct = (item: StockItemRecord): InventoryProduct => ({
   lastPurchaseDate: item.data_compra,
   categoryId: item.categoria || "Outros",
   validityDate: item.data_validade,
-  needsValidity: !item.data_validade,
+  needsValidity: !item.data_validade && !item.validade_nao_aplica,
   packLabel: item.pack_label ?? undefined,
   packSize: item.pack_size ?? undefined,
   autoAddToList: item.auto_adicionar_lista,

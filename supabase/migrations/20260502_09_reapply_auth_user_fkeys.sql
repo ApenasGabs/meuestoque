@@ -29,4 +29,14 @@ alter table public.shopping_lists
   add constraint shopping_lists_fechado_por_fkey
   foreign key (fechado_por) references auth.users(id) on delete set null;
 
+-- =====================================================
+-- group_members.user_id
+-- =====================================================
+alter table public.group_members
+  drop constraint if exists group_members_user_id_fkey;
+
+alter table public.group_members
+  add constraint group_members_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade;
+
 commit;

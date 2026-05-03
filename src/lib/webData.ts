@@ -341,11 +341,8 @@ export async function updateListItemValidityDate(
   if (naoAplicaValidade !== undefined) {
     updateData.nao_aplica_validade = naoAplicaValidade;
   }
-  
-  const { error } = await supabase
-    .from("items")
-    .update(updateData)
-    .eq("id", itemId);
+
+  const { error } = await supabase.from("items").update(updateData).eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -1106,7 +1103,7 @@ export const getStockItems = async (groupId: string): Promise<StockItemRecord[]>
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .eq("group_id", groupId)
     .order("nome", { ascending: true });
@@ -1119,7 +1116,7 @@ export const getStockItemById = async (itemId: string): Promise<StockItemRecord 
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .eq("id", itemId)
     .maybeSingle();
@@ -1152,7 +1149,7 @@ export const upsertStockItem = async (input: UpsertStockItemInput): Promise<Stoc
     .from("stock_items")
     .upsert(payload)
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
     )
     .maybeSingle();
 
