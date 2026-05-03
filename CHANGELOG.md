@@ -5,6 +5,28 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.11.0](https://github.com/ApenasGabs/meuestoque/compare/v1.10.0...v1.11.0) (2026-05-03)
+
+### ✨ Features
+
+* **migrations:** add baseline migrations for core tables, rate limits, group RPCs, stock sync triggers, FIFO consumption, and cleanup tasks ([fd51fd6](https://github.com/ApenasGabs/meuestoque/commit/fd51fd6255bae9425bc8c249fa122055a78a7672))
+
+### 🐛 Bug Fixes
+
+* 🐛 arruma erros de JSX e limpa lints de tipagem e hooks ([7fef6d8](https://github.com/ApenasGabs/meuestoque/commit/7fef6d8b07e1336be4869e7615e16f4daba9e1a6))
+* 🐛 update Card component props and enhance type definitions for better flexibility ([2072353](https://github.com/ApenasGabs/meuestoque/commit/2072353d27d9bf6d8f4923ba21e93ac26ad81efc))
+
+### 📚 Documentation
+
+* :books: adiciona auditoria de código e pre-checks para migrations de 20260502 ([6e2d5b8](https://github.com/ApenasGabs/meuestoque/commit/6e2d5b87b6901f3c8a322cd12d291cc717a18c1d))
+* :books: atualiza mapa do banco com detalhes de reconciliação e limpeza de campos legados ([b30509b](https://github.com/ApenasGabs/meuestoque/commit/b30509b060dd9213d3a2d89ac8167e169113a407))
+* atualiza mapa do banco com inspeção real e drift de migrations ([82fa2f4](https://github.com/ApenasGabs/meuestoque/commit/82fa2f44108769069c712001b43696cc9139bb3f))
+* reestrutura documentação e adiciona ADRs, glossário e contratos de RPC ([85be7d8](https://github.com/ApenasGabs/meuestoque/commit/85be7d891b06b027d747c04d57c65f684b4e731d))
+
+### 🔧 Chores
+
+* **release:** 1.10.0 [skip ci] ([3f47899](https://github.com/ApenasGabs/meuestoque/commit/3f478991f758783c368b1f30c66c0e540369e035))
+
 ## [1.10.0](https://github.com/ApenasGabs/meuestoque/compare/v1.9.0...v1.10.0) (2026-05-02)
 
 ### ✨ Features
