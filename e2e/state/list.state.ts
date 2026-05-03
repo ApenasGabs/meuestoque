@@ -41,18 +41,36 @@ export const seedActiveList = async (
 };
 
 /**
- * Creates an active list with unchecked items ready for shopping.
+ * Seeds items into the existing active list of a group.
+ * If no active list exists, creates one first.
+ * This avoids creating a second concurrent active list when beforeEach
+ * already set one up — which would cause assertions to resolve the wrong list.
  *
  * @param groupId - Target group UUID
  * @param items - Array of item definitions
  * @returns List ID and array of created item IDs
- * @throws {Error} If list or item creation fails
+ * @throws {Error} If list lookup, creation, or item insertion fails
  */
 export const seedListWithItems = async (
   groupId: string,
   items: ListItemInput[]
 ): Promise<SeedListWithItemsResult> => {
-  const { listId } = await seedActiveList(groupId);
+  // Reuse the existing active list if one was already created (e.g. by beforeEach).
+  const { data: existing, error: fetchError } = await supabaseAdmin
+    .from("shopping_lists")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("ativa", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (fetchError && fetchError.code !== "PGRST116") {
+    // PGRST116 = "no rows returned" — expected when list doesn't exist yet
+    throw new Error(`seedListWithItems (fetch): ${fetchError.message}`);
+  }
+
+  const listId = existing?.id ?? (await seedActiveList(groupId)).listId;
 
   const itemsToInsert = items.map((item) => ({
     list_id: listId,
@@ -69,7 +87,7 @@ export const seedListWithItems = async (
     .select("id");
 
   if (error) {
-    throw new Error(`seedListWithItems failed: ${error.message}`);
+    throw new Error(`seedListWithItems (insert): ${error.message}`);
   }
 
   return {

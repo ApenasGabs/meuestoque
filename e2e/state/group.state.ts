@@ -101,9 +101,13 @@ export const seedFullContext = async (
   const inviteCode = groupData.codigo_convite;
 
   // 4. Add user to group
-  await supabaseAdmin
+  const { error: memberError } = await supabaseAdmin
     .from("group_members")
     .insert({ user_id: userId, group_id: groupId });
+
+  if (memberError) {
+    throw new Error(`seedFullContext (group_members): ${memberError.message}`);
+  }
 
   // 5. Create active shopping list
   const { data: listData, error: listError } = await supabaseAdmin

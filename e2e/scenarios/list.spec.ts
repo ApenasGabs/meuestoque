@@ -32,7 +32,8 @@ test.describe("Shopping List - Lista de Compras", () => {
 
   test.beforeEach(async () => {
     await resetGroupData(groupId);
-    // Re-create active list after reset
+    // Re-create a single active list after reset.
+    // seedListWithItems will reuse this list instead of creating a second one.
     const { supabaseAdmin } = await import("../config/supabaseAdmin");
     await supabaseAdmin
       .from("shopping_lists")
