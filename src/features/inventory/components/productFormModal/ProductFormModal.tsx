@@ -167,6 +167,7 @@ export const ProductFormModal = ({
             onChange={(event) => setName(event.target.value)}
             placeholder="Ex: Arroz"
             required
+            data-testid="product-name"
           />
         </div>
 
@@ -179,6 +180,7 @@ export const ProductFormModal = ({
               min="0"
               value={quantity}
               onChange={(event) => setQuantity(event.target.value)}
+              data-testid="product-quantity"
             />
           </div>
           <div>
@@ -189,6 +191,7 @@ export const ProductFormModal = ({
               min="0"
               value={minStock}
               onChange={(event) => setMinStock(event.target.value)}
+              data-testid="product-min"
             />
           </div>
           <div>
@@ -197,6 +200,7 @@ export const ProductFormModal = ({
               id="product-unit"
               value={unit}
               onChange={(event) => setUnit(event.target.value as Unit | "outro")}
+              data-testid="product-unit"
             >
               {UNITS.map((u) => (
                 <option key={u} value={u}>
@@ -261,6 +265,7 @@ export const ProductFormModal = ({
               step="0.0001"
               value={portionSize}
               onChange={(event) => setPortionSize(event.target.value)}
+              data-testid="product-portion-size"
             />
             <p className="text-xs text-base-content/60 mt-1">
               {compositeUnit
@@ -433,7 +438,12 @@ export const ProductFormModal = ({
           <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" className="flex-1">
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1"
+            data-testid="product-save-button"
+          >
             {product ? "Salvar" : "Adicionar"}
           </Button>
         </div>

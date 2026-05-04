@@ -21,7 +21,7 @@ export const verifyUserName = async (
   page: Page,
   name: string
 ): Promise<void> => {
-  await expect(page.getByText(name)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(name)).toBeVisible();
 };
 
 /**
@@ -30,7 +30,7 @@ export const verifyUserName = async (
  * @param page - Playwright page instance
  */
 export const clickLogout = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Sair da conta" }).click();
+  await page.getByTestId("logout-button").click();
 };
 
 /**
@@ -39,5 +39,5 @@ export const clickLogout = async (page: Page): Promise<void> => {
  * @param page - Playwright page instance
  */
 export const verifyRedirectedToLogin = async (page: Page): Promise<void> => {
-  await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
 };

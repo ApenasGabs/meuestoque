@@ -3,12 +3,15 @@ import { expect } from "@playwright/test";
 
 /**
  * Navigates to the shopping list page.
+ * Uses page.goto to navigate directly — the Supabase session persists in localStorage
+ * and survives page reloads. Waits for the list heading to confirm the app
+ * finished bootstrapping the session and loading list data.
  *
  * @param page - Playwright page instance
  */
 export const navigateToList = async (page: Page): Promise<void> => {
   await page.goto("/list");
-  await page.waitForLoadState("domcontentloaded");
+  await expect(page.getByTestId("shopping-list-heading")).toBeVisible({ timeout: 30000 });
 };
 
 /**
@@ -21,8 +24,8 @@ export const addItemViaSmartInput = async (
   page: Page,
   input: string
 ): Promise<void> => {
-  await page.getByPlaceholder("Nome, quantidade, valor").fill(input);
-  await page.getByRole("button", { name: "Adicionar" }).click();
+  await page.getByTestId("smart-shopping-input").fill(input);
+  await page.getByTestId("add-item-button").click();
 };
 
 /**
@@ -35,7 +38,7 @@ export const verifyItemVisible = async (
   page: Page,
   itemName: string
 ): Promise<void> => {
-  await expect(page.getByText(itemName).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(itemName).first()).toBeVisible();
 };
 
 /**
@@ -61,8 +64,8 @@ export const toggleItemChecked = async (
   page: Page,
   itemName: string
 ): Promise<void> => {
-  const itemRow = page.locator(".card").filter({ hasText: itemName }).first();
-  await itemRow.locator('input[type="checkbox"]').first().click();
+  const testId = `shopping-item-checkbox-${itemName.toLowerCase().replace(/\s+/g, "-")}`;
+  await page.getByTestId(testId).first().click();
 };
 
 /**
@@ -75,8 +78,8 @@ export const verifyItemChecked = async (
   page: Page,
   itemName: string
 ): Promise<void> => {
-  const itemRow = page.locator(".card").filter({ hasText: itemName }).first();
-  await expect(itemRow.locator('input[type="checkbox"]').first()).toBeChecked();
+  const testId = `shopping-item-checkbox-${itemName.toLowerCase().replace(/\s+/g, "-")}`;
+  await expect(page.getByTestId(testId).first()).toBeChecked();
 };
 
 /**
@@ -89,8 +92,8 @@ export const verifyItemUnchecked = async (
   page: Page,
   itemName: string
 ): Promise<void> => {
-  const itemRow = page.locator(".card").filter({ hasText: itemName }).first();
-  await expect(itemRow.locator('input[type="checkbox"]').first()).not.toBeChecked();
+  const testId = `shopping-item-checkbox-${itemName.toLowerCase().replace(/\s+/g, "-")}`;
+  await expect(page.getByTestId(testId).first()).not.toBeChecked();
 };
 
 /**
@@ -104,7 +107,7 @@ export const removeItem = async (
   itemName: string
 ): Promise<void> => {
   const itemRow = page.locator(".card").filter({ hasText: itemName }).first();
-  await itemRow.getByRole("button", { name: "Excluir" }).click();
+  await itemRow.getByTestId("remove-item-button").click();
 };
 
 /**
@@ -113,7 +116,7 @@ export const removeItem = async (
  * @param page - Playwright page instance
  */
 export const clickGenerateSmartList = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Lista inteligente" }).click();
+  await page.getByTestId("smart-list-button").click();
 };
 
 /**
@@ -122,7 +125,7 @@ export const clickGenerateSmartList = async (page: Page): Promise<void> => {
  * @param page - Playwright page instance
  */
 export const clickFinalizeShopping = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: /Finalizar compra/i }).click();
+  await page.getByTestId("finalize-shopping-button").click();
 };
 
 /**
@@ -167,7 +170,5 @@ export const verifyItemCount = async (
  * @param page - Playwright page instance
  */
 export const verifyListHeadingVisible = async (page: Page): Promise<void> => {
-  await expect(
-    page.getByRole("heading", { name: "Lista de Compras" })
-  ).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("shopping-list-heading")).toBeVisible();
 };

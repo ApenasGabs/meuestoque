@@ -205,6 +205,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               checked={item.checked}
               onChange={() => onToggle(item.id)}
               aria-label={`Marcar ${product.name}`}
+              data-testid={`shopping-item-checkbox-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
             />
           )}
 
@@ -248,6 +249,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                   size="sm"
                   className="px-2 text-center tabular-nums"
                   style={{ width: `${Math.max(quantityDraft.length, 2) + 2}ch` }}
+                  data-testid="shopping-item-quantity"
                 />
                 <span className="text-[10px] uppercase font-bold text-base-content/40">{displayUnit}</span>
                 {hasPack && (
@@ -281,6 +283,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                   size="sm"
                   className="px-2 text-center tabular-nums"
                   style={{ width: `${Math.max(priceDraft.length, 4) + 2}ch` }}
+                  data-testid="shopping-item-price"
                 />
               </div>
 
@@ -323,7 +326,12 @@ export const ShoppingListItem = memo(function ShoppingListItem({
             )}
           </div>
 
-          <Button variant="ghost" size="sm" onClick={() => onRemove(item.id)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(item.id)}
+            data-testid="remove-item-button"
+          >
             Excluir
           </Button>
         </div>

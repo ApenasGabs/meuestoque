@@ -1,11 +1,14 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
-
-config({ path: ".env.local" });
 import { defineConfig, devices } from "@playwright/test";
 
-declare const process: {
-  env: Record<string, string | undefined>;
-};
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+config({
+  path: `${__dirname}/.env.local`,
+  override: true,
+});
 
 const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5174";
 const isRemoteMode = process.env.PLAYWRIGHT_REMOTE_MODE === "1";

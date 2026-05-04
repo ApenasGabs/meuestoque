@@ -23,9 +23,8 @@ export const fillLoginForm = async (
   email: string,
   password: string
 ): Promise<void> => {
-  const form = page.locator("form").first();
-  await form.locator('input[type="email"]').first().fill(email);
-  await form.locator('input[type="password"]').first().fill(password);
+  await page.getByTestId("login-email").fill(email);
+  await page.getByTestId("login-password").fill(password);
 };
 
 /**
@@ -34,7 +33,7 @@ export const fillLoginForm = async (
  * @param page - Playwright page instance
  */
 export const submitLogin = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.getByTestId("login-submit").click();
 };
 
 /**
@@ -58,6 +57,10 @@ export const performLogin = async (
 
   await fillLoginForm(page, email, password);
   await submitLogin(page);
+  // Wait for redirect to finish
+  await page.waitForURL(/\/list|group|stock/, { timeout: 15000 });
+  // Wait for the app to fully bootstrap (bottom nav visible = ready + authenticated)
+  await expect(page.getByTestId("nav-list")).toBeVisible({ timeout: 15000 });
 };
 
 /**
@@ -70,8 +73,8 @@ export const verifyLoginError = async (
   page: Page,
   expectedMessage?: string
 ): Promise<void> => {
-  const alert = page.locator('[role="alert"]');
-  await expect(alert).toBeVisible({ timeout: 10000 });
+  const alert = page.getByTestId("login-error");
+  await expect(alert).toBeVisible();
 
   if (expectedMessage) {
     await expect(alert).toContainText(expectedMessage);
@@ -84,7 +87,7 @@ export const verifyLoginError = async (
  * @param page - Playwright page instance
  */
 export const verifyRedirectedToList = async (page: Page): Promise<void> => {
-  await expect(page).toHaveURL(/\/list(?:[?#].*)?$/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/list(?:[?#].*)?$/);
 };
 
 /**
@@ -93,7 +96,7 @@ export const verifyRedirectedToList = async (page: Page): Promise<void> => {
  * @param page - Playwright page instance
  */
 export const verifyRedirectedToGroup = async (page: Page): Promise<void> => {
-  await expect(page).toHaveURL(/\/group(?:[?#].*)?$/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/group(?:[?#].*)?$/);
 };
 
 /**
@@ -102,7 +105,7 @@ export const verifyRedirectedToGroup = async (page: Page): Promise<void> => {
  * @param page - Playwright page instance
  */
 export const verifyOnLoginPage = async (page: Page): Promise<void> => {
-  await expect(page).toHaveURL(/\/login(?:[?#].*)?$/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/login(?:[?#].*)?$/);
   await expect(page.getByText("Entrar na sua conta")).toBeVisible();
 };
 
@@ -132,14 +135,10 @@ export const fillRegisterForm = async (
   password: string,
   confirmPassword: string
 ): Promise<void> => {
-  const form = page.locator("form").first();
-
-  // The register form has: Nome, E-mail, Senha, Confirmar senha
-  const inputs = form.locator("input");
-  await inputs.nth(0).fill(name); // Nome
-  await inputs.nth(1).fill(email); // E-mail
-  await inputs.nth(2).fill(password); // Senha
-  await inputs.nth(3).fill(confirmPassword); // Confirmar senha
+  await page.getByTestId("register-name").fill(name);
+  await page.getByTestId("register-email").fill(email);
+  await page.getByTestId("register-password").fill(password);
+  await page.getByTestId("register-confirm-password").fill(confirmPassword);
 };
 
 /**
@@ -148,5 +147,5 @@ export const fillRegisterForm = async (
  * @param page - Playwright page instance
  */
 export const submitRegister = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: /Criar conta/i }).click();
+  await page.getByTestId("register-submit").click();
 };

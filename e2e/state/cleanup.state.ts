@@ -11,39 +11,45 @@ import { cleanupGroupStock } from "./stock.state";
  * @param groupId - Group UUID
  */
 export const cleanupAll = async (
-  userId: string,
-  groupId: string
+  userId?: string,
+  groupId?: string
 ): Promise<void> => {
-  // Order matters: clean leaf tables first, then parents
+  if (!groupId) {
+    console.warn("cleanupAll: No groupId provided, skipping group cleanup.");
+  } else {
+    // 1. Stock data (movements → lots → items → catalog)
+    await cleanupGroupStock(groupId);
 
-  // 1. Stock data (movements → lots → items → catalog)
-  await cleanupGroupStock(groupId);
+    // 2. Shopping list items
+    const { data: lists } = await supabaseAdmin
+      .from("shopping_lists")
+      .select("id")
+      .eq("group_id", groupId);
 
-  // 2. Shopping list items
-  const { data: lists } = await supabaseAdmin
-    .from("shopping_lists")
-    .select("id")
-    .eq("group_id", groupId);
+    if (lists && lists.length > 0) {
+      const listIds = lists.map((list) => list.id);
+      await supabaseAdmin
+        .from("items")
+        .delete()
+        .in("list_id", listIds);
+    }
 
-  if (lists && lists.length > 0) {
-    const listIds = lists.map((list) => list.id);
+    // 3. Shopping lists themselves
     await supabaseAdmin
-      .from("items")
+      .from("shopping_lists")
       .delete()
-      .in("list_id", listIds);
+      .eq("group_id", groupId);
+
+    // 4. Group (cascades group_members)
+    await cleanupGroup(groupId);
   }
 
-  // 3. Shopping lists themselves
-  await supabaseAdmin
-    .from("shopping_lists")
-    .delete()
-    .eq("group_id", groupId);
-
-  // 4. Group (cascades group_members)
-  await cleanupGroup(groupId);
-
   // 5. User
-  await cleanupTestUser(userId);
+  if (!userId) {
+    console.warn("cleanupAll: No userId provided, skipping user cleanup.");
+  } else {
+    await cleanupTestUser(userId);
+  }
 };
 
 /**

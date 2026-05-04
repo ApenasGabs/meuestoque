@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
 import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
-import { Card, CardBody, CardTitle } from "../components/Card/Card";
+import { Card, CardBody } from "../components/Card/Card";
 import { Input } from "../components/Input/Input";
 import { normalizeInviteCode } from "../domain/listRules";
 import {
@@ -159,7 +159,7 @@ export function GroupPage() {
     <main className="page">
       <Card className="mb-6">
         <CardBody>
-          <CardTitle>Grupo</CardTitle>
+          <h1 className="text-2xl font-bold mb-4">Grupo</h1>
           <p>
             {userName
               ? `Olá, ${userName}`
@@ -174,7 +174,7 @@ export function GroupPage() {
 
           <section className="mt-6 space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-xl font-semibold" data-testid="group-heading">
                 {groupNameActive ?? "Nenhum grupo ativo"}
               </h2>
               {groupCode ? <Badge variant="info">{groupCode}</Badge> : null}
@@ -196,14 +196,15 @@ export function GroupPage() {
                 >
                   Ir para a lista
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleLeaveGroup}
-                  disabled={loading}
-                >
-                  Sair do grupo
-                </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleLeaveGroup}
+                    disabled={loading}
+                    data-testid="leave-group-button"
+                  >
+                    Sair do grupo
+                  </Button>
               </div>
             )}
           </section>
@@ -213,7 +214,7 @@ export function GroupPage() {
       {successCode && (
         <Card className="mb-6">
           <CardBody>
-            <CardTitle>Convite criado</CardTitle>
+            <h2 className="text-2xl font-bold mb-4">Convite criado</h2>
             <Badge variant="success">{successCode}</Badge>
             <p className="muted mt-3">
               Compartilhe este código com quem vai participar do grupo.
@@ -237,36 +238,38 @@ export function GroupPage() {
       <div className="grid">
         <Card>
           <CardBody>
-            <CardTitle>Criar grupo</CardTitle>
+            <h2 className="text-2xl font-bold mb-4">Criar grupo</h2>
             <form className="form" onSubmit={handleCreateGroup}>
-              <Input
-                label="Nome do grupo"
-                value={groupName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setGroupName(e.target.value)
-                }
-              />
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Salvando..." : "Criar"}
-              </Button>
+                <Input
+                  label="Nome do grupo"
+                  value={groupName}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setGroupName(e.target.value)
+                  }
+                  data-testid="create-group-name"
+                />
+                <Button type="submit" disabled={loading} className="w-full" data-testid="create-group-button">
+                  {loading ? "Salvando..." : "Criar"}
+                </Button>
             </form>
           </CardBody>
         </Card>
 
         <Card>
           <CardBody>
-            <CardTitle>Entrar com código</CardTitle>
+            <h2 className="text-2xl font-bold mb-4">Entrar com código</h2>
             <form className="form" onSubmit={handleJoinGroup}>
-              <Input
-                label="Código"
-                value={inviteCode}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInviteCode(e.target.value)
-                }
-              />
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
+                <Input
+                  label="Código"
+                  value={inviteCode}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setInviteCode(e.target.value)
+                  }
+                  data-testid="join-group-code"
+                />
+                <Button type="submit" disabled={loading} className="w-full" data-testid="join-group-button">
+                  {loading ? "Entrando..." : "Entrar"}
+                </Button>
             </form>
           </CardBody>
         </Card>
@@ -274,7 +277,7 @@ export function GroupPage() {
 
       <Card className="mt-6">
         <CardBody>
-          <CardTitle>Meus grupos</CardTitle>
+          <h2 className="text-2xl font-bold mb-4">Meus grupos</h2>
           {allGroups.length === 0 ? (
             <p className="muted">Nenhum grupo encontrado.</p>
           ) : (

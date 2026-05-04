@@ -3,12 +3,15 @@ import { expect } from "@playwright/test";
 
 /**
  * Navigates to the group management page.
+ * Uses page.goto to navigate directly — the Supabase session persists in localStorage
+ * and survives page reloads. Waits for the group heading to confirm the app
+ * finished bootstrapping the session and loading group data.
  *
  * @param page - Playwright page instance
  */
 export const navigateToGroup = async (page: Page): Promise<void> => {
   await page.goto("/group");
-  await page.waitForLoadState("domcontentloaded");
+  await expect(page.getByTestId("group-heading")).toBeVisible({ timeout: 30000 });
 };
 
 /**
@@ -21,7 +24,7 @@ export const fillCreateGroupName = async (
   page: Page,
   name: string
 ): Promise<void> => {
-  await page.getByLabel("Nome do grupo").fill(name);
+  await page.getByTestId("create-group-name").fill(name);
 };
 
 /**
@@ -30,9 +33,7 @@ export const fillCreateGroupName = async (
  * @param page - Playwright page instance
  */
 export const submitCreateGroup = async (page: Page): Promise<void> => {
-  // The "Criar" button inside the create group form
-  const createSection = page.locator("form").filter({ hasText: "Nome do grupo" });
-  await createSection.getByRole("button", { name: /^Criar$/ }).click();
+  await page.getByTestId("create-group-button").click();
 };
 
 /**
@@ -45,7 +46,7 @@ export const verifyInviteCodeVisible = async (
   page: Page,
   code: string
 ): Promise<void> => {
-  await expect(page.getByText(code).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(code).first()).toBeVisible();
 };
 
 /**
@@ -58,7 +59,7 @@ export const fillJoinGroupCode = async (
   page: Page,
   code: string
 ): Promise<void> => {
-  await page.getByLabel("Código").fill(code);
+  await page.getByTestId("join-group-code").fill(code);
 };
 
 /**
@@ -67,8 +68,7 @@ export const fillJoinGroupCode = async (
  * @param page - Playwright page instance
  */
 export const submitJoinGroup = async (page: Page): Promise<void> => {
-  const joinSection = page.locator("form").filter({ hasText: "Código" });
-  await joinSection.getByRole("button", { name: /^Entrar$/ }).click();
+  await page.getByTestId("join-group-button").click();
 };
 
 /**
@@ -81,9 +81,7 @@ export const verifyGroupActive = async (
   page: Page,
   groupName: string
 ): Promise<void> => {
-  await expect(
-    page.locator("h2").filter({ hasText: groupName })
-  ).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("group-heading")).toContainText(groupName);
 };
 
 /**
@@ -106,7 +104,7 @@ export const clickUseGroup = async (
  * @param page - Playwright page instance
  */
 export const clickLeaveGroup = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Sair do grupo" }).click();
+  await page.getByTestId("leave-group-button").click();
 };
 
 /**
@@ -154,7 +152,7 @@ export const verifyGroupError = async (
   message?: string
 ): Promise<void> => {
   const alert = page.locator('[role="alert"]');
-  await expect(alert).toBeVisible({ timeout: 10000 });
+  await expect(alert).toBeVisible();
 
   if (message) {
     await expect(alert).toContainText(message);

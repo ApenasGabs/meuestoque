@@ -264,6 +264,7 @@ export const StockView = ({
                 size="sm"
                 onClick={exitBulkMode}
                 className="p-0 w-8 h-8 min-h-8"
+                aria-label="Sair do modo de seleção"
               >
                 <XOutlined />
               </Button>
@@ -274,13 +275,18 @@ export const StockView = ({
           <>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold">Estoque</h2>
+                <h1 className="text-base font-semibold" data-testid="stock-heading">Estoque</h1>
                 <p className="text-xs text-base-content/60">
                   {lowStockCount} baixo · {outOfStockCount} zerado
                   {expiringCount > 0 ? ` · ${expiringCount} vencendo` : ""}
                 </p>
               </div>
-              <Button variant="primary" size="sm" onClick={() => setOpenForm(true)}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setOpenForm(true)}
+                data-testid="add-product-button"
+              >
                 Novo produto
               </Button>
             </div>
@@ -290,6 +296,7 @@ export const StockView = ({
                 value={search}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="Buscar produto"
+                data-testid="stock-search"
               />
             </div>
 
@@ -299,6 +306,7 @@ export const StockView = ({
                 size="sm"
                 className="rounded-full"
                 onClick={onClearFilters}
+                data-testid="filter-all"
               >
                 Todos
               </Button>
@@ -307,6 +315,7 @@ export const StockView = ({
                 size="sm"
                 className="rounded-full"
                 onClick={() => onToggleFilter("low")}
+                data-testid="filter-low"
               >
                 Baixos
               </Button>
@@ -315,6 +324,7 @@ export const StockView = ({
                 size="sm"
                 className="rounded-full"
                 onClick={() => onToggleFilter("out")}
+                data-testid="filter-out"
               >
                 Zerados
               </Button>

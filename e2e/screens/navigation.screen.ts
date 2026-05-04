@@ -71,7 +71,7 @@ export const verifyNavBadge = async (
  * @param page - Playwright page instance
  */
 export const verifyNavVisible = async (page: Page): Promise<void> => {
-  await expect(page.getByTestId("nav-list")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("nav-list")).toBeVisible();
 };
 
 /**
