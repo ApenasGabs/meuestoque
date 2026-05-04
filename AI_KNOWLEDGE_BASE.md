@@ -237,3 +237,21 @@ VISUAL: Barra de progresso ultra-fina (h-1) para manter o contexto sem poluir.
 - [x] Barra de progresso fina implementada.
 - [x] Lint passando (zero erros).
 - [x] Responsividade mantida em telas pequenas.
+
+---
+
+### 📝 (04/05/2026) Ajuste Visual da Barra de Progresso
+
+#### Mudança
+A porcentagem de estoque (ex: 70%) foi movida de cima da barra para **atrás** dela, centralizada horizontalmente.
+
+#### Lógica de Decisão
+```text
+VISUAL: O texto age como um "marca d'água" sutil (opacity-10) no fundo da barra.
+COMPACTAÇÃO: Permite que a barra e a porcentagem ocupem o mesmo espaço vertical, reduzindo a altura total do card.
+```
+
+#### Arquivos Modificados
+| Arquivo | Mudança |
+|---|---|
+| `src/features/inventory/components/productCard/ProductCard.tsx` | Reposicionamento do span de porcentagem para dentro do container da barra com z-index inferior. |

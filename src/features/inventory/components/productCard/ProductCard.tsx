@@ -215,20 +215,21 @@ export const ProductCard = ({
             </div>
           </div>
 
-          {/* Row 2: Progress Bar (Only if minStock > 0) */}
+          {/* Row 2: Progress Bar with Percentage in Front */}
           {product.minStock > 0 && !isPendingValidity && (
-            <div className="w-full relative">
-              <div className="w-full h-1 bg-base-300/40 rounded-full overflow-hidden">
+            <div className="w-full relative h-3 flex items-center justify-center">
+              {/* Thin Progress Bar behind */}
+              <div className="w-full h-1 bg-base-300/30 rounded-full overflow-hidden relative">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                   style={{ width: `${Math.min(stockPercent, 100)}%` }}
                 />
               </div>
-              {stockPercent > 0 && stockPercent < 100 && (
-                <span className="absolute -top-3 right-0 text-[9px] font-bold tabular-nums text-base-content/40">
-                  {stockPercent}%
-                </span>
-              )}
+
+              {/* Percentage text in front */}
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tabular-nums opacity-40 select-none pointer-events-none">
+                {stockPercent}%
+              </span>
             </div>
           )}
 
