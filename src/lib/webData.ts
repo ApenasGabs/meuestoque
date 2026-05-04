@@ -883,6 +883,15 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
   if (error) throw new Error(error.message);
 }
 
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { error } = await supabase
+    .from("groups")
+    .delete()
+    .eq("id", groupId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function createShoppingListForGroup(groupId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("shopping_lists")

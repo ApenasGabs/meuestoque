@@ -9,6 +9,7 @@ import { Input } from "../components/Input/Input";
 import { normalizeInviteCode } from "../domain/listRules";
 import {
   createGroupForCurrentUser,
+  deleteGroup,
   ensureActiveListForGroup,
   joinGroupByCode,
   leaveGroup,
@@ -234,39 +235,43 @@ export function GroupPage() {
         </Card>
       )}
 
-      <div className="grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardBody>
-            <CardTitle>Criar grupo</CardTitle>
-            <form className="form" onSubmit={handleCreateGroup}>
-              <Input
-                label="Nome do grupo"
-                value={groupName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setGroupName(e.target.value)
-                }
-              />
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Salvando..." : "Criar"}
-              </Button>
+            <h2 className="text-xl font-bold mb-4">Entrar com código</h2>
+            <form className="form" onSubmit={handleJoinGroup}>
+                <Input
+                  label="Código do Convite"
+                  placeholder="EX: ABC123XY"
+                  value={inviteCode}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setInviteCode(e.target.value)
+                  }
+                  data-testid="join-group-code"
+                />
+                <Button type="submit" disabled={loading} className="w-full" data-testid="join-group-button">
+                  {loading ? "Entrando..." : "Participar do Grupo"}
+                </Button>
             </form>
           </CardBody>
         </Card>
 
         <Card>
           <CardBody>
-            <CardTitle>Entrar com código</CardTitle>
-            <form className="form" onSubmit={handleJoinGroup}>
-              <Input
-                label="Código"
-                value={inviteCode}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInviteCode(e.target.value)
-                }
-              />
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
+            <h2 className="text-xl font-bold mb-4">Novo grupo</h2>
+            <form className="form" onSubmit={handleCreateGroup}>
+                <Input
+                  label="Nome do grupo"
+                  placeholder="Ex: Minha Casa"
+                  value={groupName}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setGroupName(e.target.value)
+                  }
+                  data-testid="create-group-name"
+                />
+                <Button type="submit" disabled={loading} className="w-full" variant="secondary" data-testid="create-group-button">
+                  {loading ? "Salvando..." : "Criar Grupo"}
+                </Button>
             </form>
           </CardBody>
         </Card>
@@ -283,21 +288,75 @@ export function GroupPage() {
                 <article
                   key={group.id}
                   className={
-                    group.id === groupId ? "group-item active" : "group-item"
+                    group.id === groupId ? "group-item active border-l-4 border-l-primary pl-4" : "group-item"
                   }
                 >
-                  <div>
+                  <div className="flex-1">
                     <strong>{group.nome}</strong>
-                    <p>{group.codigo_convite}</p>
+                    <p className="text-xs font-mono">{group.codigo_convite}</p>
                   </div>
                   <div className="actions-row">
+                    {group.id !== groupId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUseGroup(group.id)}
+                        disabled={loading}
+                      >
+                        Usar
+                      </Button>
+                    ) : (
+                      <Badge variant="primary">Ativo</Badge>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => handleUseGroup(group.id)}
+                      size="sm"
+                      className="text-error hover:bg-error/10"
+                      onClick={async () => {
+                        if (!userId) return;
+                        if (!confirm(`Tem certeza que deseja SAIR do grupo "${group.nome}"?`)) return;
+                        setLoading(true);
+                        try {
+                          await leaveGroup(group.id, userId);
+                          if (group.id === groupId) {
+                            clearGroup();
+                          }
+                          await refreshGroups();
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Erro ao sair");
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
                       disabled={loading}
                     >
-                      Usar
+                      Sair
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-error hover:bg-error/20 font-bold"
+                      onClick={async () => {
+                        if (!confirm(`⚠️ AVISO: Isso excluirá o grupo "${group.nome}" e TODOS os seus dados (estoque, listas, etc) para TODOS os membros. Tem certeza?`)) return;
+                        setLoading(true);
+                        try {
+                          await deleteGroup(group.id);
+                          if (group.id === groupId) {
+                            clearGroup();
+                          }
+                          await refreshGroups();
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Erro ao excluir");
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      Excluir
                     </Button>
                   </div>
                 </article>

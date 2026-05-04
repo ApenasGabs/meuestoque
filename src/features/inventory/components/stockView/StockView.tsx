@@ -322,8 +322,7 @@ export const StockView = ({
           </>
         )}
       </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-28">
+      <div className="flex-1 overflow-y-auto p-2 space-y-0 pb-28">
         {pendingGroupedProducts.size > 0 && (
           <CategorySection
             name="Pendentes de Validade"
@@ -385,7 +384,6 @@ export const StockView = ({
           })
         )}
       </div>
-
       {pendingProduct && (
         <Drawer
           open={Boolean(pendingProduct)}
@@ -439,7 +437,6 @@ export const StockView = ({
           </div>
         </Drawer>
       )}
-
       {consumingProduct && (
         <Drawer
           open={Boolean(consumingProduct)}
@@ -496,7 +493,6 @@ export const StockView = ({
           </div>
         </Drawer>
       )}
-
       <ProductFormModal
         key={`${editingProduct?.id ?? "new"}-${openForm ? "open" : "closed"}`}
         open={openForm}
@@ -516,7 +512,6 @@ export const StockView = ({
         }}
         onAddCategory={onAddCategory}
       />
-
       {historyProduct && (
         <ConsumptionHistoryDrawer
           open={Boolean(historyProduct)}
@@ -525,7 +520,6 @@ export const StockView = ({
           productName={historyProduct.name}
         />
       )}
-
       {inventoryBulk && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-slide-up">
           <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
@@ -560,7 +554,6 @@ export const StockView = ({
           </div>
         </div>
       )}
-
       {bulkDateDrawerOpen && (
         <Drawer
           open={bulkDateDrawerOpen}
