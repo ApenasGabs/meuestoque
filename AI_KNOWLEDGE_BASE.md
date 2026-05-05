@@ -300,3 +300,47 @@ ESTADO: O estado local (active group) só é limpo se a deleção no banco de da
 - [x] Estado local preservado em caso de falha na deleção.
 - [x] TypeScript compila sem erros (interfaces sincronizadas).
 - [x] Lint passando (zero erros).
+
+---
+
+### 📝 (05/05/2026) Atualização da Pipeline CI/CD (Deploy Manual/Forçado)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[Gatilho: Push ou Manual] --> B{force_deploy == true?}
+    B -- Sim --> C[Job: Deploy Vercel]
+    B -- Não --> D{Semantic Release gerou tag?}
+    D -- Sim --> C
+    D -- Sim --> E[Job: Testes Unitários]
+    E --> F[Job: Testes E2E]
+    D -- Não --> G[Fim: Nada a fazer]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `.github/workflows/release.yml` | Adicionado `workflow_dispatch` e lógica condicional para `force_deploy`. |
+
+#### Lógica de Decisão
+```text
+DEPLOYS:
+Ocorre se (nova_tag_gerada == true) OU (force_deploy == true).
+
+TESTES (Unitários e E2E):
+Ocorrem APENAS se (nova_tag_gerada == true).
+O force_deploy ignora a bateria de testes para agilizar correções manuais ou deploys de emergência que não geram tag.
+```
+
+#### Comportamento
+- Adicionado botão "Run workflow" no GitHub Actions com checkbox "Forçar deploy".
+- Se marcado, a Vercel recebe o código atual da `main` imediatamente.
+- O fluxo padrão de commit (feat/fix) continua exigindo testes e gerando tags automáticas.
+
+#### Checklist de Aceite
+- [x] `workflow_dispatch` configurado corretamente.
+- [x] Input `force_deploy` disponível na UI do GitHub.
+- [x] Job de Deploy aceita ambas as condições (tag ou manual).
+- [x] Jobs de Teste continuam protegidos e vinculados apenas a novas versões.
+- [x] YAML validado.
