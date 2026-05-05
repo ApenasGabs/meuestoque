@@ -8,7 +8,7 @@ import { CategorySection } from "../categorySection/CategorySection";
 import { ConsumptionHistoryDrawer } from "../consumptionHistory/ConsumptionHistoryDrawer";
 import { ProductFormModal } from "../productFormModal/ProductFormModal";
 import { useBulkStore } from "../../../../stores/bulkStore";
-import { XOutlined } from "@ant-design/icons";
+import { XOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface StockViewProps {
   products: InventoryProduct[];
@@ -29,6 +29,7 @@ interface StockViewProps {
     validityDate: string | null,
     naoAplica: boolean,
   ) => Promise<void>;
+  onBulkRemove?: (itemIds: string[]) => Promise<void>;
 }
 
 /**
@@ -71,6 +72,7 @@ export const StockView = ({
   onAddToShoppingList,
   onAddCategory,
   onBulkUpdateValidity,
+  onBulkRemove,
 }: StockViewProps): ReactElement => {
   const [openForm, setOpenForm] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
@@ -251,6 +253,23 @@ export const StockView = ({
       .catch((err) => {
         console.error("Falha ao marcar itens como não perecíveis:", err);
       });
+  };
+
+  const handleBulkRemove = () => {
+    if (selectedItems.length === 0) return;
+    if (
+      window.confirm(
+        `Tem certeza que deseja remover ${selectedItems.length} item(ns) permanentemente?`,
+      )
+    ) {
+      onBulkRemove?.(selectedItems)
+        .then(() => {
+          exitBulkMode();
+        })
+        .catch((err) => {
+          console.error("Falha ao remover itens em lote:", err);
+        });
+    }
   };
 
   return (
@@ -550,6 +569,15 @@ export const StockView = ({
               disabled={selectedItems.length === 0}
             >
               Definir Validade
+            </Button>
+            <Button
+              variant="ghost"
+              className="px-3 text-error hover:bg-error/10"
+              onClick={handleBulkRemove}
+              disabled={selectedItems.length === 0}
+              aria-label="Remover selecionados"
+            >
+              <DeleteOutlined />
             </Button>
           </div>
         </div>

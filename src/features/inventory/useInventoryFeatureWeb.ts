@@ -33,6 +33,7 @@ interface InventoryFeatureWebActions {
   addProduct: (product: Omit<InventoryProduct, "id">) => Promise<string>;
   updateProduct: (id: string, product: Omit<InventoryProduct, "id">) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
+  removeProductsBulk: (itemIds: string[]) => Promise<void>;
   updateQuantity: (id: string, delta: number) => Promise<void>;
   toggleInShoppingList: (id: string, include: boolean) => Promise<void>;
 }
@@ -189,6 +190,10 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
   const removeProduct = async (id: string): Promise<void> => {
     await removeItem(id);
   };
+  
+  const removeProductsBulk = async (itemIds: string[]): Promise<void> => {
+    await useStockStore.getState().removeItemsBulk(itemIds);
+  };
 
   const updateQuantity = async (id: string, delta: number): Promise<void> => {
     await updateItemQuantity(id, delta, useAuthStore.getState().userId);
@@ -214,6 +219,7 @@ export const useInventoryFeatureWeb = (): InventoryFeatureWebState & InventoryFe
     addProduct,
     updateProduct,
     removeProduct,
+    removeProductsBulk,
     updateQuantity,
     toggleInShoppingList,
   };

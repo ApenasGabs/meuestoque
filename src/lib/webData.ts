@@ -1172,6 +1172,12 @@ export const deleteStockItemById = async (itemId: string): Promise<void> => {
   if (error) throw new Error(error.message);
 };
 
+export const deleteStockItemsBulk = async (itemIds: string[]): Promise<void> => {
+  if (itemIds.length === 0) return;
+  const { error } = await supabase.from("stock_items").delete().in("id", itemIds);
+  if (error) throw new Error(error.message);
+};
+
 export const getStockMovements = async (
   itemId: string,
   limit = 30,

@@ -215,39 +215,33 @@ export const ProductCard = ({
             </div>
           </div>
 
-          {/* Row 2: Progress Bar with Percentage in Front */}
+          {/* Row 2: Simple Thin Progress Bar */}
           {product.minStock > 0 && !isPendingValidity && (
-            <div className="w-full relative h-3 flex items-center justify-center">
-              {/* Thin Progress Bar behind */}
-              <div className="w-full h-1 bg-base-300/30 rounded-full overflow-hidden relative">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
-                  style={{ width: `${Math.min(stockPercent, 100)}%` }}
-                />
-              </div>
-
-              {/* Percentage text in front */}
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tabular-nums opacity-40 select-none pointer-events-none">
-                {stockPercent}%
-              </span>
+            <div className="w-full h-1 bg-base-300/30 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                style={{ width: `${Math.min(stockPercent, 100)}%` }}
+              />
             </div>
           )}
 
-          {/* Row 3: Quantity, Unit, Consume Button and Actions */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              {/* Quantity Indicator */}
-              <div className="flex items-center justify-center bg-base-200/80 rounded px-1.5 py-0.5 min-w-[2.2rem] h-7 border border-base-300/50">
-                <span className="text-sm font-bold tabular-nums leading-none">
-                  {product.quantity}
-                </span>
-              </div>
-
-              {/* Unit */}
-              <span className="text-sm font-medium text-base-content/60 uppercase tracking-tighter">
-                {product.unit ?? "Un"}
+          {/* Row 3: Quantity, Percentage (Centered), and Actions */}
+          <div className="flex items-center justify-between gap-2 -mt-1 relative">
+            <div className="flex items-center gap-2">
+              {/* Quantity Indicator / Unit*/}
+              <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                {product.quantity} {product.unit ?? "Un"}
               </span>
+            </div>
 
+            {/* Percentage centered in the middle of Row 3 */}
+            {product.minStock > 0 && !isPendingValidity && (
+              <span className="absolute left-1/2 -translate-x-1/2 text-sm font-bold tabular-nums text-base-content/60 select-none">
+                {stockPercent}%
+              </span>
+            )}
+
+            <div className="flex items-center gap-1">
               {/* Consume Button */}
               <Button
                 variant="ghost"
@@ -284,7 +278,7 @@ export const ProductCard = ({
                 aria-label={`Consumir ${product.name}`}
                 className="h-7 min-h-7 px-1.5 bg-base-200 hover:bg-base-300 border-none text-[10px] font-bold font-mono"
               >
-                -{product.portionSize ?? 1}
+                Consumir -{product.portionSize ?? 1}
               </Button>
             </div>
 

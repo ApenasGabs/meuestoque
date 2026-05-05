@@ -29,6 +29,7 @@ export const StockPageNew = (): ReactElement => {
     addProduct,
     updateProduct,
     removeProduct,
+    removeProductsBulk,
     updateQuantity,
     toggleInShoppingList,
     lastAutoAddedItemName,
@@ -137,6 +138,18 @@ export const StockPageNew = (): ReactElement => {
           onConsumeProduct={(product, portions) => void handleConsumeProduct(product, portions)}
           onAddToShoppingList={handleAddToShoppingList}
           onAddCategory={handleAddCategory}
+          onBulkRemove={async (itemIds: string[]) => {
+            try {
+              await removeProductsBulk(itemIds);
+              setToast({ message: `${itemIds.length} item(ns) removido(s)!`, type: "success" });
+              void fetchItems(groupId);
+            } catch (err) {
+              setToast({
+                message: err instanceof Error ? err.message : "Falha ao remover itens",
+                type: "error",
+              });
+            }
+          }}
           onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
             try {
               await bulkUpdateStockValidity(itemIds, validityDate, naoAplica);
