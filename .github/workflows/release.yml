@@ -1,4 +1,4 @@
-name: Release
+name: Release & Deploy
 
 on:
   push:
@@ -11,44 +11,192 @@ permissions:
   pull-requests: write
 
 jobs:
+  # ==========================================
+  # JOB 1: AVALIAR E GERAR VERSÃO (TAG)
+  # ==========================================
   release:
-    name: Release
+    name: 📦 Semantic Release
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      published: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
 
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
 
-      - name: Setup Node.js
+      - name: ℹ️ Log: Informações do Ambiente
+        run: |
+          echo "==== DADOS DO AMBIENTE ===="
+          echo "Repositório: ${{ github.repository }}"
+          echo "Branch Acionada: ${{ github.ref_name }}"
+          echo "Hash do Commit: ${{ github.sha }}"
+          echo "==========================="
+
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
 
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Verify workspace
+      - name: 📦 Instalar dependências
         run: |
-          echo "Current branch: $(git branch --show-current)"
-          echo "Last commit: $(git log -1 --oneline)"
-          echo "Tags: $(git tag | tail -5)"
+          echo "Iniciando a instalação via npm ci..."
+          npm ci --legacy-peer-deps
 
-      - name: Release
-        id: release
+      - name: 🏷️ Avaliar e Gerar Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx semantic-release
 
-      - name: Trigger Vercel Deploy
-        if: success()
-        env:
-          VERCEL_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+      - name: 📋 Log: Resumo da Execução
         run: |
-          echo "Disparando deploy na Vercel..."
-          curl -fsSL -X POST "$VERCEL_HOOK"
-          echo -e "\nDeploy solicitado com sucesso!"
+          if [ "${{ steps.semantic.outputs.new_release_published }}" == "true" ]; then
+            echo "### 🚀 Release Gerada com Sucesso!" >> $GITHUB_STEP_SUMMARY
+            echo "- **Versão:** v${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- A pipeline agora irá bifurcar: Deploy para Vercel e Bateria de Testes em paralelo." >> $GITHUB_STEP_SUMMARY
+            echo "Nova versão (v${{ steps.semantic.outputs.new_release_version }}) detectada. Preparando próximos jobs..."
+          else
+            echo "### ⏸️ Nenhuma release gerada" >> $GITHUB_STEP_SUMMARY
+            echo "- Os commits deste push não exigem uma nova versão (ex: chore, docs)." >> $GITHUB_STEP_SUMMARY
+            echo "- **Deploy e Testes cancelados.**" >> $GITHUB_STEP_SUMMARY
+            echo "Nenhuma tag nova. A pipeline será encerrada aqui com sucesso."
+          fi
+
+  # ==========================================
+  # JOB 2: DEPLOY NA VERCEL
+  # ==========================================
+  deploy:
+    name: 🔺 Deploy Vercel
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.published == 'true'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ℹ️ Log: Início do Deploy
+        run: |
+          echo "==== INICIANDO DEPLOY ===="
+          echo "Versão Alvo: v${{ needs.release.outputs.version }}"
+          echo "Ambiente: Production"
+          echo "=========================="
+
+      - name: 🛠️ Instalar Vercel CLI
+        run: npm install --global vercel
+
+      - name: 🔗 Conectar ao Projeto Vercel
+        run: |
+          echo "Baixando variáveis de ambiente (pull)..."
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: 🏗️ Build dos Artefatos
+        run: |
+          echo "Construindo aplicação na nuvem do GitHub Actions..."
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: 🚀 Publicar na Vercel
+        run: |
+          echo "Enviando build pronto para a Vercel..."
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: 📋 Log: Resumo do Deploy
+        run: |
+          echo "### 🔺 Deploy na Vercel: SUCESSO" >> $GITHUB_STEP_SUMMARY
+          echo "Sua aplicação (v${{ needs.release.outputs.version }}) já está no ar!" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # JOB 3: TESTES UNITÁRIOS
+  # ==========================================
+  unit-tests:
+    name: 🃏 Testes Unitários
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.published == 'true'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ℹ️ Log: Início dos Testes
+        run: echo "Iniciando validação do código fonte (v${{ needs.release.outputs.version }})..."
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: 📦 Instalar dependências
+        run: npm ci --legacy-peer-deps
+
+      - name: 🧪 Executar Vitest
+        run: |
+          echo "Rodando script 'npm run test'..."
+          npm run test
+
+      - name: 📋 Log: Resumo Unitários
+        run: |
+          echo "### 🃏 Testes Unitários: APROVADOS" >> $GITHUB_STEP_SUMMARY
+          echo "O código base está íntegro. Liberando a máquina virtual para iniciar o Playwright (E2E)." >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # JOB 4: TESTES E2E (PLAYWRIGHT)
+  # ==========================================
+  e2e-tests:
+    name: 🎭 Testes E2E
+    runs-on: ubuntu-latest
+    needs: [release, unit-tests]
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ℹ️ Log: Preparação E2E
+        run: echo "Preparando ambiente para simulação de usuário na versão v${{ needs.release.outputs.version }}..."
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: 📦 Instalar dependências
+        run: npm ci --legacy-peer-deps
+
+      - name: 🏗️ Build do Projeto
+        run: |
+          echo "Realizando build local para servir os arquivos estáticos ao Playwright..."
+          npm run build
+
+      - name: 🌐 Instalar Navegadores (Playwright)
+        run: |
+          echo "Baixando Chromium e dependências do Ubuntu (--with-deps)..."
+          npx playwright install --with-deps chromium
+
+      - name: 🎭 Executar Playwright
+        run: |
+          echo "Iniciando testes E2E com Playwright..."
+          npm run e2e
+
+      - name: 📋 Log: Resumo E2E
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "### 🎭 Testes E2E: APROVADOS" >> $GITHUB_STEP_SUMMARY
+            echo "A simulação de usuário ocorreu sem quebras visuais ou de fluxo." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Testes E2E: FALHARAM" >> $GITHUB_STEP_SUMMARY
+            echo "Ocorreu um erro durante a execução do Playwright. Verifique o log detalhado." >> $GITHUB_STEP_SUMMARY
+          fi
