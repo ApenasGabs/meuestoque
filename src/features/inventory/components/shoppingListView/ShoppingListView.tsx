@@ -36,6 +36,7 @@ interface ShoppingListViewProps {
   onUpdateItemPrice?: (id: string, value: number | null) => void;
   onUpdateItemUnitPrice?: (id: string, value: number | null) => void;
   onUpdateItemQuantity?: (id: string, value: number) => void;
+  onUpdateItemUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
   onBulkUpdateValidity?: (
     itemIds: string[],
@@ -85,6 +86,7 @@ export const ShoppingListView = ({
   onUpdateItemPrice,
   onUpdateItemUnitPrice,
   onUpdateItemQuantity,
+  onUpdateItemUnit,
   onUpdateValidityDate,
   onBulkUpdateValidity,
   onBulkRemove,
@@ -421,6 +423,7 @@ export const ShoppingListView = ({
                 onUpdatePrice={onUpdateItemPrice}
                 onUpdateUnitPrice={onUpdateItemUnitPrice}
                 onUpdateQuantity={onUpdateItemQuantity}
+                onUpdateUnit={onUpdateItemUnit}
                 onUpdateValidityDate={onUpdateValidityDate}
               />
             );

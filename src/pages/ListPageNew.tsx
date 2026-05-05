@@ -358,6 +358,27 @@ export const ListPageNew = (): ReactElement => {
     [listId, parseListQuantity, refreshItems],
   );
 
+  const handleUpdateItemUnit = useCallback(
+    async (itemId: string, unit: Unit): Promise<void> => {
+      if (!listId) return;
+
+      const item = shoppingItemsRef.current.find((i) => i.id === itemId);
+      if (!item) return;
+
+      const parsed = parseListQuantity(item.quantidade);
+      const quantity = parsed.quantity || 1;
+      const quantityLabel = `${quantity} ${unit}`;
+
+      try {
+        await updateListItemQuantity(itemId, quantityLabel);
+        await refreshItems(listId);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Falha ao atualizar unidade");
+      }
+    },
+    [listId, parseListQuantity, refreshItems],
+  );
+
   const handleGenerateSmartList = useCallback(async (): Promise<void> => {
     if (!listId) return;
 
@@ -463,6 +484,13 @@ export const ListPageNew = (): ReactElement => {
       void handleUpdateItemQuantity(id, value);
     },
     [handleUpdateItemQuantity],
+  );
+
+  const fireUpdateItemUnit = useCallback(
+    (id: string, value: Unit): void => {
+      void handleUpdateItemUnit(id, value);
+    },
+    [handleUpdateItemUnit],
   );
 
   const handleUpdateValidityDate = useCallback(
@@ -583,6 +611,7 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemPrice={fireUpdateItemPrice}
           onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
           onUpdateItemQuantity={fireUpdateItemQuantity}
+          onUpdateItemUnit={fireUpdateItemUnit}
           onUpdateValidityDate={fireUpdateValidityDate}
           onBulkRemove={async (itemIds: string[]) => {
             try {
