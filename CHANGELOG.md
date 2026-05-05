@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.0](https://github.com/ApenasGabs/meuestoque/compare/v1.13.1...v1.14.0) (2026-05-05)
+
+### ✨ Features
+
+* add manual workflow trigger with force deploy option to CI/CD pipeline ([e6362e3](https://github.com/ApenasGabs/meuestoque/commit/e6362e397e307ece33f59a9c50c853c40ecef482))
+
 ## [1.13.1](https://github.com/ApenasGabs/meuestoque/compare/v1.13.0...v1.13.1) (2026-05-05)
 
 ### 🐛 Bug Fixes
