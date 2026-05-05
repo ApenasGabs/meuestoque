@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.1](https://github.com/ApenasGabs/meuestoque/compare/v1.13.0...v1.13.1) (2026-05-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 standardize log step names in release workflow ([d361160](https://github.com/ApenasGabs/meuestoque/commit/d361160f5cef65f9c71ad434188e45129ac32143))
+
+### ♻️ Refactoring
+
+* :wrench: restructure CI/CD pipeline to use semantic-release with parallelized deployment and testing jobs ([5a5c6b4](https://github.com/ApenasGabs/meuestoque/commit/5a5c6b4f223abdc59ad7a0ba24069922dbaccc8d))
+
 ## [1.13.0](https://github.com/ApenasGabs/meuestoque/compare/v1.12.0...v1.13.0) (2026-05-05)
 
 ### ✨ Features
