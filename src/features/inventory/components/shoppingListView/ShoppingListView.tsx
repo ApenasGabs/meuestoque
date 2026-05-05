@@ -10,7 +10,7 @@ import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 import { ShoppingListItem } from "../shoppingListItem/ShoppingListItem";
 import { toUnit, type Unit } from "../../../../types/inventory.types";
-import { XOutlined } from "@ant-design/icons";
+import { XOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface SmartShoppingDraft {
   name: string;
@@ -42,6 +42,7 @@ interface ShoppingListViewProps {
     validityDate: string | null,
     naoAplica: boolean,
   ) => Promise<void>;
+  onBulkRemove?: (itemIds: string[]) => Promise<void>;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
 }
@@ -86,6 +87,7 @@ export const ShoppingListView = ({
   onUpdateItemQuantity,
   onUpdateValidityDate,
   onBulkUpdateValidity,
+  onBulkRemove,
   onOpenImportModal,
   onViewHistory,
 }: ShoppingListViewProps): ReactElement => {
@@ -242,6 +244,23 @@ export const ShoppingListView = ({
       .catch((err) => {
         console.error("Falha ao marcar como não perecível (lista):", err);
       });
+  };
+
+  const handleBulkRemove = (): void => {
+    if (selectedItems.length === 0) return;
+    if (
+      window.confirm(
+        `Tem certeza que deseja remover ${selectedItems.length} item(ns) permanentemente da lista?`,
+      )
+    ) {
+      onBulkRemove?.(selectedItems)
+        .then(() => {
+          exitBulkMode();
+        })
+        .catch((err) => {
+          console.error("Falha ao remover itens em lote (lista):", err);
+        });
+    }
   };
 
   return (
@@ -453,6 +472,15 @@ export const ShoppingListView = ({
               disabled={selectedItems.length === 0}
             >
               Definir Validade
+            </Button>
+            <Button
+              variant="ghost"
+              className="px-3 text-error hover:bg-error/10"
+              onClick={handleBulkRemove}
+              disabled={selectedItems.length === 0}
+              aria-label="Remover selecionados"
+            >
+              <DeleteOutlined />
             </Button>
           </div>
         </div>

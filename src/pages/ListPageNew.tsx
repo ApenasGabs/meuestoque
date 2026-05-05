@@ -14,6 +14,7 @@ import type { InventoryProduct, InventoryShoppingListItem } from "../features/in
 import {
   addListItem,
   deleteListItem,
+  deleteListItemsBulk,
   ensureActiveListForGroup,
   finishShoppingList,
   loadListItems,
@@ -583,6 +584,15 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
           onUpdateItemQuantity={fireUpdateItemQuantity}
           onUpdateValidityDate={fireUpdateValidityDate}
+          onBulkRemove={async (itemIds: string[]) => {
+            try {
+              await deleteListItemsBulk(itemIds);
+              setNotice(`${itemIds.length} item(ns) removido(s).`);
+              if (listId) await refreshItems(listId);
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Falha ao remover itens");
+            }
+          }}
           onBulkUpdateValidity={async (itemIds, validityDate, naoAplica) => {
             // Shopping list items use the per-item RPC since there is no
             // bulk RPC for the items table; the list is small enough that

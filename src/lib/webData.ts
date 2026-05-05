@@ -322,6 +322,13 @@ export async function deleteListItem(itemId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function deleteListItemsBulk(itemIds: string[]): Promise<void> {
+  if (itemIds.length === 0) return;
+  const { error } = await supabase.from("items").delete().in("id", itemIds);
+
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Updates the expiration date or sets the non-perishable flag for an item in the active shopping list.
  * This is used to persist temporary validity choices before checkout.
