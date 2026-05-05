@@ -7,13 +7,13 @@ begin;
 -- 1. Adiciona coluna created_by
 alter table public.groups add column if not exists created_by uuid;
 
--- 2. Popula created_by para grupos existentes (primeiro membro)
+-- 2. Popula created_by para grupos existentes (membro mais antigo)
 update public.groups g
 set created_by = sub.user_id
 from (
-	select group_id, min(user_id::text)::uuid as user_id
+	select distinct on (group_id) group_id, user_id
 	from public.group_members
-	group by group_id
+	order by group_id, entrou_em asc
 ) sub
 where g.id = sub.group_id and g.created_by is null;
 
