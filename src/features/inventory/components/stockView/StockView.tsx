@@ -262,7 +262,7 @@ export const StockView = ({
         `Tem certeza que deseja remover ${selectedItems.length} item(ns) permanentemente?`,
       )
     ) {
-      onBulkRemove?.(selectedItems)
+      void (onBulkRemove?.(selectedItems) ?? Promise.resolve())
         .then(() => {
           exitBulkMode();
         })

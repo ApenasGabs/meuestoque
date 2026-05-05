@@ -1245,8 +1245,9 @@ begin
     raise exception 'Nome do grupo é obrigatório';
   end if;
 
-  insert into public.groups (nome)
-  values (btrim(p_nome))
+
+  insert into public.groups (nome, created_by)
+  values (btrim(p_nome), v_user_id)
   returning id into v_group_id;
 
   insert into public.group_members (group_id, user_id)
