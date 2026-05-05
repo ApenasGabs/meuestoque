@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
 import { Button } from "../components/Button/Button";
-import { Card, CardBody, CardTitle } from "../components/Card/Card";
+import { Card, CardBody } from "../components/Card/Card";
 import { Input } from "../components/Input/Input";
 import { useAppMode } from "../hooks/useAppMode";
 import { supabase } from "../lib/supabase";
@@ -85,7 +85,7 @@ export function LoginPage() {
     <main className="page auth">
       <Card>
         <CardBody>
-          <CardTitle>{appTitle}</CardTitle>
+          <h1 className="text-2xl font-bold mb-4">{appTitle}</h1>
           <p>Entrar na sua conta</p>
 
           <form onSubmit={onSubmit} className="form mt-6">
@@ -95,6 +95,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               type="email"
               required
+              data-testid="login-email"
             />
             <Input
               label="Senha"
@@ -102,11 +103,21 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               type="password"
               required
+              data-testid="login-password"
             />
 
-            {error && <Alert type="error">{error}</Alert>}
+            {error && (
+              <Alert type="error" data-testid="login-error">
+                {error}
+              </Alert>
+            )}
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+              data-testid="login-submit"
+            >
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>

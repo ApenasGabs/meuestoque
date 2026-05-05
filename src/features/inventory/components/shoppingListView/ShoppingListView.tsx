@@ -288,14 +288,19 @@ export const ShoppingListView = ({
           <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold">Lista de Compras</h2>
+                <h1 className="text-base font-semibold" data-testid="shopping-list-heading">Lista de Compras</h1>
                 <p className="text-xs text-base-content/60">
                   {uncheckedCount} pendentes · {checkedCount} comprados
                   {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" size="sm" onClick={onGenerateSmartList}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onGenerateSmartList}
+                  data-testid="smart-list-button"
+                >
                   Lista inteligente
                 </Button>
                 {onOpenImportModal && (
@@ -320,6 +325,7 @@ export const ShoppingListView = ({
                   onChange={(event) => setSmartInput(event.target.value)}
                   onKeyDown={handleSmartKeyDown}
                   placeholder="Nome, quantidade, valor"
+                  data-testid="smart-shopping-input"
                 />
               </div>
 
@@ -377,7 +383,12 @@ export const ShoppingListView = ({
               </div>
 
               <div className="flex items-end">
-                <Button variant="primary" className="w-full" onClick={handleSmartSubmit}>
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={handleSmartSubmit}
+                  data-testid="add-item-button"
+                >
                   Adicionar
                 </Button>
               </div>
@@ -439,6 +450,7 @@ export const ShoppingListView = ({
             size="sm"
             onClick={onFinalizeShopping}
             disabled={finalizeDisabled}
+            data-testid="finalize-shopping-button"
           >
             {finalizing ? "Finalizando..." : "Finalizar compra"}
           </Button>

@@ -28,6 +28,7 @@ interface NavigationItem {
   path: string;
   testId: string;
   badgeCount?: number;
+  ariaLabel?: string;
 }
 
 export const ComprasWebShell = () => {
@@ -84,14 +85,15 @@ export const ComprasWebShell = () => {
   }, [listId]);
 
   const navigationItems: NavigationItem[] = [
-    { label: "Lista", path: "/list", testId: "nav-list", badgeCount: listBadgeCount },
+    { label: "Lista", path: "/list", testId: "nav-list", badgeCount: listBadgeCount, ariaLabel: "Lista de Compras" },
     {
       label: "Estoque",
       path: "/stock",
       testId: "nav-stock",
       badgeCount: stockWarningCount,
+      ariaLabel: "Meu Estoque",
     },
-    { label: <SettingOutlined style={{ fontSize: '1.25rem' }} />, path: "/profile", testId: "nav-config" },
+    { label: <SettingOutlined style={{ fontSize: '1.25rem' }} />, path: "/profile", testId: "nav-config", ariaLabel: "Configurações" },
   ];
 
   const showPrivateActions = ready && Boolean(userId);
@@ -195,6 +197,7 @@ export const ComprasWebShell = () => {
                 className={`relative flex-1 rounded-none h-16 flex-col gap-1 ${isActive ? "text-primary bg-primary/10 font-semibold" : "text-base-content/60"}`}
                 onClick={() => navigate(item.path)}
                 data-testid={item.testId}
+                aria-label={item.ariaLabel}
               >
                 {isActive && (
                   <span className="absolute left-3 right-3 top-1 h-1 rounded-full bg-primary" />

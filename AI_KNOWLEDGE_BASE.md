@@ -12,7 +12,8 @@ Para facilitar a leitura e não estourar seu contexto, quebramos as especificaç
 4. 👉 **`docs/ai/03_COMPONENTS.md`** — Componentes UI (Tailwind/daisyUI).
 5. 👉 **`docs/ai/04_RPC_CONTRACTS.md`** — Contratos das funções Postgres.
 6. 👉 **`docs/ai/05_DATABASE_MAP.md`** — Índice para o ER diagrama em `docs/database_map.md`.
-7. 👉 **`docs/ai/feature-*.md`** — Documentação dedicada por feature (ex: `feature-bulk-expiration.md`).
+7. 👉 **`docs/ai/06_E2E_TESTING.md`** — Arquitetura E2E (State Injection + Playwright).
+8. 👉 **`docs/ai/feature-*.md`** — Documentação dedicada por feature (ex: `feature-bulk-expiration.md`).
 
 Documentação fora de `docs/ai/`:
 
@@ -157,6 +158,81 @@ SE banco tiver políticas legadas + V2 na mesma tabela
 - [x] Migração aplicada no Supabase (`phase_a_v2_rls_policy_cleanup`).
 - [x] Fluxo de bootstrap/login/register sem fallback perigoso de `listId`.
 - [x] List pages resolvendo lista ativa por `groupId`.
+
+---
+
+### 📝 (03/05/2026) Arquitetura E2E com State Injection
+
+> Documentacao completa: `docs/ai/06_E2E_TESTING.md`
+
+#### Arquitetura
+```mermaid
+graph TD
+    subgraph "state/"
+        S1["auth.state"] --> DB["Supabase Admin"]
+        S2["group.state"] --> DB
+        S3["list.state"] --> DB
+        S4["stock.state"] --> DB
+        S5["cleanup.state"] --> DB
+    end
+    subgraph "screens/"
+        SC1["auth.screen"]
+        SC2["group.screen"]
+        SC3["list.screen"]
+        SC4["stock.screen"]
+    end
+    subgraph "scenarios/"
+        T1["auth.spec (7)"]
+        T2["groups.spec (8)"]
+        T3["list.spec (7)"]
+        T4["stock.spec (7)"]
+        T5["flows.spec (3)"]
+    end
+    T1 --> S1 & SC1
+    T2 --> S2 & SC2
+    T3 --> S3 & SC3
+    T4 --> S4 & SC4
+    T5 --> S1 & S4 & SC1 & SC3 & SC4
+```
+
+#### Arquivos Criados
+
+| Diretorio | Arquivo | Proposito |
+|---|---|---|
+| `e2e/config/` | `supabaseAdmin.ts` | Cliente admin com `service_role` key |
+| `e2e/fixtures/` | `testData.ts` | Geradores deterministicos de dados de teste |
+| `e2e/state/` | `auth`, `group`, `list`, `stock`, `cleanup` | Seed/cleanup direto no Supabase |
+| `e2e/screens/` | `auth`, `group`, `list`, `stock`, `navigation`, `profile` | Acoes atomicas de UI |
+| `e2e/scenarios/` | `auth`, `groups`, `list`, `stock`, `flows` | 32 cenarios E2E declarativos |
+
+#### Scripts NPM Adicionados
+
+| Script | Descricao |
+|---|---|
+| `npm run e2e:auth` | 7 testes de autenticacao |
+| `npm run e2e:groups` | 8 testes de gestao de grupos |
+| `npm run e2e:list` | 7 testes de lista de compras |
+| `npm run e2e:stock` | 7 testes de estoque |
+| `npm run e2e:flows` | 3 testes cross-domain |
+| `npm run e2e:all` | Todos os 32 testes |
+
+#### Logica de Decisao
+```text
+SEED: Sempre via supabaseAdmin (service_role) para bypasear RLS.
+SCREEN: Funcoes puras, 1 acao por funcao, sem estado interno.
+SCENARIO: Composicao declarativa de state + screen.
+ISOLAMENTO: Cada test.describe cria seu usuario/grupo; afterAll limpa tudo.
+```
+
+#### Checklist de Aceite
+- [x] TypeScript compila com zero erros (`tsc --noEmit`).
+- [x] 32 cenarios implementados em 5 dominios.
+- [x] 6 arquivos de screen com funcoes atomicas.
+- [x] 5 arquivos de state com seed/cleanup via admin API.
+- [x] Scripts NPM adicionados ao `package.json`.
+- [x] Documentacao completa em `docs/ai/06_E2E_TESTING.md`.
+- [x] `.env.example` atualizado com variaveis necessarias.
+
 
 
 ### 📝 (04/05/2026) Melhorias na Gestão de Grupos

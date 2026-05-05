@@ -187,6 +187,7 @@ export const ProfilePage = (): ReactElement => {
               className="danger"
               onClick={() => void handleLogout()}
               disabled={loading}
+              data-testid="logout-button"
             >
               Sair da conta
             </Button>

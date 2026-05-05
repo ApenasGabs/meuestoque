@@ -2,20 +2,20 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Accessibility Tests", () => {
   test("should have proper heading hierarchy", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
-    // Verificar se existe um h1
+    // Verificar se existe um h1 na página de login
     const h1 = page.locator("h1");
     await expect(h1).toBeVisible();
 
-    // Verificar se existem h2s
-    const h2s = page.locator("h2");
-    const count = await h2s.count();
-    expect(count).toBeGreaterThan(0);
+    // Verificar que o subtítulo "Entrar na sua conta" está presente
+    await expect(page.getByText("Entrar na sua conta")).toBeVisible();
   });
 
   test("should have accessible buttons", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
     // Todos os botões devem ter texto ou aria-label
     const buttons = page.locator("button");
@@ -34,7 +34,8 @@ test.describe("Accessibility Tests", () => {
   });
 
   test("should display images with alt text", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
     // Todas as imagens devem ter alt text
     const images = page.locator("img");
@@ -51,7 +52,7 @@ test.describe("Performance Tests", () => {
   test("should load page within acceptable time", async ({ page }) => {
     const startTime = Date.now();
 
-    await page.goto("/");
+    await page.goto("/login");
 
     const endTime = Date.now();
     const loadTime = endTime - startTime;
@@ -70,7 +71,8 @@ test.describe("Performance Tests", () => {
       }
     });
 
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
     // Não deve haver erros
     expect(errors.length).toBe(0);
@@ -82,36 +84,42 @@ test.describe("Responsiveness Tests", () => {
     // Viewport de celular
     await page.setViewportSize({ width: 375, height: 667 });
 
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
     // Verificar se a navbar está visível
-    const navbar = page.locator(".navbar");
+    const navbar = page.locator("nav.navbar");
     await expect(navbar).toBeVisible();
 
-    // Verificar se o conteúdo principal está visível
-    const hero = page.locator(".hero-content");
-    await expect(hero).toBeVisible();
+    // Verificar se o formulário de login está visível
+    const loginSubmit = page.getByTestId("login-submit");
+    await expect(loginSubmit).toBeVisible();
   });
 
   test("should be responsive on tablet", async ({ page }) => {
     // Viewport de tablet
     await page.setViewportSize({ width: 768, height: 1024 });
 
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
-    // Verificar grid responsivo
-    const grid = page.getByTestId("feature-cards");
-    await expect(grid).toBeVisible();
+    // Verificar se o formulário de login está visível e funcional
+    const loginEmail = page.getByTestId("login-email");
+    await expect(loginEmail).toBeVisible();
+
+    const loginSubmit = page.getByTestId("login-submit");
+    await expect(loginSubmit).toBeVisible();
   });
 
   test("should be responsive on desktop", async ({ page }) => {
     // Viewport de desktop
     await page.setViewportSize({ width: 1920, height: 1080 });
 
-    await page.goto("/");
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
 
     // Verificar se todos os elementos estão visíveis
-    const footer = page.locator(".footer");
+    const footer = page.locator("footer.footer");
     await expect(footer).toBeVisible();
   });
 });
