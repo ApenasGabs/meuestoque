@@ -5,6 +5,27 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.0](https://github.com/ApenasGabs/meuestoque/compare/v1.14.0...v1.15.0) (2026-05-05)
+
+### ✨ Features
+
+* :test_tube: implement E2E testing framework with page object models and core user flows ([c414735](https://github.com/ApenasGabs/meuestoque/commit/c414735561f683a4fa0ec0d720e3cd60b6baa2eb))
+* **e2e:** :sparkles: :test_tube: implement new functional architecture for E2E tests ([02cab2c](https://github.com/ApenasGabs/meuestoque/commit/02cab2c18c8cc8758c5552e9470e9148336b140d))
+* implement E2E authentication and group management test suites with Playwright setup ([0ed0d7c](https://github.com/ApenasGabs/meuestoque/commit/0ed0d7c4c309e919b35d790ac138295dbe77a543))
+
+### 🐛 Bug Fixes
+
+* 🐛 corrige error handling e cleanup nos testes E2E ([5c2007e](https://github.com/ApenasGabs/meuestoque/commit/5c2007e2ef6763b4d538247709596ff34c0c3b6b))
+
+### ♻️ Refactoring
+
+* ♻️ arruma validações, delegamentos e lazy load sugeridos no E2E ([1242654](https://github.com/ApenasGabs/meuestoque/commit/1242654dc85dc4976fc8cf09420f3afd656da8f0))
+* update seedListWithItems to reuse existing shopping lists and improve group member insertion error handling ([d2a520a](https://github.com/ApenasGabs/meuestoque/commit/d2a520aabb73630bf6928f4db98822cf65a10c3a))
+
+### 🧪 Tests
+
+* :wrench: standardize E2E selectors using data-testid attributes and update test helpers ([b24c388](https://github.com/ApenasGabs/meuestoque/commit/b24c388b2961785611858bfb5c5419c4aaeb6c2e))
+
 ## [1.14.0](https://github.com/ApenasGabs/meuestoque/compare/v1.13.1...v1.14.0) (2026-05-05)
 
 ### ✨ Features
