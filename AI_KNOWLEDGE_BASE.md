@@ -255,3 +255,48 @@ COMPACTAÇÃO: Permite que a barra e a porcentagem ocupem o mesmo espaço vertic
 | Arquivo | Mudança |
 |---|---|
 | `src/features/inventory/components/productCard/ProductCard.tsx` | Reposicionamento do span de porcentagem para dentro do container da barra com z-index inferior. |
+
+---
+
+### 📝 (05/05/2026) Correção de Permissões e Falha Silenciosa na Exclusão de Grupos
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[GroupPage] -->|Check Ownership| B{group.created_by === userId?}
+    B -->|Yes| C[Render Excluir Button]
+    B -->|No| D[Hide Excluir Button]
+    C -->|Click| E[deleteGroup RPC/Delete]
+    E -->|Supabase Delete| F{RLS Check}
+    F -->|Blocked / 0 rows| G[Throw Error: Sem Permissão]
+    F -->|Success / 1 row| H[Clear Local State + Refresh]
+    G -->|Caught| I[Show Alert Error]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/domain/sessionRules.ts` | Adicionado `created_by` à interface `GroupRecord`. |
+| `src/stores/groupStore.ts` | Adicionado `created_by` à interface `WebGroupRecord`. |
+| `src/lib/webData.ts` | Atualizado `loadUserGroups` para buscar `created_by`; `deleteGroup` agora valida se a linha foi realmente deletada. |
+| `src/pages/GroupPage.tsx` | Implementada renderização condicional do botão "Excluir" baseada no `userId`. |
+
+#### Lógica de Decisão
+```text
+VISIBILIDADE: O botão "Excluir" só deve aparecer para o criador do grupo (dono).
+SEGURANÇA: deleteGroup() agora usa .select("id") para garantir que a deleção foi processada pelo Supabase.
+ESTADO: O estado local (active group) só é limpo se a deleção no banco de dados for confirmada com sucesso.
+```
+
+#### Comportamento
+- Usuários que não criaram o grupo não veem mais a opção de excluí-lo (apenas "Sair").
+- Se por algum motivo (bug ou bypass) um não-dono tentar excluir, o backend/RLS bloqueia e o frontend agora exibe um erro em vez de limpar o estado e deixar o usuário "sem grupo".
+
+#### Checklist de Aceite
+- [x] `created_by` sendo populado no carregamento de grupos.
+- [x] Botão "Excluir" oculto para não-donos.
+- [x] `deleteGroup` lança erro se o RLS bloquear a deleção (zero rows affected).
+- [x] Estado local preservado em caso de falha na deleção.
+- [x] TypeScript compila sem erros (interfaces sincronizadas).
+- [x] Lint passando (zero erros).

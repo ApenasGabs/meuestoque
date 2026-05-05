@@ -334,30 +334,32 @@ export function GroupPage() {
                     >
                       Sair
                     </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-error hover:bg-error/20 font-bold"
-                      onClick={async () => {
-                        if (!confirm(`⚠️ AVISO: Isso excluirá o grupo "${group.nome}" e TODOS os seus dados (estoque, listas, etc) para TODOS os membros. Tem certeza?`)) return;
-                        setLoading(true);
-                        try {
-                          await deleteGroup(group.id);
-                          if (group.id === groupId) {
-                            clearGroup();
+                    {group.created_by === userId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-error hover:bg-error/20 font-bold"
+                        onClick={async () => {
+                          if (!confirm(`⚠️ AVISO: Isso excluirá o grupo "${group.nome}" e TODOS os seus dados (estoque, listas, etc) para TODOS os membros. Tem certeza?`)) return;
+                          setLoading(true);
+                          try {
+                            await deleteGroup(group.id);
+                            if (group.id === groupId) {
+                              clearGroup();
+                            }
+                            await refreshGroups();
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : "Erro ao excluir");
+                          } finally {
+                            setLoading(false);
                           }
-                          await refreshGroups();
-                        } catch (err) {
-                          setError(err instanceof Error ? err.message : "Erro ao excluir");
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      Excluir
-                    </Button>
+                        }}
+                        disabled={loading}
+                      >
+                        Excluir
+                      </Button>
+                    )}
                   </div>
                 </article>
               ))}

@@ -5,6 +5,7 @@ export interface WebGroupRecord {
   id: string;
   nome: string;
   codigo_convite: string;
+  created_by?: string;
 }
 
 export interface GroupStoreSnapshot {

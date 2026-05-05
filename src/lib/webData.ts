@@ -74,7 +74,7 @@ export const getSessionUser = async (): Promise<UserSessionData | null> => {
 export const loadUserGroups = async (userId: string): Promise<GroupRecord[]> => {
   const { data, error } = await supabase
     .from("groups")
-    .select("id, nome, codigo_convite, group_members!inner(user_id)")
+    .select("id, nome, codigo_convite, created_by, group_members!inner(user_id)")
     .eq("group_members.user_id", userId);
 
   if (error) throw new Error(error.message);
@@ -83,6 +83,7 @@ export const loadUserGroups = async (userId: string): Promise<GroupRecord[]> => 
     id: group.id,
     nome: group.nome,
     codigo_convite: group.codigo_convite,
+    created_by: group.created_by,
   }));
 };
 
@@ -891,12 +892,16 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("groups")
     .delete()
-    .eq("id", groupId);
+    .eq("id", groupId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("Você não tem permissão para excluir este grupo ou ele não existe.");
+  }
 }
 
 export async function createShoppingListForGroup(groupId: string): Promise<string | null> {
