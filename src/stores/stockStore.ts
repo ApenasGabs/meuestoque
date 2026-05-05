@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
   deleteStockItemById,
+  deleteStockItemsBulk,
   getStockItems,
   recordStockMovement,
   setStockItemInShoppingList,
@@ -39,6 +40,7 @@ interface StockState {
   ) => Promise<{ item: StockItemRecord | null; autoAddedToList: boolean }>;
   toggleInShoppingList: (itemId: string, include: boolean) => Promise<StockItemRecord>;
   removeItem: (itemId: string) => Promise<void>;
+  removeItemsBulk: (itemIds: string[]) => Promise<void>;
   clearStock: () => void;
 }
 
@@ -186,6 +188,11 @@ export const useStockStore = create<StockState>()(
       removeItem: async (itemId) => {
         await deleteStockItemById(itemId);
         set((state) => ({ items: state.items.filter((item) => item.id !== itemId) }));
+      },
+      removeItemsBulk: async (itemIds) => {
+        await deleteStockItemsBulk(itemIds);
+        const idSet = new Set(itemIds);
+        set((state) => ({ items: state.items.filter((item) => !idSet.has(item.id)) }));
       },
       clearStock: () => {
         clearPendingStockWrites();

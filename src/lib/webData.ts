@@ -74,7 +74,7 @@ export const getSessionUser = async (): Promise<UserSessionData | null> => {
 export const loadUserGroups = async (userId: string): Promise<GroupRecord[]> => {
   const { data, error } = await supabase
     .from("groups")
-    .select("id, nome, codigo_convite, group_members!inner(user_id)")
+    .select("id, nome, codigo_convite, created_by, group_members!inner(user_id)")
     .eq("group_members.user_id", userId);
 
   if (error) throw new Error(error.message);
@@ -83,6 +83,7 @@ export const loadUserGroups = async (userId: string): Promise<GroupRecord[]> => 
     id: group.id,
     nome: group.nome,
     codigo_convite: group.codigo_convite,
+    created_by: group.created_by,
   }));
 };
 
@@ -318,6 +319,13 @@ export async function updateListItemQuantity(itemId: string, quantity: string): 
 
 export async function deleteListItem(itemId: string): Promise<void> {
   const { error } = await supabase.from("items").delete().eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteListItemsBulk(itemIds: string[]): Promise<void> {
+  if (itemIds.length === 0) return;
+  const { error } = await supabase.from("items").delete().in("id", itemIds);
 
   if (error) throw new Error(error.message);
 }
@@ -883,6 +891,19 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
   if (error) throw new Error(error.message);
 }
 
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("groups")
+    .delete()
+    .eq("id", groupId)
+    .select("id");
+
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("Você não tem permissão para excluir este grupo ou ele não existe.");
+  }
+}
+
 export async function createShoppingListForGroup(groupId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("shopping_lists")
@@ -1160,6 +1181,12 @@ export const upsertStockItem = async (input: UpsertStockItemInput): Promise<Stoc
 
 export const deleteStockItemById = async (itemId: string): Promise<void> => {
   const { error } = await supabase.from("stock_items").delete().eq("id", itemId);
+  if (error) throw new Error(error.message);
+};
+
+export const deleteStockItemsBulk = async (itemIds: string[]): Promise<void> => {
+  if (itemIds.length === 0) return;
+  const { error } = await supabase.from("stock_items").delete().in("id", itemIds);
   if (error) throw new Error(error.message);
 };
 

@@ -175,6 +175,14 @@ export const ProfilePage = (): ReactElement => {
             </Button>
             <Button
               type="button"
+              variant="ghost"
+              onClick={() => navigate("/group")}
+              data-testid="manage-groups-button"
+            >
+              Gerenciar Grupos
+            </Button>
+            <Button
+              type="button"
               variant="accent"
               className="danger"
               onClick={() => void handleLogout()}

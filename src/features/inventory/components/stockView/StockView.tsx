@@ -8,7 +8,7 @@ import { CategorySection } from "../categorySection/CategorySection";
 import { ConsumptionHistoryDrawer } from "../consumptionHistory/ConsumptionHistoryDrawer";
 import { ProductFormModal } from "../productFormModal/ProductFormModal";
 import { useBulkStore } from "../../../../stores/bulkStore";
-import { XOutlined } from "@ant-design/icons";
+import { XOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface StockViewProps {
   products: InventoryProduct[];
@@ -29,6 +29,7 @@ interface StockViewProps {
     validityDate: string | null,
     naoAplica: boolean,
   ) => Promise<void>;
+  onBulkRemove?: (itemIds: string[]) => Promise<void>;
 }
 
 /**
@@ -71,6 +72,7 @@ export const StockView = ({
   onAddToShoppingList,
   onAddCategory,
   onBulkUpdateValidity,
+  onBulkRemove,
 }: StockViewProps): ReactElement => {
   const [openForm, setOpenForm] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
@@ -253,6 +255,23 @@ export const StockView = ({
       });
   };
 
+  const handleBulkRemove = () => {
+    if (selectedItems.length === 0) return;
+    if (
+      window.confirm(
+        `Tem certeza que deseja remover ${selectedItems.length} item(ns) permanentemente?`,
+      )
+    ) {
+      void (onBulkRemove?.(selectedItems) ?? Promise.resolve())
+        .then(() => {
+          exitBulkMode();
+        })
+        .catch((err) => {
+          console.error("Falha ao remover itens em lote:", err);
+        });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur space-y-3 sticky top-0 z-10">
@@ -322,8 +341,7 @@ export const StockView = ({
           </>
         )}
       </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-28">
+      <div className="flex-1 overflow-y-auto p-2 space-y-0 pb-28">
         {pendingGroupedProducts.size > 0 && (
           <CategorySection
             name="Pendentes de Validade"
@@ -385,7 +403,6 @@ export const StockView = ({
           })
         )}
       </div>
-
       {pendingProduct && (
         <Drawer
           open={Boolean(pendingProduct)}
@@ -439,7 +456,6 @@ export const StockView = ({
           </div>
         </Drawer>
       )}
-
       {consumingProduct && (
         <Drawer
           open={Boolean(consumingProduct)}
@@ -496,7 +512,6 @@ export const StockView = ({
           </div>
         </Drawer>
       )}
-
       <ProductFormModal
         key={`${editingProduct?.id ?? "new"}-${openForm ? "open" : "closed"}`}
         open={openForm}
@@ -516,7 +531,6 @@ export const StockView = ({
         }}
         onAddCategory={onAddCategory}
       />
-
       {historyProduct && (
         <ConsumptionHistoryDrawer
           open={Boolean(historyProduct)}
@@ -525,7 +539,6 @@ export const StockView = ({
           productName={historyProduct.name}
         />
       )}
-
       {inventoryBulk && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-slide-up">
           <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
@@ -557,10 +570,18 @@ export const StockView = ({
             >
               Definir Validade
             </Button>
+            <Button
+              variant="ghost"
+              className="px-3 text-error hover:bg-error/10"
+              onClick={handleBulkRemove}
+              disabled={selectedItems.length === 0}
+              aria-label="Remover selecionados"
+            >
+              <DeleteOutlined />
+            </Button>
           </div>
         </div>
       )}
-
       {bulkDateDrawerOpen && (
         <Drawer
           open={bulkDateDrawerOpen}

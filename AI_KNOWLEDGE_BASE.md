@@ -157,3 +157,146 @@ SE banco tiver políticas legadas + V2 na mesma tabela
 - [x] Migração aplicada no Supabase (`phase_a_v2_rls_policy_cleanup`).
 - [x] Fluxo de bootstrap/login/register sem fallback perigoso de `listId`.
 - [x] List pages resolvendo lista ativa por `groupId`.
+
+
+### 📝 (04/05/2026) Melhorias na Gestão de Grupos
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[ProfilePage] -->|Gerenciar Grupos| B[GroupPage]
+    B -->|Join/Create| C[Supabase Groups]
+    B -->|Leave| D[group_members DELETE]
+    B -->|Delete| E[groups DELETE]
+    B -->|Switch| F[useGroupStore setGroup]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/pages/ProfilePage.tsx` | Adicionado link "Gerenciar Grupos" para facilitar acesso. |
+| `src/pages/GroupPage.tsx` | Layout reorganizado; Adicionados botões "Sair" e "Excluir" na lista de grupos. |
+| `src/lib/webData.ts` | Adicionada função `deleteGroup`. |
+| `supabase/migrations/20260504_01_allow_group_deletion.sql` | **Criado**: Habilita política RLS para exclusão de grupos por membros; Backfill de `created_by` usa o membro mais antigo (`entrou_em`). |
+
+#### Lógica de Decisão
+```text
+SAIR: Remove apenas o vínculo do usuário (group_members).
+EXCLUIR: Remove o grupo e TODOS os dados relacionados (CASCADE). Exige confirmação.
+VISIBILIDADE: Join/Create sempre disponíveis no GroupPage, independente do estado ativo.
+```
+
+#### Comportamento
+- Usuário pode gerenciar múltiplos grupos sem ser bloqueado pelo estado "em grupo".
+- Acesso rápido via Perfil -> Gerenciar Grupos.
+- Confirmações críticas para evitar perda de dados.
+
+#### Checklist de Aceite
+- [x] Link no perfil funcionando.
+- [x] Botão "Sair" remove do grupo e limpa estado se ativo.
+- [x] Botão "Excluir" remove permanentemente e limpa estado.
+- [x] Layout do `GroupPage` responsivo e intuitivo.
+- [x] Migration de RLS criada.
+- [x] TypeScript compila sem erros nos arquivos alterados.
+
+---
+
+### 📝 (04/05/2026) Redesign dos Cards de Estoque
+
+#### Arquitetura (Layout do Card)
+```mermaid
+graph TD
+    A[ProductCard] --> B[Linha 1: Nome + Badges]
+    A --> C[Linha 2: Barra de Progresso Fina]
+    A --> D[Linha 3: Qtd + Unidade + Ações]
+    D --> D1[🛒 Shopping]
+    D --> D2[📊 Histórico]
+    D --> D3[✏️ Editar]
+    D --> D4[🗑️ Excluir]
+```
+
+#### Arquivos Modificados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/features/inventory/components/productCard/ProductCard.tsx` | Redesign completo do layout para maior densidade e clareza. |
+| `src/features/inventory/components/stockView/StockView.tsx` | Redução de padding e espaçamento global da view de estoque. |
+
+#### Lógica de Decisão
+```text
+DENSIDADE: Redução de padding (p-4 -> p-2) e spacing (y-4 -> y-2) para exibir mais itens.
+LAYOUT: Unidade colada na quantidade; Ícones agrupados à direita; Data de compra removida.
+VISUAL: Barra de progresso ultra-fina (h-1) para manter o contexto sem poluir.
+```
+
+#### Checklist de Aceite
+- [x] Unidade exibida ao lado da quantidade.
+- [x] Data de compra removida.
+- [x] Ícones 🛒 �� ✏️ 🗑️ organizados em linha.
+- [x] Barra de progresso fina implementada.
+- [x] Lint passando (zero erros).
+- [x] Responsividade mantida em telas pequenas.
+
+---
+
+### 📝 (04/05/2026) Ajuste Visual da Barra de Progresso
+
+#### Mudança
+A porcentagem de estoque (ex: 70%) foi movida de cima da barra para **atrás** dela, centralizada horizontalmente.
+
+#### Lógica de Decisão
+```text
+VISUAL: O texto age como um "marca d'água" sutil (opacity-10) no fundo da barra.
+COMPACTAÇÃO: Permite que a barra e a porcentagem ocupem o mesmo espaço vertical, reduzindo a altura total do card.
+```
+
+#### Arquivos Modificados
+| Arquivo | Mudança |
+|---|---|
+| `src/features/inventory/components/productCard/ProductCard.tsx` | Reposicionamento do span de porcentagem para dentro do container da barra com z-index inferior. |
+
+---
+
+### 📝 (05/05/2026) Correção de Permissões e Falha Silenciosa na Exclusão de Grupos
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[GroupPage] -->|Check Ownership| B{group.created_by === userId?}
+    B -->|Yes| C[Render Excluir Button]
+    B -->|No| D[Hide Excluir Button]
+    C -->|Click| E[deleteGroup RPC/Delete]
+    E -->|Supabase Delete| F{RLS Check}
+    F -->|Blocked / 0 rows| G[Throw Error: Sem Permissão]
+    F -->|Success / 1 row| H[Clear Local State + Refresh]
+    G -->|Caught| I[Show Alert Error]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/domain/sessionRules.ts` | Adicionado `created_by` à interface `GroupRecord`. |
+| `src/stores/groupStore.ts` | Adicionado `created_by` à interface `WebGroupRecord`. |
+| `src/lib/webData.ts` | Atualizado `loadUserGroups` para buscar `created_by`; `deleteGroup` agora valida se a linha foi realmente deletada. |
+| `src/pages/GroupPage.tsx` | Implementada renderização condicional do botão "Excluir" baseada no `userId`. |
+
+#### Lógica de Decisão
+```text
+VISIBILIDADE: O botão "Excluir" só deve aparecer para o criador do grupo (dono).
+SEGURANÇA: deleteGroup() agora usa .select("id") para garantir que a deleção foi processada pelo Supabase.
+ESTADO: O estado local (active group) só é limpo se a deleção no banco de dados for confirmada com sucesso.
+```
+
+#### Comportamento
+- Usuários que não criaram o grupo não veem mais a opção de excluí-lo (apenas "Sair").
+- Se por algum motivo (bug ou bypass) um não-dono tentar excluir, o backend/RLS bloqueia e o frontend agora exibe um erro em vez de limpar o estado e deixar o usuário "sem grupo".
+
+#### Checklist de Aceite
+- [x] `created_by` sendo populado no carregamento de grupos.
+- [x] Botão "Excluir" oculto para não-donos.
+- [x] `deleteGroup` lança erro se o RLS bloquear a deleção (zero rows affected).
+- [x] Estado local preservado em caso de falha na deleção.
+- [x] TypeScript compila sem erros (interfaces sincronizadas).
+- [x] Lint passando (zero erros).

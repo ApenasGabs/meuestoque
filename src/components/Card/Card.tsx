@@ -50,7 +50,7 @@ export const CardBody = ({
   const centerClass = centered ? "flex flex-col items-center justify-center text-center" : "";
 
   return (
-    <div className={`p-6 ${centerClass} ${className}`.trim()} {...props}>
+    <div className={`px-6 ${centerClass} ${className}`.trim()} {...props}>
       {children}
     </div>
   );

@@ -2,6 +2,7 @@ export interface GroupRecord {
   id: string;
   nome: string;
   codigo_convite: string;
+  created_by?: string;
 }
 
 export const pickActiveGroup = (

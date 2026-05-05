@@ -8,6 +8,9 @@ import { Input } from "../../../../components/Input/Input";
 import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
+import { UNITS } from "../../../../types/inventory.types";
+import type { Unit } from "../../../../types/inventory.types";
+
 interface ShoppingListItemProps {
   item: InventoryShoppingListItem;
   product: InventoryProduct;
@@ -16,6 +19,7 @@ interface ShoppingListItemProps {
   onUpdatePrice?: (id: string, value: number | null) => void;
   onUpdateUnitPrice?: (id: string, value: number | null) => void;
   onUpdateQuantity?: (id: string, value: number) => void;
+  onUpdateUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
 }
 
@@ -47,6 +51,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   onUpdatePrice,
   onUpdateUnitPrice,
   onUpdateQuantity,
+  onUpdateUnit,
   onUpdateValidityDate,
 }: ShoppingListItemProps): ReactElement {
   // ── Bulk mode plumbing for the shopping list (Spec Epic 1) ──
@@ -249,7 +254,26 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                   className="px-2 text-center tabular-nums"
                   style={{ width: `${Math.max(quantityDraft.length, 2) + 2}ch` }}
                 />
-                <span className="text-[10px] uppercase font-bold text-base-content/40">{displayUnit}</span>
+                <select
+                  className="select select-ghost select-xs h-7 min-h-7 px-1 py-0 text-[10px] uppercase font-bold text-base-content/40 border-none bg-transparent hover:bg-base-200/50 focus:outline-none cursor-pointer"
+                  value={baseUnit}
+                  onChange={(event) => {
+                    event.stopPropagation();
+                    onUpdateUnit?.(item.id, event.target.value as Unit);
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                  aria-label="Alterar unidade"
+                  title="Alterar unidade"
+                >
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                  {baseUnit && !UNITS.includes(baseUnit as Unit) && (
+                    <option value={baseUnit}>{baseUnit}</option>
+                  )}
+                </select>
                 {hasPack && (
                   <span className="text-[10px] text-base-content/40 ml-1">
                     (rende {product.packSize} {baseUnit})

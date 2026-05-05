@@ -22,7 +22,7 @@ interface ProductCardProps {
 
 /**
  * Interactive card component for inventory products.
- * 
+ *
  * Features:
  * - Quick consumption button (-portion) with long-press for custom amount
  * - Contextual badges: Low stock, Out of stock, Expiring soon, Auto-consume enabled
@@ -31,7 +31,7 @@ interface ProductCardProps {
  * - Pack/Box conversion display (e.g. "X units (Y packs)")
  * - Action buttons: Edit, Delete, Add to Cart, View History
  * - Swipe/Mobile-friendly long-press interactions
- * 
+ *
  * @param props.product - The product data to display
  * @param props.onEdit - Callback to open edit form
  * @param props.onAddToList - Callback to add item to shopping list
@@ -120,20 +120,21 @@ export const ProductCard = ({
     const val = product.consumeValue ?? 0;
     const freq = product.consumeFrequency ?? "daily";
     const ps = product.portionSize ?? 1;
-    const daily = freq === "daily" ? val * ps : freq === "weekly" ? (val * ps) / 7 : (val * ps) / 30;
+    const daily =
+      freq === "daily" ? val * ps : freq === "weekly" ? (val * ps) / 7 : (val * ps) / 30;
     if (daily <= 0) return null;
     return Math.floor(product.quantity / daily);
   })();
 
   // Progress bar percentage (quantity vs minStock)
-  const stockPercent = product.minStock > 0
-    ? Math.min(100, Math.round((product.quantity / product.minStock) * 100))
-    : product.quantity > 0 ? 100 : 0;
-  const progressColor = stockPercent <= 0
-    ? "bg-error"
-    : stockPercent <= 100
-      ? "bg-warning"
-      : "bg-success";
+  const stockPercent =
+    product.minStock > 0
+      ? Math.min(100, Math.round((product.quantity / product.minStock) * 100))
+      : product.quantity > 0
+        ? 100
+        : 0;
+  const progressColor =
+    stockPercent <= 0 ? "bg-error" : stockPercent <= 100 ? "bg-warning" : "bg-success";
 
   return (
     <Card
@@ -141,7 +142,7 @@ export const ProductCard = ({
       testId={`product-card-${product.id}`}
     >
       <CardBody
-        className="p-2 overflow-x-auto"
+        className="p-1.5 overflow-hidden"
         onClick={() => {
           if (cardLongPressTriggeredRef.current) {
             cardLongPressTriggeredRef.current = false;
@@ -175,9 +176,10 @@ export const ProductCard = ({
           }
         }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-1.5">
+          {/* Row 1: Name and Status Badges */}
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-start gap-1.5 min-w-0 flex-1">
               {isBulkMode && (
                 <Checkbox
                   checked={selected}
@@ -185,166 +187,171 @@ export const ProductCard = ({
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-sm font-medium truncate max-w-[120px] xs:max-w-40">{product.name}</p>
-                <div className="flex flex-wrap gap-1">
-                  {isPendingValidity && (
-                    <Badge variant="error" size="sm">
-                      Pendente Validade
-                    </Badge>
-                  )}
-                  {isOut && (
-                    <Badge variant="error" size="sm">
-                      Zerado
-                    </Badge>
-                  )}
-                  {isLow && !isOut && (
-                    <Badge variant="warning" size="sm">
-                      Baixo
-                    </Badge>
-                  )}
-                  {expiryInfo && !isPendingValidity && (
-                    <Badge variant={expiryInfo.variant} size="sm">
-                      {expiryInfo.label}
-                    </Badge>
-                  )}
-                  {autoConsumeLabel && (
-                    <Badge variant="info" size="sm">
-                      {autoConsumeLabel}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {product.unit && (
-                <span className="text-xs text-base-content/60">
-                  {product.unit}
-                  {product.packLabel && product.packSize && ` (${(product.quantity / product.packSize).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${product.packLabel})`}
-                </span>
-              )}
-              {product.lastPurchaseDate && (
-                <span className="text-xs text-base-content/40">
-                  {new Date(product.lastPurchaseDate).toLocaleDateString("pt-BR")}
-                </span>
-              )}
-            </div>
-
-            {/* Stock level progress bar */}
-            {product.minStock > 0 && !isPendingValidity && (
-              <div className="mt-1 flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-base-300/60 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${progressColor}`}
-                    style={{ width: `${Math.min(stockPercent, 100)}%` }}
-                  />
-                </div>
-                <span className="text-[10px] tabular-nums text-base-content/50 flex-shrink-0">
-                  {stockPercent}%
-                </span>
-              </div>
-            )}
-
-            {/* Runout prediction (Feature #13) */}
-            {runoutDays !== null && !isPendingValidity && (
-              <p className={`text-[10px] mt-0.5 ${
-                runoutDays <= 3 ? "text-error font-medium" : runoutDays <= 7 ? "text-warning" : "text-base-content/50"
-              }`}>
-                {runoutDays <= 0
-                  ? "⚠️ Estoque acabou! Reponha agora."
-                  : runoutDays <= 3
-                    ? `⚡ Dura ~${runoutDays}d com consumo auto.`
-                    : `📊 Dura ~${runoutDays}d com consumo auto.`}
+              <p className="text-sm font-bold truncate" title={product.name}>
+                {product.name}
               </p>
-            )}
+            </div>
+            <div className="flex flex-wrap gap-1 justify-end shrink-0">
+              {isPendingValidity && (
+                <Badge variant="error" size="sm">
+                  Validade?
+                </Badge>
+              )}
+              {isOut && (
+                <Badge variant="error" size="sm">
+                  Zerado
+                </Badge>
+              )}
+              {isLow && !isOut && (
+                <Badge variant="warning" size="sm">
+                  Baixo
+                </Badge>
+              )}
+              {expiryInfo && !isPendingValidity && (
+                <Badge variant={expiryInfo.variant} size="sm">
+                  {expiryInfo.label}
+                </Badge>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center justify-end gap-1 border-t border-base-200 pt-2 sm:border-t-0 sm:pt-0">
-            <div className="flex items-center bg-base-200/50 rounded-lg px-2 mr-1">
-              <span className="w-8 text-center font-bold tabular-nums text-sm">{product.quantity}</span>
+          {/* Row 2: Simple Thin Progress Bar */}
+          {product.minStock > 0 && !isPendingValidity && (
+            <div className="w-full h-1 bg-base-300/30 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                style={{ width: `${Math.min(stockPercent, 100)}%` }}
+              />
+            </div>
+          )}
+
+          {/* Row 3: Quantity, Percentage (Centered), and Actions */}
+          <div className="flex items-center justify-between gap-2 -mt-1 relative">
+            <div className="flex items-center gap-2">
+              {/* Quantity Indicator / Unit*/}
+              <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                {product.quantity} {product.unit ?? "Un"}
+              </span>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleConsumeClick();
-              }}
-              onMouseDown={(event) => {
-                event.stopPropagation();
-                handleConsumePointerDown();
-              }}
-              onMouseUp={(event) => {
-                event.stopPropagation();
-                clearLongPress();
-              }}
-              onMouseLeave={clearLongPress}
-              onTouchStart={(event) => {
-                event.stopPropagation();
-                handleConsumePointerDown();
-              }}
-              onTouchEnd={(event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                clearLongPress();
-                if (!longPressTriggeredRef.current) {
-                  onConsume(product);
-                }
-                longPressTriggeredRef.current = false;
-              }}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onOpenCustomConsume(product);
-              }}
-              aria-label={`Consumir ${product.name}`}
-              className="text-xs font-mono px-2 bg-base-200 hover:bg-base-300 border-none min-h-8 h-8"
-            >
-              -{product.portionSize ?? 1}
-            </Button>
+            {/* Percentage centered in the middle of Row 3 */}
+            {product.minStock > 0 && !isPendingValidity && (
+              <span className="absolute left-1/2 -translate-x-1/2 text-sm font-bold tabular-nums text-base-content/60 select-none">
+                {stockPercent}%
+              </span>
+            )}
 
+            <div className="flex items-center gap-1">
+              {/* Consume Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleConsumeClick();
+                }}
+                onMouseDown={(event) => {
+                  event.stopPropagation();
+                  handleConsumePointerDown();
+                }}
+                onMouseUp={(event) => {
+                  event.stopPropagation();
+                  clearLongPress();
+                }}
+                onMouseLeave={clearLongPress}
+                onTouchStart={(event) => {
+                  event.stopPropagation();
+                  handleConsumePointerDown();
+                }}
+                onTouchEnd={(event) => {
+                  event.stopPropagation();
+                  event.preventDefault();
+                  longPressTriggeredRef.current = false;
+                  clearLongPress();
+                  onConsume(product);
+                }}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onOpenCustomConsume(product);
+                }}
+                aria-label={`Consumir ${product.name}`}
+                className="h-7 min-h-7 px-1.5 bg-base-200 hover:bg-base-300 border-none text-[10px] font-bold font-mono"
+              >
+                Consumir -{product.portionSize ?? 1}
+              </Button>
+            </div>
+
+            {/* Icons Actions: 🛒 📊 ✏️ 🗑️ */}
             <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(event) => { event.stopPropagation(); onAddToList(product); }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onAddToList(product);
+                }}
                 aria-label={`Adicionar ${product.name} na lista`}
-                className="min-h-8 h-8 w-8 p-0"
+                className="h-8 w-8 min-h-8 p-0"
+                title="Adicionar na lista"
               >
-                <ShoppingCartOutlined />
+                <ShoppingCartOutlined className="text-base" />
               </Button>
               {onViewHistory && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(event) => { event.stopPropagation(); onViewHistory(product); }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onViewHistory(product);
+                  }}
                   aria-label={`Histórico de ${product.name}`}
-                  className="min-h-8 h-8 w-8 p-0 text-info/70 hover:text-info"
+                  className="h-8 w-8 min-h-8 p-0 opacity-70 hover:opacity-100"
+                  title="Histórico de consumo"
                 >
-                  📊
+                  <span className="text-base">📊</span>
                 </Button>
               )}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(event) => { event.stopPropagation(); onEdit(product); }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit(product);
+                }}
                 aria-label={`Editar ${product.name}`}
-                className="min-h-8 h-8 w-8 p-0"
+                className="h-8 w-8 min-h-8 p-0 opacity-70 hover:opacity-100"
+                title="Editar"
               >
-                <EditOutlined />
+                <EditOutlined className="text-base" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(event) => { event.stopPropagation(); setConfirmDeleteOpen(true); }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setConfirmDeleteOpen(true);
+                }}
                 aria-label={`Remover ${product.name}`}
-                className="min-h-8 h-8 w-8 p-0 text-error/70 hover:text-error hover:bg-error/10"
+                className="h-8 w-8 min-h-8 p-0 text-error/60 hover:text-error hover:bg-error/10"
+                title="Remover"
               >
-                <DeleteOutlined />
+                <DeleteOutlined className="text-base" />
               </Button>
             </div>
           </div>
+
+          {/* Optional: Auto-consume mini info if exists, very subtle */}
+          {autoConsumeLabel && (
+            <div className="flex items-center gap-1 opacity-40 text-[9px] -mt-1">
+              <span>{autoConsumeLabel}</span>
+              {runoutDays !== null && (
+                <span className={runoutDays <= 3 ? "text-error font-bold" : ""}>
+                  · dura ~{runoutDays}d
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </CardBody>
 
@@ -357,8 +364,8 @@ export const ProductCard = ({
         >
           <div className="space-y-4">
             <p className="text-sm text-base-content/80">
-              Tem certeza que deseja remover <strong>{product.name}</strong> do estoque?
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover <strong>{product.name}</strong> do estoque? Esta ação
+              não pode ser desfeita.
             </p>
             <div className="flex gap-2 pt-2">
               <Button
