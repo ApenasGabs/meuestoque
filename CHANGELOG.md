@@ -5,6 +5,24 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.0](https://github.com/ApenasGabs/meuestoque/compare/v1.12.0...v1.13.0) (2026-05-05)
+
+### ✨ Features
+
+* ✨ adiciona exclusão em massa na barra de operações do estoque ([7547783](https://github.com/ApenasGabs/meuestoque/commit/7547783db143e2411e502c0c01933ab97fa606d8))
+* ✨ adiciona exclusão em massa na lista de compras ([28277fc](https://github.com/ApenasGabs/meuestoque/commit/28277fca3458fee37cc34a96f8f2330d0bc455bd))
+* add ability to update units directly in shopping list items ([4297d34](https://github.com/ApenasGabs/meuestoque/commit/4297d34aa435b9df2b51a2342d79554d35cf221d))
+
+### 🐛 Bug Fixes
+
+* :wrench: refactor based on code review ([5a7bac8](https://github.com/ApenasGabs/meuestoque/commit/5a7bac8b36cc9bd9c12c248194ac20122f12e6a2))
+* 🐛 melhora lógica de backfill do dono do grupo ([c13fe7f](https://github.com/ApenasGabs/meuestoque/commit/c13fe7f8572ea85d3d4fc85e71b41d4787cc5c00))
+* 🐛 oculta excluir grupo para não-donos e valida deleção no banco ([be637f9](https://github.com/ApenasGabs/meuestoque/commit/be637f9b49f11725540a2150f1bf808b34acb073))
+
+### 👌 Styles
+
+* 💄 move porcentagem de estoque para frente da barra de progresso ([be8cf18](https://github.com/ApenasGabs/meuestoque/commit/be8cf18645f50b70f565fef3f5f84e52cd3f2231))
+
 ## [1.12.0](https://github.com/ApenasGabs/meuestoque/compare/v1.11.0...v1.12.0) (2026-05-03)
 
 ### ✨ Features
