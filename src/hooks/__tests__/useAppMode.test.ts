@@ -1,9 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { getAppMode } from "../useAppMode";
 import { useAuthStore } from "../../stores/authStore";
 import { useGroupStore } from "../../stores/groupStore";
 
 describe("getAppMode", () => {
+  beforeEach(() => {
+    useAuthStore.setState({ userId: null });
+    useGroupStore.setState({ groupId: null });
+  });
+
   it("returns solo mode when no group is active", () => {
     useAuthStore.setState({ userId: "user-1" });
     useGroupStore.setState({ groupId: null });

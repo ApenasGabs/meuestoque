@@ -4,7 +4,6 @@ import { Button } from "./components/Button/Button";
 import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
 import { PublicOnly, RequireAuth, RequireGroup } from "./components/RouteGuards";
-import { useAppMode } from "./hooks/useAppMode";
 import { useAppTitleSync } from "./hooks/useAppTitleSync";
 import { GroupPage } from "./pages/GroupPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -37,10 +36,9 @@ export const ComprasWebShell = () => {
   const userId = useAuthStore((state) => state.userId);
   const stockItems = useStockStore((state) => state.items);
   const ready = useSessionStore((state) => state.ready);
-  const { appTitle } = useAppMode();
 
-  // Synchronizes document.title based on app mode
-  useAppTitleSync();
+  // Synchronizes document.title based on app mode and provides the title for the Navbar
+  const { appTitle } = useAppTitleSync();
 
   const lowStockCount = stockItems.filter(
     (item) => item.quantidade <= item.quantidade_minima,
