@@ -130,11 +130,9 @@ export const fillProductForm = async (
  * Submits the product form (clicks "Adicionar" or "Salvar").
  *
  * @param page - Playwright page instance
- * @param isEdit - True if editing (button says "Salvar"), false if creating ("Adicionar")
  */
 export const submitProductForm = async (
-  page: Page,
-  _isEdit = false
+  page: Page
 ): Promise<void> => {
   await page.getByTestId("product-save-button").click();
 };

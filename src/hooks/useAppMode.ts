@@ -1,15 +1,6 @@
 import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 
-/**
- * Mapped domains by usage mode.
- * Solo → meuestoque | Shared → nossoestoque
- */
-const DOMAINS = {
-  solo: "meuestoque.apenasgabs.dev",
-  shared: "nossoestoque.apenasgabs.dev",
-} as const;
-
 export type AppMode = "solo" | "shared";
 
 interface AppModeResult {
@@ -19,8 +10,6 @@ interface AppModeResult {
   isShared: boolean;
   /** Primary app title: "Meu Estoque" or "Nosso Estoque" */
   appTitle: string;
-  /** Target domain name expected for the current mode */
-  targetDomain: string;
   /** Possessive prefix: "Meu" (My) or "Nosso" (Our) */
   prefix: string;
 }
@@ -31,7 +20,7 @@ interface AppModeResult {
  * - If the user doesn't belong to any group → **solo** mode ("Meu Estoque")
  * - If the user has an active groupId → **shared** mode ("Nosso Estoque")
  *
- * Returns formatted labels, target domains, and status flags ready for UI consumption.
+ * Returns formatted labels and status flags ready for UI consumption.
  */
 export const useAppMode = (): AppModeResult => {
   const userId = useAuthStore((state) => state.userId);
@@ -44,7 +33,6 @@ export const useAppMode = (): AppModeResult => {
     mode,
     isShared,
     appTitle: isShared ? "Nosso Estoque" : "Meu Estoque",
-    targetDomain: isShared ? DOMAINS.shared : DOMAINS.solo,
     prefix: isShared ? "Nosso" : "Meu",
   };
 };
@@ -64,7 +52,6 @@ export const getAppMode = (): AppModeResult => {
     mode,
     isShared,
     appTitle: isShared ? "Nosso Estoque" : "Meu Estoque",
-    targetDomain: isShared ? DOMAINS.shared : DOMAINS.solo,
     prefix: isShared ? "Nosso" : "Meu",
   };
 };
