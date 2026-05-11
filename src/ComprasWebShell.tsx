@@ -5,7 +5,7 @@ import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
 import { PublicOnly, RequireAuth, RequireGroup } from "./components/RouteGuards";
 import { useAppMode } from "./hooks/useAppMode";
-import { useSubdomainSync } from "./hooks/useSubdomainSync";
+import { useAppTitleSync } from "./hooks/useAppTitleSync";
 import { GroupPage } from "./pages/GroupPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ListPageNew } from "./pages/ListPageNew";
@@ -39,8 +39,8 @@ export const ComprasWebShell = () => {
   const ready = useSessionStore((state) => state.ready);
   const { appTitle } = useAppMode();
 
-  // Synchronizes subdomain and document.title based on app mode
-  useSubdomainSync();
+  // Synchronizes document.title based on app mode
+  useAppTitleSync();
 
   const lowStockCount = stockItems.filter(
     (item) => item.quantidade <= item.quantidade_minima,

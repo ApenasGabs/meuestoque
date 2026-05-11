@@ -4,7 +4,7 @@ import { useAppMode } from "./useAppMode";
 /**
  * Hook that synchronizes the document.title with the current app mode.
  */
-export const useSubdomainSync = (): void => {
+export const useAppTitleSync = (): void => {
   const { appTitle } = useAppMode();
 
   useEffect(() => {
