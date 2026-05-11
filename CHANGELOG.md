@@ -5,6 +5,18 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.1](https://github.com/ApenasGabs/meuestoque/compare/v1.15.0...v1.15.1) (2026-05-11)
+
+### 📚 Documentation
+
+* ✨ adiciona documento de normas de engenharia do projeto ([81c144e](https://github.com/ApenasGabs/meuestoque/commit/81c144e9a6e033a0008fbea014b4155e8d1aa75f))
+
+### ♻️ Refactoring
+
+* ♻️ melhora o hook useAppTitleSync e isola estado em testes do useAppMode ([f3d83d4](https://github.com/ApenasGabs/meuestoque/commit/f3d83d4839be2f10c51108d30171f9e8f5cdec7d))
+* ♻️ remove domain redirection logic and keep dynamic application titles ([e4126e7](https://github.com/ApenasGabs/meuestoque/commit/e4126e7b57ad7e6ce42784bca05b8a7ba75a9995))
+* ♻️ remove domain sync logic, rename hook to useAppTitleSync and add unit tests ([7ffa129](https://github.com/ApenasGabs/meuestoque/commit/7ffa1299449c8bcf700c3200c40fc6fae679aaeb))
+
 ## [1.15.0](https://github.com/ApenasGabs/meuestoque/compare/v1.14.0...v1.15.0) (2026-05-05)
 
 ### ✨ Features
