@@ -420,3 +420,40 @@ O force_deploy ignora a bateria de testes para agilizar correções manuais ou d
 - [x] Job de Deploy aceita ambas as condições (tag ou manual).
 - [x] Jobs de Teste continuam protegidos e vinculados apenas a novas versões.
 - [x] YAML validado.
+
+---
+
+### 📝 (12/05/2026) Correção de Inicialização do Supabase e Robustez de Env Vars
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[Vercel/Build] --> B{VITE_SUPABASE_URL?}
+    B -- "" (Empty) --> C[Fallback: localhost]
+    B -- undefined --> C
+    B -- "https://..." --> D[Real Supabase]
+    C & D --> E[createClient]
+```
+
+#### Arquivos Modificados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/lib/supabase.ts` | Troca de `??` por `||` para tratar strings vazias; Melhora log de aviso. |
+| `vercel.json` | Identificada configuração de `ignoreCommand` que pode estar bloqueando deploys de produção. |
+
+#### Lógica de Decisão
+```text
+PROBLEMA: createClient() lança "supabaseUrl is required" se receber string vazia.
+SOLUÇÃO: O operador || (OR) garante que "" ou undefined caiam no fallback de localhost.
+ALERTA: Se o app cair no fallback em produção, ele não conectará, mas evitará o Crash (White Screen).
+```
+
+#### Comportamento
+- O app não crasha mais na Vercel com "Uncaught Error: supabaseUrl is required".
+- Se as variáveis `VITE_` estiverem faltando, um aviso é exibido no console.
+- Sugestão de revisão do `vercel.json` para garantir que builds de produção ocorram.
+
+#### Checklist de Aceite
+- [x] Troca de operador `??` -> `||` aplicada.
+- [x] `import.meta.env` usado diretamente no check de warning.
+- [x] Código compilando sem erros.
