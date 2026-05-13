@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.2](https://github.com/ApenasGabs/meuestoque/compare/v1.15.1...v1.15.2) (2026-05-13)
+
+### 🐛 Bug Fixes
+
+* 🐛 garante inicialização robusta do Supabase e trata env vars vazias ([f9e9264](https://github.com/ApenasGabs/meuestoque/commit/f9e92641ce33ed22d71494e4a96d0f9b1ad7b9b5))
+
+### 🔧 Chores
+
+* 🔧 ignora pasta scratch e arruma parâmetro não utilizado no e2e ([5290e01](https://github.com/ApenasGabs/meuestoque/commit/5290e01eb9a78824baa151988ce17bad51702f90))
+
 ## [1.15.1](https://github.com/ApenasGabs/meuestoque/compare/v1.15.0...v1.15.1) (2026-05-11)
 
 ### 📚 Documentation
