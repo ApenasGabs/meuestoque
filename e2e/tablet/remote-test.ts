@@ -24,7 +24,7 @@ export const resolveRemoteUrl = (path: string): string =>
 
 export const test = base.extend<RemoteFixtures, RemoteWorkerFixtures>({
   remoteBrowser: [
-    async (_args, provide): Promise<void> => {
+    async (_fixtures, provide): Promise<void> => {
       const cdpUrl =
         process.env.PLAYWRIGHT_CDP_URL ||
         `http://127.0.0.1:${process.env.LOCAL_TUNNEL_PORT || "9223"}`;

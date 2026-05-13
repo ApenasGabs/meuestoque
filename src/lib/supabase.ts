@@ -1,16 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "http://localhost:54321";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "public-anon-key-placeholder";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  // For web local tests/dev without backend, this gives an explicit startup signal.
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.warn(
-    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in web environment",
+    "⚠️ Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Falling back to local development defaults.",
   );
 }
 
-export const supabase = createClient(
-  supabaseUrl ?? "http://localhost:54321",
-  supabaseAnonKey ?? "public-anon-key-placeholder",
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
