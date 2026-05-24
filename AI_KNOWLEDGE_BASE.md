@@ -478,16 +478,16 @@ graph TD
 #### Arquivos Modificados
 | Arquivo | Mudança / Propósito |
 |---|---|
-| `src/stores/stockStore.ts` | Criada a função `applyPendingMovements` para mesclar mudanças otimistas pendentes sobre os dados recém buscados da API (evita reset visual ao clicar rápido). |
-| `src/lib/webData.ts` | Adicionado fallback no `recordStockMovement`. Se `consume_stock_fifo` não consumir toda a quantidade devido à falta de lotes, um movimento legado é gerado e o `stock_items` é atualizado manualmente. |
+| `src/stores/stockStore.ts` | Criada a função `applyPendingMovements` para mesclar mudanças otimistas pendentes sobre os dados recém buscados da API. Mantida a semântica correta de limpeza do `lastAutoAddedItemName`. |
+| `supabase/migrations/20260524_01_atomic_consume_stock_fifo.sql` | Atualiza a RPC `consume_stock_fifo` para absorver de forma atômica o consumo "sem lote" (fallback), inserindo um movimento e ajustando a `stock_items.quantidade` diretamente no Postgres. |
 
 #### Lógica de Decisão
 ```text
-PROBLEMA 1: Cliques rápidos acumulavam deltas, mas quando a API retornava o primeiro lote de requisições, o Zustand sobreescrevia o estado com dados defasados da API, apagando cliques locais recentes.
+PROBLEMA 1: Cliques rápidos acumulavam deltas, mas quando a API retornava, o Zustand sobreescrevia o estado com dados defasados.
 SOLUÇÃO 1: Antes de fazer `set(items)`, aplicar os deltas de `pendingStockMovements` aos itens retornados.
 
-PROBLEMA 2: Itens sem lotes (stock_lots vazio) falhavam silenciosamente no `consume_stock_fifo`, não gerando movimentos nem alterando quantidade.
-SOLUÇÃO 2: Verificar `effectivelyConsumed < quantity` no retorno do RPC. O que sobrar (ou tudo) recebe um insert direto em `stock_movements` (lot_id=null) e update em `stock_items`.
+PROBLEMA 2: Fallback de consumo no frontend não era atômico (um update + um insert separados), podendo gerar inconsistência.
+SOLUÇÃO 2: A lógica inteira de consumo (incluindo o que sobra se faltarem lotes) foi movida para dentro da RPC `consume_stock_fifo`, garantindo 100% de consistência transacional.
 ```
 
 #### Comportamento da Feature

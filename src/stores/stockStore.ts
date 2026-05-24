@@ -161,10 +161,10 @@ export const useStockStore = create<StockState>()(
               });
 
               const refreshedItems = await getStockItems(pending.groupId);
-              set((state) => ({
+              set({
                 items: sortByName(applyPendingMovements(refreshedItems)),
-                lastAutoAddedItemName: movementResult.autoAddedToList ? pending.itemName : state.lastAutoAddedItemName,
-              }));
+                lastAutoAddedItemName: movementResult.autoAddedToList ? pending.itemName : null,
+              });
             } catch (error) {
               try {
                 const refreshedItems = await getStockItems(pending.groupId);

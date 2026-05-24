@@ -1315,7 +1315,7 @@ export const recordStockMovement = async (
 
   if (input.tipo === "saida" || input.tipo === "consumo_auto") {
     // Phase 3.4: Consumo FIFO
-    const { data: consumedData, error: rpcError } = await supabase.rpc("consume_stock_fifo", {
+    const { error: rpcError } = await supabase.rpc("consume_stock_fifo", {
       p_stock_item_id: input.itemId,
       p_quantidade: quantity,
       p_tipo: input.tipo,
@@ -1329,36 +1329,7 @@ export const recordStockMovement = async (
       throw new Error(rpcError.message);
     }
 
-    const effectivelyConsumed = Number(consumedData) || 0;
     nextQuantity = Math.max(0, item.quantidade - quantity);
-
-    if (effectivelyConsumed < quantity) {
-      const remaining = quantity - effectivelyConsumed;
-      
-      const { error: updateError } = await supabase
-        .from("stock_items")
-        .update({ quantidade: nextQuantity })
-        .eq("id", input.itemId);
-
-      if (updateError) throw new Error(updateError.message);
-
-      const { error: movementError } = await supabase.from("stock_movements").insert({
-        item_id: input.itemId,
-        stock_item_id: input.itemId,
-        lot_id: null,
-        tipo: input.tipo,
-        quantidade: remaining,
-        unidade: input.unidade ?? null,
-        custo_unitario_ref: input.custoUnitarioRef ?? null,
-        observacao: (input.observacao ? input.observacao + " " : "") + "(consumo sem lote)",
-        origem: input.origem ?? null,
-        source_list_id: input.sourceListId ?? null,
-        source_list_item_id: input.sourceListItemId ?? null,
-        criado_por: input.createdBy ?? null,
-      });
-
-      if (movementError) throw new Error(movementError.message);
-    }
   } else {
     // Entrada ou ajuste
     nextQuantity = input.tipo === "entrada" ? item.quantidade + quantity : Math.max(0, quantity);
