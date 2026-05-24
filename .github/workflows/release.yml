@@ -104,23 +104,34 @@ jobs:
       - name: 🛠️ Instalar Vercel CLI
         run: npm install --global vercel
 
-      - name: 🔗 Conectar ao Projeto Vercel
+      - name: 🔐 Gerar arquivo .env.production com Secrets do GitHub
         run: |
-          echo "Baixando variáveis de ambiente (pull)..."
-          vercel pull --yes --environment=production
-          
-          echo "Disponibilizando as chaves para o Vite..."
-          cp .vercel/.env.production.local .env.production
+          echo "Criando arquivo de variáveis de ambiente para o Vite..."
+          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env.production
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env.production
+
+      - name: 🔗 Conectar ao Projeto Vercel
+        run: vercel link --yes --project ${{ secrets.VERCEL_PROJECT_ID }} --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
       - name: 🏗️ Build dos Artefatos
         run: |
           echo "Construindo aplicação na nuvem do GitHub Actions..."
           vercel build --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: 🚀 Publicar na Vercel
         run: |
           echo "Enviando build pronto para a Vercel..."
           vercel deploy --prebuilt --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: "📋 Log: Resumo do Deploy"
         run: |
