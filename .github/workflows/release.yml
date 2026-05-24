@@ -104,23 +104,46 @@ jobs:
       - name: 🛠️ Instalar Vercel CLI
         run: npm install --global vercel
 
-      - name: 🔗 Conectar ao Projeto Vercel
+      - name: 🔗 Conectar ao Projeto Vercel (Setup)
+        run: vercel pull --yes --environment=production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: 🔐 Injetar Secrets do GitHub no Build (Fail-Safe)
         run: |
-          echo "Baixando variáveis de ambiente (pull)..."
-          vercel pull --yes --environment=production
+          echo "Gerando .env.production com segurança via EOF..."
           
-          echo "Disponibilizando as chaves para o Vite..."
-          cp .vercel/.env.production.local .env.production
+          # O EOF (Heredoc) impede que caracteres especiais quebrem a injeção
+          cat << 'EOF' > .env.production
+          VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          EOF
+          
+          # Validação rápida sugerida pelo bot (Fail-fast validation)
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "❌ ERRO: VITE_SUPABASE_URL não encontrada no GitHub Secrets."
+            exit 1
+          fi
 
       - name: 🏗️ Build dos Artefatos
         run: |
           echo "Construindo aplicação na nuvem do GitHub Actions..."
           vercel build --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: 🚀 Publicar na Vercel
         run: |
           echo "Enviando build pronto para a Vercel..."
           vercel deploy --prebuilt --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: "📋 Log: Resumo do Deploy"
         run: |
@@ -185,6 +208,21 @@ jobs:
 
       - name: 📦 Instalar dependências
         run: npm ci --legacy-peer-deps
+
+      - name: 🔐 Injetar Secrets do GitHub no Build (Fail-Safe)
+        run: |
+          echo "Gerando .env.production com segurança via EOF..."
+          
+          cat << 'EOF' > .env.production
+          VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          EOF
+          
+          # Validação rápida sugerida pelo bot (Fail-fast validation)
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "❌ ERRO: VITE_SUPABASE_URL não encontrada no GitHub Secrets."
+            exit 1
+          fi
 
       - name: 🏗️ Build do Projeto
         run: |
