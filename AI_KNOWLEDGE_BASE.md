@@ -457,3 +457,45 @@ ALERTA: Se o app cair no fallback em produção, ele não conectará, mas evitar
 - [x] Troca de operador `??` -> `||` aplicada.
 - [x] `import.meta.env` usado diretamente no check de warning.
 - [x] Código compilando sem erros.
+
+---
+
+### 📝 (24/05/2026) Correção de Race Condition no Consumo de Estoque
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[UI Consumo Rápido] -->|Cliques Rápidos| B(Zustand: updateItemQuantity)
+    B -->|Debounce| C[API: recordStockMovement]
+    C -->|RPC: consume_stock_fifo| D{Lotes suficientes?}
+    D -- Sim --> E[Atualiza Lotes e Movimentações]
+    D -- Não --> F[Fallback: Atualiza stock_items e insere Movimentação sem Lote]
+    E & F --> G[getStockItems]
+    G -->|Zustand: merge com| H(applyPendingMovements)
+    H --> I[Estado Local Sincronizado]
+```
+
+#### Arquivos Modificados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/stores/stockStore.ts` | Criada a função `applyPendingMovements` para mesclar mudanças otimistas pendentes sobre os dados recém buscados da API. Mantida a semântica correta de limpeza do `lastAutoAddedItemName`. |
+| `supabase/migrations/20260524_01_atomic_consume_stock_fifo.sql` | Atualiza a RPC `consume_stock_fifo` para absorver de forma atômica o consumo "sem lote" (fallback), inserindo um movimento e ajustando a `stock_items.quantidade` diretamente no Postgres. |
+
+#### Lógica de Decisão
+```text
+PROBLEMA 1: Cliques rápidos acumulavam deltas, mas quando a API retornava, o Zustand sobreescrevia o estado com dados defasados.
+SOLUÇÃO 1: Antes de fazer `set(items)`, aplicar os deltas de `pendingStockMovements` aos itens retornados.
+
+PROBLEMA 2: Fallback de consumo no frontend não era atômico (um update + um insert separados), podendo gerar inconsistência.
+SOLUÇÃO 2: A lógica inteira de consumo (incluindo o que sobra se faltarem lotes) foi movida para dentro da RPC `consume_stock_fifo`, garantindo 100% de consistência transacional.
+```
+
+#### Comportamento da Feature
+- O usuário pode clicar múltiplas vezes rapidamente no botão "Consumir"; a interface deduzirá a quantidade otimisticamente sem "pulos" visuais quando a requisição de background resolver.
+- Itens criados manualmente (sem lote) agora podem ser consumidos normalmente, decrementando sua quantidade na base de dados de forma confiável.
+
+#### Checklist de Aceite
+- [x] Race condition no update otimista mitigada com mesclagem local (`applyPendingMovements`).
+- [x] Fallback no Supabase funcionando para itens sem registro em `stock_lots`.
+- [x] Scripts de build e lint executados sem erros (`npm run lint && npm run build`).
+
