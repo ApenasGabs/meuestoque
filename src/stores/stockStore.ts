@@ -56,6 +56,16 @@ const clearPendingStockWrites = (): void => {
   pendingStockMovements.clear();
 };
 
+const applyPendingMovements = (items: StockItemRecord[]): StockItemRecord[] => {
+  return items.map((item) => {
+    const pending = pendingStockMovements.get(item.id);
+    if (pending && pending.delta !== 0) {
+      return { ...item, quantidade: Math.max(0, item.quantidade + pending.delta) };
+    }
+    return item;
+  });
+};
+
 export const useStockStore = create<StockState>()(
   persist(
     (set, get) => ({
@@ -69,7 +79,7 @@ export const useStockStore = create<StockState>()(
         set({ loading: true });
         try {
           const data = await getStockItems(groupId);
-          set({ items: sortByName(data) });
+          set({ items: sortByName(applyPendingMovements(data)) });
         } finally {
           set({ loading: false });
         }
@@ -78,7 +88,8 @@ export const useStockStore = create<StockState>()(
         const saved = await upsertStockItem(payload);
         set((state) => {
           const withoutCurrent = state.items.filter((item) => item.id !== saved.id);
-          return { items: sortByName([...withoutCurrent, saved]) };
+          const savedWithPending = applyPendingMovements([saved])[0];
+          return { items: sortByName([...withoutCurrent, savedWithPending]) };
         });
         return saved;
       },
@@ -150,14 +161,14 @@ export const useStockStore = create<StockState>()(
               });
 
               const refreshedItems = await getStockItems(pending.groupId);
-              set({
-                items: sortByName(refreshedItems),
-                lastAutoAddedItemName: movementResult.autoAddedToList ? pending.itemName : null,
-              });
+              set((state) => ({
+                items: sortByName(applyPendingMovements(refreshedItems)),
+                lastAutoAddedItemName: movementResult.autoAddedToList ? pending.itemName : state.lastAutoAddedItemName,
+              }));
             } catch (error) {
               try {
                 const refreshedItems = await getStockItems(pending.groupId);
-                set({ items: sortByName(refreshedItems) });
+                set({ items: sortByName(applyPendingMovements(refreshedItems)) });
               } catch (refreshError) {
                 console.error("Failed to refresh stock items after movement write failure.", {
                   error,
