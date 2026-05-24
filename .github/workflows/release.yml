@@ -113,15 +113,15 @@ jobs:
 
       - name: 🔐 Injetar Secrets do GitHub no Build (Fail-Safe)
         run: |
-          echo "Gerando .env.production com segurança via EOF..."
+          echo "Injetando chaves diretamente no ambiente da Vercel..."
           
-          # O EOF (Heredoc) impede que caracteres especiais quebrem a injeção
-          cat << 'EOF' > .env.production
+          # Injetamos direto no arquivo que a Vercel CLI acabou de criar no 'pull'
+          cat << 'EOF' >> .vercel/.env.production.local
           VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
           EOF
           
-          # Validação rápida sugerida pelo bot (Fail-fast validation)
+          # Validação para garantir que o GitHub puxou a variável
           if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
             echo "❌ ERRO: VITE_SUPABASE_URL não encontrada no GitHub Secrets."
             exit 1
