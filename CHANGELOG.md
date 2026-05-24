@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.4](https://github.com/ApenasGabs/meuestoque/compare/v1.15.3...v1.15.4) (2026-05-24)
+
+### 🐛 Bug Fixes
+
+* 🐛 copia variáveis da Vercel para .env.production no deploy ([0a69e77](https://github.com/ApenasGabs/meuestoque/commit/0a69e7758cb4cc907d737f6fd801b5d422c1e819))
+
 ## [1.15.3](https://github.com/ApenasGabs/meuestoque/compare/v1.15.2...v1.15.3) (2026-05-24)
 
 ### 🐛 Bug Fixes
