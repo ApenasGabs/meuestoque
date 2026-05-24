@@ -5,6 +5,13 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.5](https://github.com/ApenasGabs/meuestoque/compare/v1.15.4...v1.15.5) (2026-05-24)
+
+### 🐛 Bug Fixes
+
+* 🐛 aprimora injeção de variáveis via eof no vercel e e2e ([141bc67](https://github.com/ApenasGabs/meuestoque/commit/141bc67b87106aa6029ec5e2369a79cd06092637))
+* 🐛 atualiza deploy da vercel para gerar env com github secrets ([354d553](https://github.com/ApenasGabs/meuestoque/commit/354d553a1f2d4627b2df89fbd03d817cccfd9c5c))
+
 ## [1.15.4](https://github.com/ApenasGabs/meuestoque/compare/v1.15.3...v1.15.4) (2026-05-24)
 
 ### 🐛 Bug Fixes
