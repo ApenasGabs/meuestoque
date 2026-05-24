@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.3](https://github.com/ApenasGabs/meuestoque/compare/v1.15.2...v1.15.3) (2026-05-24)
+
+### 🐛 Bug Fixes
+
+* 🐛 resolve race condition na atualização do estoque e corrige consumo de itens sem lote ([587bc21](https://github.com/ApenasGabs/meuestoque/commit/587bc2198751cfa1c165539c62f89f37901f5a2b))
+
+### 🔧 Chores
+
+* :wrench: refatorado baseado no code review ([9f9c170](https://github.com/ApenasGabs/meuestoque/commit/9f9c1703e35d9309102003599ec4d42f48df2506))
+
 ## [1.15.2](https://github.com/ApenasGabs/meuestoque/compare/v1.15.1...v1.15.2) (2026-05-13)
 
 ### 🐛 Bug Fixes
