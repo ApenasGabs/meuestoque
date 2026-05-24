@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.15.6](https://github.com/ApenasGabs/meuestoque/compare/v1.15.5...v1.15.6) (2026-05-24)
+
+### 🐛 Bug Fixes
+
+* 🐛 injeta secrets diretamente no .env.production.local da vercel ([d7d46e2](https://github.com/ApenasGabs/meuestoque/commit/d7d46e2172b71513833fcb9c37345a1d403d12ec))
+
 ## [1.15.5](https://github.com/ApenasGabs/meuestoque/compare/v1.15.4...v1.15.5) (2026-05-24)
 
 ### 🐛 Bug Fixes
