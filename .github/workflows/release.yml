@@ -108,6 +108,9 @@ jobs:
         run: |
           echo "Baixando variáveis de ambiente (pull)..."
           vercel pull --yes --environment=production
+          
+          echo "Disponibilizando as chaves para o Vite..."
+          cp .vercel/.env.production.local .env.production
 
       - name: 🏗️ Build dos Artefatos
         run: |
