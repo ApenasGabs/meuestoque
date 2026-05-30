@@ -54,6 +54,8 @@ export const StockPageNew = (): ReactElement => {
     void fetchItems(groupId);
   }, [groupId, fetchItems, navigate]);
 
+  const storeItems = useStockStore((state) => state.items);
+
   const handleBarcodeScan = useCallback(async (ean: string) => {
     if (!groupId) return;
     setScannerOpen(false);
@@ -61,14 +63,20 @@ export const StockPageNew = (): ReactElement => {
     try {
       const result = await resolveProductByEan(ean, groupId);
       if (result.found && result.productId) {
-        setScannedProductId(result.productId);
+        // Resolve catalog product_id → stock_item.id para o StockView encontrar
+        const stockItem = storeItems.find((item) => item.product_id === result.productId);
+        if (stockItem) {
+          setScannedProductId(stockItem.id);
+        } else {
+          setToast({ message: "Produto existe no catálogo mas não está no estoque.", type: "warning" });
+        }
       } else {
         setToast({ message: "Produto não encontrado no catálogo.", type: "warning" });
       }
     } catch {
       setToast({ message: "Erro ao consultar código de barras", type: "error" });
     }
-  }, [groupId]);
+  }, [groupId, storeItems]);
 
   useEffect(() => {
     if (lastAutoAddedItemName) {
@@ -197,6 +205,7 @@ export const StockPageNew = (): ReactElement => {
           className="fixed bottom-24 right-4 w-14 h-14 min-h-[3.5rem] p-0 rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-transform z-40"
           onClick={() => setScannerOpen(true)}
           aria-label="Escanear código de barras"
+          data-testid="fab-scan-button"
         >
           <CameraOutlined />
         </Button>

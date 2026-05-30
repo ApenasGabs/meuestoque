@@ -14,16 +14,30 @@ const eanCache = new Map<string, BarcodeResult>();
 const EAN_COOLDOWN_MS = 3000;
 const lastProcessed = new Map<string, number>();
 
-export function isValidEan(ean: string): boolean {
+/**
+ * Valida se a string é um código de barras EAN válido (comprimento de 8 a 14 dígitos).
+ *
+ * @param ean - O código de barras a ser validado
+ * @returns Retorna verdadeiro se o EAN for válido
+ */
+export const isValidEan = (ean: string): boolean => {
   return /^\d{8,14}$/.test(ean);
-}
+};
 
 const OPENFOODFACTS_TIMEOUT_MS = 5000;
 
-export async function resolveProductByEan(
+/**
+ * Resolve informações de um produto a partir do código EAN.
+ * Busca em cache, no catálogo interno (Supabase) e na API do OpenFoodFacts.
+ *
+ * @param ean - O código de barras (EAN/UPC) do produto
+ * @param groupId - O ID do grupo/estoque atual
+ * @returns Promessa com o resultado do produto resolvido
+ */
+export const resolveProductByEan = async (
   ean: string,
   groupId: string,
-): Promise<BarcodeResult> {
+): Promise<BarcodeResult> => {
   if (!isValidEan(ean)) {
     return { found: false, source: 'none', ean };
   }
@@ -89,16 +103,27 @@ export async function resolveProductByEan(
   }
 
   const result: BarcodeResult = { found: false, source: 'none', ean };
+  eanCache.set(`${groupId}:${ean}`, result);
   return result;
-}
+};
 
-export async function saveEanMapping(
+/**
+ * Associa um código EAN a um produto no catálogo. Se o produto não existir, cria um novo.
+ *
+ * @param groupId - O ID do grupo/estoque atual
+ * @param ean - O código de barras a ser associado
+ * @param nome - Nome do produto
+ * @param unidade - Unidade de estoque (ex: Un, Kg, L)
+ * @param categoria - Categoria do produto
+ * @returns Promessa contendo o ID do produto no catálogo
+ */
+export const saveEanMapping = async (
   groupId: string,
   ean: string,
   nome: string,
   unidade: string = 'Un',
   categoria: string = 'Outros',
-): Promise<string> {
+): Promise<string> => {
   const { data: existing } = await supabase
     .from('product_catalog')
     .select('id')
@@ -153,14 +178,26 @@ export async function saveEanMapping(
   });
 
   return created.id;
-}
+};
 
-export function isEanInCooldown(ean: string): boolean {
+/**
+ * Verifica se um código EAN está no período de cooldown para evitar leituras duplicadas.
+ *
+ * @param ean - O código de barras a ser verificado
+ * @returns Retorna verdadeiro se o código estiver sob período de cooldown
+ */
+export const isEanInCooldown = (ean: string): boolean => {
   const last = lastProcessed.get(ean);
   if (!last) return false;
   return Date.now() - last < EAN_COOLDOWN_MS;
-}
+};
 
-export function markEanProcessed(ean: string): void {
+/**
+ * Marca um código EAN como processado registrando o timestamp atual para controle de cooldown.
+ *
+ * @param ean - O código de barras processado
+ */
+export const markEanProcessed = (ean: string): void => {
   lastProcessed.set(ean, Date.now());
-}
+};
+

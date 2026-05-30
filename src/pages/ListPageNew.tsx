@@ -72,7 +72,7 @@ export const ListPageNew = (): ReactElement => {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [pendingEan, setPendingEan] = useState<string | null>(null);
-  const [injectedInput, setInjectedInput] = useState<string>("");
+  const [smartInput, setSmartInput] = useState<string>("");
   const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
@@ -598,14 +598,15 @@ export const ListPageNew = (): ReactElement => {
       const result = await resolveProductByEan(ean, groupId);
       
       if (result.found && result.name) {
-        // Auto-preenche o input com o nome do produto
-        setInjectedInput(`${result.name}, 1`);
+        // Limpa EAN pendente anterior (se houver) para não associar ao produto errado
+        setPendingEan(null);
+        // Atualiza o input diretamente sem precisar do workaround do queueMicrotask
+        setSmartInput(`${result.name}, 1`);
         setNotice(`📸 ${result.name}`);
       } else {
         // Produto desconhecido — guarda o EAN para salvar depois
         setPendingEan(ean);
         setNotice("Código não reconhecido. Digite o nome para o sistema aprender!");
-        // Foca no input (como o value mudará, o foco natural do user é suficiente ou via ref)
       }
     } catch {
       setError("Erro ao processar o código de barras.");
@@ -678,7 +679,8 @@ export const ListPageNew = (): ReactElement => {
           onViewHistory={() => navigate("/history")}
           canUseScanner={canUseCamera}
           onScannerOpen={() => setScannerOpen(true)}
-          injectedInput={injectedInput}
+          smartInput={smartInput}
+          onSmartInputChange={setSmartInput}
         />
       </div>
 

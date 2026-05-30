@@ -14,7 +14,13 @@ export interface ScannerInstance {
   stop(): Promise<void>;
 }
 
-export async function createBarcodeScanner(): Promise<ScannerInstance> {
+/**
+ * Instancia o leitor de código de barras apropriado para o ambiente atual.
+ * Prioriza a API nativa do navegador se disponível, caso contrário utiliza o fallback html5-qrcode.
+ *
+ * @returns Promessa contendo a instância de ScannerInstance resolvida
+ */
+export const createBarcodeScanner = async (): Promise<ScannerInstance> => {
   if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
     try {
       // Feature check: ensure it supports EAN/UPC
@@ -28,7 +34,7 @@ export async function createBarcodeScanner(): Promise<ScannerInstance> {
   }
 
   return new FallbackBarcodeScanner();
-}
+};
 
 class NativeBarcodeScanner implements ScannerInstance {
   private detector: BarcodeDetector;
@@ -98,8 +104,7 @@ class NativeBarcodeScanner implements ScannerInstance {
 }
 
 class FallbackBarcodeScanner implements ScannerInstance {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private scanner: any = null;
+  private scanner: import('html5-qrcode').Html5Qrcode | null = null;
 
   async start(containerId: string, onScan: (ean: string) => void): Promise<void> {
     const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
