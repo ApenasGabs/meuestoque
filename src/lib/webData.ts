@@ -917,6 +917,15 @@ export async function createShoppingListForGroup(groupId: string): Promise<strin
 
 export type StockFrequency = "daily" | "weekly" | "monthly";
 
+export interface ProductCatalogRecord {
+  id: string;
+  group_id: string;
+  nome: string;
+  categoria: string;
+  unidade_estoque: string;
+  ean: string | null;
+}
+
 export interface StockItemRecord {
   id: string;
   group_id: string;
@@ -939,6 +948,7 @@ export interface StockItemRecord {
   atualizado_em: string;
   pack_label: string | null;
   pack_size: number | null;
+  product_id: string | null;
 }
 
 export interface StockMovementRecord {
@@ -1124,7 +1134,7 @@ export const getStockItems = async (groupId: string): Promise<StockItemRecord[]>
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size, product_id",
     )
     .eq("group_id", groupId)
     .order("nome", { ascending: true });
@@ -1137,7 +1147,7 @@ export const getStockItemById = async (itemId: string): Promise<StockItemRecord 
   const { data, error } = await supabase
     .from("stock_items")
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size, product_id",
     )
     .eq("id", itemId)
     .maybeSingle();
@@ -1170,7 +1180,7 @@ export const upsertStockItem = async (input: UpsertStockItemInput): Promise<Stoc
     .from("stock_items")
     .upsert(payload)
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size, product_id",
     )
     .maybeSingle();
 
@@ -1281,7 +1291,7 @@ export const setStockItemInShoppingList = async (
     .update({ na_lista: include })
     .eq("id", itemId)
     .select(
-      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size",
+      "id, group_id, nome, categoria, unidade, quantidade, quantidade_minima, tamanho_porcao, na_lista, auto_adicionar_lista, consumo_frequencia, consumo_valor, data_compra, data_validade, validade_nao_aplica, ultimo_consumo_auto_em, criado_em, atualizado_em, pack_label, pack_size, product_id",
     )
     .maybeSingle();
 

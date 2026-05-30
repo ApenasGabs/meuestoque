@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
 import { Button } from "../../../../components/Button/Button";
 import { Drawer } from "../../../../components/Drawer/Drawer";
@@ -46,6 +46,9 @@ interface ShoppingListViewProps {
   onBulkRemove?: (itemIds: string[]) => Promise<void>;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
+  onScannerOpen?: () => void;
+  canUseScanner?: boolean;
+  injectedInput?: string;
 }
 
 /**
@@ -92,6 +95,9 @@ export const ShoppingListView = ({
   onBulkRemove,
   onOpenImportModal,
   onViewHistory,
+  onScannerOpen,
+  canUseScanner,
+  injectedInput,
 }: ShoppingListViewProps): ReactElement => {
   // Bulk mode for shopping list (Spec Epic 1 + Epic 2). Mirrors the inventory action
   // bar but operates on shopping_list items via updateListItemValidityDate.
@@ -107,6 +113,13 @@ export const ShoppingListView = ({
   const [selectedUnit, setSelectedUnit] = useState<Unit>("Un");
   const [selectedCategoryForDraft, setSelectedCategoryForDraft] = useState<string>("Outros");
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
+
+  useEffect(() => {
+    if (injectedInput) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSmartInput(injectedInput);
+    }
+  }, [injectedInput]);
 
   const categories = [
     "Todos",
@@ -319,14 +332,22 @@ export const ShoppingListView = ({
             <div className="space-y-3">
               <div>
                 <Label htmlFor="smart-shopping-input">Adicionar item rápido</Label>
-                <Input
-                  id="smart-shopping-input"
-                  value={smartInput}
-                  onChange={(event) => setSmartInput(event.target.value)}
-                  onKeyDown={handleSmartKeyDown}
-                  placeholder="Nome, quantidade, valor"
-                  data-testid="smart-shopping-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="smart-shopping-input"
+                    value={smartInput}
+                    onChange={(event) => setSmartInput(event.target.value)}
+                    onKeyDown={handleSmartKeyDown}
+                    placeholder="Nome, quantidade, valor"
+                    data-testid="smart-shopping-input"
+                    className="flex-1"
+                  />
+                  {canUseScanner && onScannerOpen && (
+                    <Button variant="ghost" className="px-3 text-xl" onClick={onScannerOpen} aria-label="Escanear código">
+                      📸
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/70">

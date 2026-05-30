@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/Alert/Alert";
 import { StockView } from "../features/inventory/components/stockView/StockView";
@@ -9,6 +9,10 @@ import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 import { Toast } from "../components/Toast/Toast";
 import { bulkUpdateStockValidity } from "../lib/webData";
+import { resolveProductByEan } from "../lib/barcodeService";
+import { BarcodeScannerModal } from "../components/Scanner/BarcodeScannerModal";
+import { CameraOutlined } from "@ant-design/icons";
+import { Button } from "../components/Button/Button";
 
 /**
  * New Stock Page with integrated inventory feature using latest UX
@@ -20,7 +24,11 @@ export const StockPageNew = (): ReactElement => {
   const fetchItems = useStockStore((state) => state.fetchItems);
   const [search, setSearch] = useState<string>("");
   const [filters, setFilters] = useState<Array<"low" | "out">>([]);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "warning" } | null>(null);
+
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannedProductId, setScannedProductId] = useState<string | null>(null);
+  const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const {
     products,
@@ -45,6 +53,22 @@ export const StockPageNew = (): ReactElement => {
 
     void fetchItems(groupId);
   }, [groupId, fetchItems, navigate]);
+
+  const handleBarcodeScan = useCallback(async (ean: string) => {
+    if (!groupId) return;
+    setScannerOpen(false);
+
+    try {
+      const result = await resolveProductByEan(ean, groupId);
+      if (result.found && result.productId) {
+        setScannedProductId(result.productId);
+      } else {
+        setToast({ message: "Produto não encontrado no catálogo.", type: "warning" });
+      }
+    } catch {
+      setToast({ message: "Erro ao consultar código de barras", type: "error" });
+    }
+  }, [groupId]);
 
   useEffect(() => {
     if (lastAutoAddedItemName) {
@@ -162,8 +186,29 @@ export const StockPageNew = (): ReactElement => {
               });
             }
           }}
+          scannedProductId={scannedProductId}
+          onClearScannedProduct={() => setScannedProductId(null)}
         />
       </div>
+
+      {canUseCamera && (
+        <Button
+          variant="primary"
+          className="fixed bottom-24 right-4 w-14 h-14 min-h-[3.5rem] p-0 rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-transform z-40"
+          onClick={() => setScannerOpen(true)}
+          aria-label="Escanear código de barras"
+        >
+          <CameraOutlined />
+        </Button>
+      )}
+
+      {scannerOpen && (
+        <BarcodeScannerModal
+          open={scannerOpen}
+          onClose={() => setScannerOpen(false)}
+          onScan={handleBarcodeScan}
+        />
+      )}
 
       {toast && (
         <Toast
