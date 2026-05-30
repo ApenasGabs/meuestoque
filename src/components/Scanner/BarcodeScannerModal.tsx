@@ -5,7 +5,7 @@ import { Badge } from "../Badge/Badge";
 import { Input } from "../Input/Input";
 import { Button } from "../Button/Button";
 import { createBarcodeScanner, type ScannerInstance } from "../../lib/scannerDetector";
-import { isEanInCooldown, markEanProcessed } from "../../lib/barcodeService";
+import { isValidEan, isEanInCooldown, markEanProcessed } from "../../lib/barcodeService";
 
 export interface BarcodeScannerModalProps {
   open: boolean;
@@ -14,6 +14,16 @@ export interface BarcodeScannerModalProps {
   continuous?: boolean;
 }
 
+/**
+ * Modal que exibe o leitor de código de barras.
+ * Permite leitura via câmera com suporte a zoom digital e
+ * oferece um fallback para digitação manual caso a leitura falhe.
+ *
+ * @param props.open - Estado de exibição do modal
+ * @param props.onClose - Callback disparado para fechar o modal
+ * @param props.onScan - Callback disparado quando um código é lido com sucesso
+ * @param props.continuous - Se verdadeiro, o modal não fecha após a primeira leitura
+ */
 export const BarcodeScannerModal = ({
   open,
   onClose,
@@ -88,6 +98,12 @@ export const BarcodeScannerModal = ({
     };
   }, [open, continuous, onClose, onScan, canUseCamera]);
 
+  useEffect(() => {
+    if (scannerRef.current) {
+      scannerRef.current.setZoom(zoom);
+    }
+  }, [zoom]);
+
   if (!canUseCamera && open) {
     return (
       <Modal open={open} onClose={onClose} title="Scanner indisponível">
@@ -105,13 +121,16 @@ export const BarcodeScannerModal = ({
       title="Ler Código de Barras"
       className="p-4"
     >
-      <button 
+      <Button 
+        variant="ghost"
+        size="sm"
         onClick={onClose}
-        className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-50"
+        className="btn-circle absolute right-2 top-2 z-50"
         aria-label="Fechar scanner"
+        data-testid="scanner-close-button"
       >
         ✕
-      </button>
+      </Button>
 
       {error ? (
         <Alert type="warning">
@@ -124,8 +143,7 @@ export const BarcodeScannerModal = ({
           {/* Container div for both Native and Fallback scanners */}
           <div 
             id={containerId} 
-            className="w-full h-full origin-center transition-transform duration-200"
-            style={{ transform: `scale(${zoom})` }}
+            className="w-full h-full origin-center"
           />
           
           {/* Overlay scanning line effect */}
@@ -136,21 +154,27 @@ export const BarcodeScannerModal = ({
           {/* Zoom Controls */}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4 z-20">
             <div className="bg-base-100/80 backdrop-blur rounded-full px-2 py-1 flex items-center gap-2 shadow-lg">
-              <button 
+              <Button 
+                variant="ghost"
+                size="sm"
                 onClick={() => setZoom(z => Math.max(1, z - 0.5))} 
-                className="btn btn-sm btn-circle btn-ghost" 
+                className="btn-circle" 
                 aria-label="Diminuir zoom"
+                data-testid="scanner-zoom-out"
               >
                 -
-              </button>
-              <span className="font-mono text-sm w-10 text-center">{zoom.toFixed(1)}x</span>
-              <button 
+              </Button>
+              <span className="font-mono text-sm w-10 text-center" data-testid="scanner-zoom-level">{zoom.toFixed(1)}x</span>
+              <Button 
+                variant="ghost"
+                size="sm"
                 onClick={() => setZoom(z => Math.min(3, z + 0.5))} 
-                className="btn btn-sm btn-circle btn-ghost" 
+                className="btn-circle" 
                 aria-label="Aumentar zoom"
+                data-testid="scanner-zoom-in"
               >
                 +
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -178,23 +202,35 @@ export const BarcodeScannerModal = ({
           onChange={(e) => setManualEan(e.target.value)}
           placeholder="Ou digite o código de barras..."
           className="flex-1"
+          data-testid="scanner-manual-input"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && manualEan.trim()) {
-              onScan(manualEan.trim());
-              if (!continuous) onClose();
-              setManualEan("");
+              const ean = manualEan.trim();
+              if (isValidEan(ean)) {
+                onScan(ean);
+                if (!continuous) onClose();
+                setManualEan("");
+              } else {
+                setError("O código digitado é inválido. Digite apenas de 8 a 14 números.");
+              }
             }
           }}
         />
         <Button 
           onClick={() => {
             if (manualEan.trim()) {
-              onScan(manualEan.trim());
-              if (!continuous) onClose();
-              setManualEan("");
+              const ean = manualEan.trim();
+              if (isValidEan(ean)) {
+                onScan(ean);
+                if (!continuous) onClose();
+                setManualEan("");
+              } else {
+                setError("O código digitado é inválido. Digite apenas de 8 a 14 números.");
+              }
             }
           }}
           disabled={!manualEan.trim()}
+          data-testid="scanner-manual-submit"
         >
           OK
         </Button>

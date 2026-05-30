@@ -12,6 +12,7 @@ declare global {
 export interface ScannerInstance {
   start(containerId: string, onScan: (ean: string) => void): Promise<void>;
   stop(): Promise<void>;
+  setZoom(zoom: number): void;
 }
 
 /**
@@ -101,6 +102,22 @@ class NativeBarcodeScanner implements ScannerInstance {
     this.stream = null;
     this.video = null;
   }
+
+  setZoom(zoom: number): void {
+    if (!this.stream) return;
+    const track = this.stream.getVideoTracks()[0];
+    if (track && track.getCapabilities) {
+      try {
+        const capabilities = track.getCapabilities();
+        if ('zoom' in capabilities) {
+          // @ts-expect-error - 'zoom' can exist in modern browsers but is often missing in standard TS definitions
+          void track.applyConstraints({ advanced: [{ zoom }] });
+        }
+      } catch {
+        // Ignora erros caso o navegador ou a câmera não suporte constraints de zoom nativo
+      }
+    }
+  }
 }
 
 class FallbackBarcodeScanner implements ScannerInstance {
@@ -142,6 +159,17 @@ class FallbackBarcodeScanner implements ScannerInstance {
         // ignore errors during stop
       }
       this.scanner = null;
+    }
+  }
+
+  setZoom(zoom: number): void {
+    if (this.scanner) {
+      try {
+        // @ts-expect-error - applyVideoConstraints pode não estar na tipagem base, mas existe na lib
+        void this.scanner.applyVideoConstraints({ advanced: [{ zoom }] });
+      } catch {
+        // Ignora caso a versão da lib não suporte ou a câmera não tenha suporte
+      }
     }
   }
 }

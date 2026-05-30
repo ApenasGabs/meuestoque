@@ -37,3 +37,4 @@ dist-ssr
 *.sw?
 .vercel
 scratch/
+.env
