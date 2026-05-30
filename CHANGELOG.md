@@ -5,6 +5,20 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.16.0](https://github.com/ApenasGabs/meuestoque/compare/v1.15.6...v1.16.0) (2026-05-30)
+
+### ✨ Features
+
+* ✨ adiciona coluna ean ao product_catalog (barcode-scanner v2) ([b02481d](https://github.com/ApenasGabs/meuestoque/commit/b02481d060fbc156f4e155adb6940c9b071fb692))
+* ✨ aprimora UX do scanner com zoom digital, fallback manual e melhorias de UI ([44703ff](https://github.com/ApenasGabs/meuestoque/commit/44703ffcbe91ff1a323923c1e11ed170892c8e8f))
+* ✨ aprimora UX do scanner com zoom digital, fallback manual e melhorias de UI ([35f8741](https://github.com/ApenasGabs/meuestoque/commit/35f874118833a378b1a50af80541b977f1697e38))
+* ✨ implementa leitor de código de barras v2 com fallback progressivo ([581a717](https://github.com/ApenasGabs/meuestoque/commit/581a717a1508d165b1ff36b12ac319027bee0317))
+* add Supabase Postgres best practices documentation and project standards guide ([fa96722](https://github.com/ApenasGabs/meuestoque/commit/fa96722def94e77c73cd463fc7ba4872ad1976a7))
+
+### ♻️ Refactoring
+
+* ♻️ eleva estado do smartInput e remove bypasses do linter ([93723df](https://github.com/ApenasGabs/meuestoque/commit/93723dfa73bebd507ee72e99d4cc52b91306498e))
+
 ## [1.15.6](https://github.com/ApenasGabs/meuestoque/compare/v1.15.5...v1.15.6) (2026-05-24)
 
 ### 🐛 Bug Fixes
