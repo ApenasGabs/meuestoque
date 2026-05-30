@@ -46,6 +46,10 @@ interface ShoppingListViewProps {
   onBulkRemove?: (itemIds: string[]) => Promise<void>;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
+  onScannerOpen?: () => void;
+  canUseScanner?: boolean;
+  smartInput: string;
+  onSmartInputChange: (value: string) => void;
 }
 
 /**
@@ -92,6 +96,10 @@ export const ShoppingListView = ({
   onBulkRemove,
   onOpenImportModal,
   onViewHistory,
+  onScannerOpen,
+  canUseScanner,
+  smartInput,
+  onSmartInputChange,
 }: ShoppingListViewProps): ReactElement => {
   // Bulk mode for shopping list (Spec Epic 1 + Epic 2). Mirrors the inventory action
   // bar but operates on shopping_list items via updateListItemValidityDate.
@@ -103,7 +111,6 @@ export const ShoppingListView = ({
   const [overwriteMode, setOverwriteMode] = useState<"only_missing" | "overwrite_all">(
     "only_missing",
   );
-  const [smartInput, setSmartInput] = useState<string>("");
   const [selectedUnit, setSelectedUnit] = useState<Unit>("Un");
   const [selectedCategoryForDraft, setSelectedCategoryForDraft] = useState<string>("Outros");
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
@@ -145,7 +152,7 @@ export const ShoppingListView = ({
     }
 
     onSmartAdd(parsedDraft);
-    setSmartInput("");
+    onSmartInputChange("");
     setSelectedUnit("Un");
     setSelectedCategoryForDraft("Outros");
   };
@@ -319,14 +326,22 @@ export const ShoppingListView = ({
             <div className="space-y-3">
               <div>
                 <Label htmlFor="smart-shopping-input">Adicionar item rápido</Label>
-                <Input
-                  id="smart-shopping-input"
-                  value={smartInput}
-                  onChange={(event) => setSmartInput(event.target.value)}
-                  onKeyDown={handleSmartKeyDown}
-                  placeholder="Nome, quantidade, valor"
-                  data-testid="smart-shopping-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="smart-shopping-input"
+                    value={smartInput}
+                    onChange={(event) => onSmartInputChange(event.target.value)}
+                    onKeyDown={handleSmartKeyDown}
+                    placeholder="Nome, quantidade, valor"
+                    data-testid="smart-shopping-input"
+                    className="flex-1"
+                  />
+                  {canUseScanner && onScannerOpen && (
+                    <Button variant="ghost" className="px-3 text-xl" onClick={onScannerOpen} aria-label="Escanear código" data-testid="camera-scan-button">
+                      📸
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/70">

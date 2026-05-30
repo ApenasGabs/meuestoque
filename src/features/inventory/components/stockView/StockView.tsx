@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "../../../../components/Button/Button";
 import { Drawer } from "../../../../components/Drawer/Drawer";
 import { Input } from "../../../../components/Input/Input";
@@ -30,6 +30,8 @@ interface StockViewProps {
     naoAplica: boolean,
   ) => Promise<void>;
   onBulkRemove?: (itemIds: string[]) => Promise<void>;
+  scannedProductId?: string | null;
+  onClearScannedProduct?: () => void;
 }
 
 /**
@@ -73,6 +75,8 @@ export const StockView = ({
   onAddCategory,
   onBulkUpdateValidity,
   onBulkRemove,
+  scannedProductId,
+  onClearScannedProduct,
 }: StockViewProps): ReactElement => {
   const [openForm, setOpenForm] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
@@ -91,6 +95,17 @@ export const StockView = ({
   const [overwriteConflictMode, setOverwriteConflictMode] = useState<
     "only_missing" | "overwrite_all"
   >("only_missing");
+
+  useEffect(() => {
+    if (scannedProductId) {
+      const product = products.find((p) => p.id === scannedProductId);
+      if (product) {
+        setEditingProduct(product);
+        setOpenForm(true);
+      }
+      onClearScannedProduct?.();
+    }
+  }, [scannedProductId, products, onClearScannedProduct]);
 
   const hasFilters = filters.length > 0;
 

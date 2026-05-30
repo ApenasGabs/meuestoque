@@ -32,6 +32,8 @@ import { useStockStore } from "../stores/stockStore";
 import type { StockItemRecord } from "../lib/webData";
 import type { Unit } from "../types/inventory.types";
 import { toUnit } from "../types/inventory.types";
+import { resolveProductByEan, saveEanMapping } from "../lib/barcodeService";
+import { BarcodeScannerModal } from "../components/Scanner/BarcodeScannerModal";
 
 /**
  * Main shopping list page with integrated inventory intelligence.
@@ -67,6 +69,11 @@ export const ListPageNew = (): ReactElement => {
   const [importText, setImportText] = useState("");
   const [importSource, setImportSource] = useState<StockImportSource>("auto");
   const [importing, setImporting] = useState(false);
+
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [pendingEan, setPendingEan] = useState<string | null>(null);
+  const [smartInput, setSmartInput] = useState<string>("");
+  const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
     const normalized = rawQuantity.trim().replace(/\s+/g, " ");
@@ -277,6 +284,12 @@ export const ListPageNew = (): ReactElement => {
           price: payload.price,
           createdBy: userId,
         });
+
+        if (pendingEan && groupId) {
+          await saveEanMapping(groupId, pendingEan, itemName, payload.unit, payload.category);
+          setPendingEan(null);
+        }
+
         await refreshItems(listId);
         setNotice(`"${itemName}" adicionado na lista.`);
       } catch (addError) {
@@ -285,7 +298,7 @@ export const ListPageNew = (): ReactElement => {
         setSaving(false);
       }
     },
-    [listId, refreshItems, stockItems, userId],
+    [listId, refreshItems, stockItems, userId, pendingEan, groupId],
   );
 
   const handleToggleItemChecked = useCallback(
@@ -569,12 +582,38 @@ export const ListPageNew = (): ReactElement => {
       }
       await refreshItems(nextListId);
       setNotice("Compra finalizada. Itens pendentes reaproveitados na nova lista.");
-    } catch (finishError) {
-      setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
+      } catch (finishError) {
+        setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
+      } finally {
+        setSaving(false);
+      }
+    }, [groupId, listId, refreshItems, setListId]);
+
+  const handleBarcodeScan = useCallback(async (ean: string) => {
+    if (!groupId) return;
+    setScannerOpen(false);
+    setLoading(true);
+
+    try {
+      const result = await resolveProductByEan(ean, groupId);
+      
+      if (result.found && result.name) {
+        // Limpa EAN pendente anterior (se houver) para não associar ao produto errado
+        setPendingEan(null);
+        // Atualiza o input diretamente sem precisar do workaround do queueMicrotask
+        setSmartInput(`${result.name}, 1`);
+        setNotice(`📸 ${result.name}`);
+      } else {
+        // Produto desconhecido — guarda o EAN para salvar depois
+        setPendingEan(ean);
+        setNotice("Código não reconhecido. Digite o nome para o sistema aprender!");
+      }
+    } catch {
+      setError("Erro ao processar o código de barras.");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }, [groupId, listId, refreshItems, setListId]);
+  }, [groupId]);
 
   if (!groupId) {
     return <Alert type="warning">Selecione um grupo para continuar</Alert>;
@@ -638,6 +677,10 @@ export const ListPageNew = (): ReactElement => {
           }}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
+          canUseScanner={canUseCamera}
+          onScannerOpen={() => setScannerOpen(true)}
+          smartInput={smartInput}
+          onSmartInputChange={setSmartInput}
         />
       </div>
 
@@ -711,6 +754,14 @@ export const ListPageNew = (): ReactElement => {
             </div>
           </div>
         </Drawer>
+      )}
+
+      {scannerOpen && (
+        <BarcodeScannerModal
+          open={scannerOpen}
+          onClose={() => setScannerOpen(false)}
+          onScan={handleBarcodeScan}
+        />
       )}
     </div>
   );

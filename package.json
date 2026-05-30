@@ -31,13 +31,17 @@
     "e2e:stock": "npx playwright test e2e/scenarios/stock.spec.ts",
     "e2e:flows": "npx playwright test e2e/scenarios/flows.spec.ts",
     "e2e:all": "npx playwright test e2e/scenarios/",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "inspect:supabase": "node scripts/inspect-supabase.js",
+    "add-skills": "npx -y skills add supabase/agent-skills"
   },
   "dependencies": {
+    "pg": "^8.11.0",
     "@ant-design/icons": "6.x",
     "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/vite": "^4.1.18",
     "@vercel/analytics": "^2.0.1",
+    "html5-qrcode": "^2.3.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.14.2",

@@ -151,6 +151,46 @@ jobs:
           echo "Sua aplicação (v${{ needs.release.outputs.version }}) já está no ar!" >> $GITHUB_STEP_SUMMARY
 
   # ==========================================
+  # JOB X: INSPEÇÃO DO SCHEMA (GERADA NA TAG)
+  # Roda quando uma nova release/tag é publicada e gera um snapshot do schema
+  # ==========================================
+  inspect-db:
+    name: 🔍 Inspecionar Schema do Banco
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.published == 'true'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: 📦 Instalar dependências
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔐 Validar e exportar DATABASE_URL
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "❌ ERRO: SUPABASE_DB_URL não definida nos Secrets do GitHub.";
+            exit 1;
+          fi
+          echo "DATABASE_URL=${{ secrets.SUPABASE_DB_URL }}" >> $GITHUB_ENV
+
+      - name: 🔎 Rodar inspeção do Supabase
+        run: |
+          npm run inspect:supabase
+
+      - name: 📦 Publicar snapshot como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-inspection
+          path: docs/supabase_inspection_results_*.json
+
+  # ==========================================
   # JOB 3: TESTES UNITÁRIOS
   # ==========================================
   unit-tests:

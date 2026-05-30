@@ -2,6 +2,8 @@
 
 **ATENÇÃO, IA LENDO ESTE ARQUIVO:** Se você está trabalhando neste projeto, **você DEVE** consultar a documentação listada abaixo antes de alterar o código do sistema e **atualizar este arquivo** sempre que modificar regras ou infraestrutura importante!
 
+Também há um arquivo de políticas de agentes no repositório raiz: `AGENTS.md`. Leia-o antes de começar a modificar código — ele contém passos obrigatórios que agentes automatizados devem seguir.
+
 ## 📖 Como a Documentação está Organizada
 
 Para facilitar a leitura e não estourar seu contexto, quebramos as especificações da aplicação em arquivos menores na pasta `docs/ai/`:
