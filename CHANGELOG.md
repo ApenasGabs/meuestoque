@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.17.0](https://github.com/ApenasGabs/meuestoque/compare/v1.16.0...v1.17.0) (2026-05-31)
+
+### ✨ Features
+
+* ✨ adiciona suporte a unidades de compra e rendimento por embalagem na lista de compras ([286724c](https://github.com/ApenasGabs/meuestoque/commit/286724c7b65396c9095b2f676cfac013eb6d0862))
+
 ## [1.16.0](https://github.com/ApenasGabs/meuestoque/compare/v1.15.6...v1.16.0) (2026-05-30)
 
 ### ✨ Features
