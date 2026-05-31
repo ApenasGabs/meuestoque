@@ -62,6 +62,9 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef<boolean>(false);
 
+  // ── Mobile expand state ──
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // ── Price mode: 'total' = user enters full price; 'unit' = user enters R$/unit ──
   const [priceMode, setPriceMode] = useState<"total" | "unit">(
     item.pricePerUnit != null ? "unit" : "total",
@@ -235,7 +238,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           }
         }}
       >
-        {/* Linha 1: Checkbox + Nome + Badge + Lixeira */}
+        {/* Linha 1: Checkbox + Nome + Info compacta (mobile) + Expand/Lixeira */}
         <div className="flex items-center gap-2">
           {listBulk ? (
             <Checkbox
@@ -255,25 +258,59 @@ export const ShoppingListItem = memo(function ShoppingListItem({
             />
           )}
 
-          <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-            <span
-              className={`text-sm font-medium truncate max-w-[200px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
-            >
-              {product.name}
-            </span>
-            {item.checked && (
-              <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
-                No carrinho
-              </Badge>
-            )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
+              >
+                {product.name}
+              </span>
+              {item.checked && (
+                <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
+                  No carrinho
+                </Badge>
+              )}
+            </div>
+            {/* Mobile: info compacta quando colapsado */}
+            <div className="flex items-center gap-2 mt-0.5 sm:hidden">
+              {!isExpanded && (
+                <>
+                  <span className="text-xs text-base-content/60 tabular-nums">
+                    {item.quantity} {baseUnit}
+                  </span>
+                  {item.price != null && (
+                    <span className="text-xs font-medium text-base-content/80 tabular-nums">
+                      R$ {item.price.toFixed(2).replace(".", ",")}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Botão lixeira compacto */}
+          {/* Mobile: botao expandir */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+            className="btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 sm:hidden"
+            aria-label={isExpanded ? "Recolher" : "Expandir"}
+          >
+            <svg 
+              className={`w-4 h-4 text-base-content/40 transition-transform ${isExpanded ? "rotate-180" : ""}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Botao lixeira - sempre visivel no desktop, visivel no mobile quando expandido */}
           <button
             type="button"
             onClick={() => onRemove(item.id)}
             data-testid="remove-item-button"
-            className="btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0"
+            className={`btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 ${isExpanded ? "" : "hidden sm:flex"}`}
             title="Excluir"
           >
             <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,8 +319,8 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           </button>
         </div>
 
-        {/* Linha 2: Controles em linha */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-2 ml-6 sm:ml-7">
+        {/* Linha 2: Controles - sempre visivel no desktop, apenas quando expandido no mobile */}
+        <div className={`flex items-center gap-1.5 flex-wrap mt-2 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:flex"}`}>
           {/* Qtd + unidade */}
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
@@ -361,7 +398,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           {/* Separador visual */}
           <span className="text-base-content/20 hidden sm:inline">|</span>
 
-          {/* Preço */}
+          {/* Preco */}
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
@@ -416,25 +453,25 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           )}
         </div>
 
-        {/* Badges de validade pré-definida (abaixo da barra, só se tiver) */}
+        {/* Badges de validade pre-definida (abaixo da barra, so se tiver) - visivel apenas quando expandido no mobile */}
         {(item.naoAplicaValidade || (!item.naoAplicaValidade && item.validityDate && !item.checked)) && (
-          <div className="flex items-center gap-1.5 mt-1.5 ml-6 sm:ml-7">
+          <div className={`flex items-center gap-1.5 mt-1.5 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:flex"}`}>
             {item.naoAplicaValidade && (
               <Badge variant="info" size="sm" className="text-[10px] h-5">
-                ♾️ Sem validade
+                Sem validade
               </Badge>
             )}
             {!item.naoAplicaValidade && item.validityDate && !item.checked && (
               <Badge variant="info" size="sm" className="text-[10px] h-5">
-                📅 {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
+                {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
               </Badge>
             )}
           </div>
         )}
 
-        {/* Pack info hint quando há rendimento definido no produto */}
+        {/* Pack info hint quando ha rendimento definido no produto */}
         {hasPack && !showPackFields && (
-          <div className="mt-1 ml-6 sm:ml-7">
+          <div className={`mt-1 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:block"}`}>
             <span className="text-[10px] text-base-content/40">
               (rende {product.packSize} {baseUnit})
             </span>
