@@ -228,10 +228,18 @@ export const ProductCard = ({
           {/* Row 3: Quantity, Percentage (Centered), and Actions */}
           <div className="flex items-center justify-between gap-2 -mt-1 relative">
             <div className="flex items-center gap-2">
-              {/* Quantity Indicator / Unit*/}
-              <span className="text-sm font-medium text-base-content/60 tracking-tighter">
-                {product.quantity} {product.unit ?? "Un"}
-              </span>
+              {/* Quantity Indicator / Unit — shows pack count if pack_size is set */}
+              {product.packSize && product.packSize > 0 ? (
+                <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                  {(product.quantity / product.packSize).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
+                  {" "}{product.packLabel ?? "pac"}
+                  {" "}<span className="opacity-60 text-[10px]">({product.quantity} {product.unit ?? "Un"})</span>
+                </span>
+              ) : (
+                <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                  {product.quantity} {product.unit ?? "Un"}
+                </span>
+              )}
             </div>
 
             {/* Percentage centered in the middle of Row 3 */}

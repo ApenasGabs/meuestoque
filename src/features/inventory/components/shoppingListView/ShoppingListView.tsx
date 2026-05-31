@@ -19,6 +19,10 @@ interface SmartShoppingDraft {
   hasQuantity: boolean;
   unit: Unit;
   category: string;
+  /** Pack size parsed from '2x5kg' format (e.g., 5) */
+  packSize: number | null;
+  /** Pack unit parsed from '2x5kg' format (e.g., 'Kg') */
+  packUnit: Unit | null;
 }
 
 interface ShoppingListViewProps {
@@ -38,6 +42,7 @@ interface ShoppingListViewProps {
   onUpdateItemQuantity?: (id: string, value: number) => void;
   onUpdateItemUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
+  onUpdatePackSize?: (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null) => void;
   onBulkUpdateValidity?: (
     itemIds: string[],
     validityDate: string | null,
@@ -92,6 +97,7 @@ export const ShoppingListView = ({
   onUpdateItemQuantity,
   onUpdateItemUnit,
   onUpdateValidityDate,
+  onUpdatePackSize,
   onBulkUpdateValidity,
   onBulkRemove,
   onOpenImportModal,
@@ -132,17 +138,38 @@ export const ShoppingListView = ({
       .filter((part) => part.length > 0);
 
     const name = parts[0] ?? "";
-    const quantityValue = parts[1] ? Number.parseFloat(parts[1].replace(",", ".")) : 1;
+    const rawQty = parts[1] ?? "";
     const priceValue = parts[2] ? Number.parseFloat(parts[2].replace(",", ".")) : null;
-    const hasQuantity = parts.length >= 2 && !Number.isNaN(quantityValue) && quantityValue > 0;
+
+    // Parse '2x5kg' or '2X5Kg' format — quantity × pack size
+    const packMatch = rawQty.match(/^(\d+(?:[.,]\d+)?)\s*[xX]\s*(\d+(?:[.,]\d+)?)\s*([a-zA-Z]*)$/);
+    let quantity = 1;
+    let packSize: number | null = null;
+    let packUnit: Unit | null = null;
+    let hasQuantity = false;
+
+    if (packMatch) {
+      const qtyVal = Number.parseFloat(packMatch[1].replace(",", "."));
+      const sizeVal = Number.parseFloat(packMatch[2].replace(",", "."));
+      hasQuantity = Number.isFinite(qtyVal) && qtyVal > 0;
+      quantity = hasQuantity ? qtyVal : 1;
+      packSize = Number.isFinite(sizeVal) && sizeVal > 0 ? sizeVal : null;
+      packUnit = packMatch[3] ? toUnit(packMatch[3]) : selectedUnit;
+    } else {
+      const quantityValue = rawQty ? Number.parseFloat(rawQty.replace(",", ".")) : 1;
+      hasQuantity = parts.length >= 2 && !Number.isNaN(quantityValue) && quantityValue > 0;
+      quantity = hasQuantity ? quantityValue : 1;
+    }
 
     return {
       name,
-      quantity: hasQuantity ? quantityValue : 1,
+      quantity,
       price: priceValue !== null && !Number.isNaN(priceValue) ? priceValue : null,
       hasQuantity,
       unit: selectedUnit,
       category: selectedCategoryForDraft,
+      packSize,
+      packUnit,
     };
   }, [selectedCategoryForDraft, selectedUnit, smartInput]);
 
@@ -451,6 +478,7 @@ export const ShoppingListView = ({
                 onUpdateQuantity={onUpdateItemQuantity}
                 onUpdateUnit={onUpdateItemUnit}
                 onUpdateValidityDate={onUpdateValidityDate}
+                onUpdatePackSize={onUpdatePackSize}
               />
             );
           })

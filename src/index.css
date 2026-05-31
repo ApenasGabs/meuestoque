@@ -146,29 +146,7 @@ textarea:not(.textarea) {
   background: white;
 }
 
-button:not(.btn) {
-  background: #7c9e87;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  cursor: pointer;
-}
 
-button:not(.btn).active {
-  background: #4e7059;
-}
-
-button:not(.btn).ghost,
-.ghost-link {
-  background: transparent;
-  color: #4e7059;
-  border: 1px solid #b9c8bf;
-}
-
-button:not(.btn).danger {
-  background: #b23030;
-}
 
 .grid {
   display: grid;

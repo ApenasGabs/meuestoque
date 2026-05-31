@@ -23,6 +23,7 @@ import {
   updateListItemUnitPrice,
   updateListItemQuantity,
   updateListItemValidityDate,
+  updateListItemPackSize,
   type ItemRecord,
 } from "../lib/webData";
 import { supabase } from "../lib/supabase";
@@ -211,6 +212,9 @@ export const ListPageNew = (): ReactElement => {
           totalPrice: item.preco_total,
           validityDate: item.data_validade,
           naoAplicaValidade: item.nao_aplica_validade,
+          packLabel: item.pack_label ?? null,
+          packSize: item.pack_size ?? null,
+          packUnit: item.pack_unit ?? null,
         };
       }),
     [isPriceOlderThan30Days, parseListQuantity, shoppingItems],
@@ -256,6 +260,8 @@ export const ListPageNew = (): ReactElement => {
       price: number | null;
       hasQuantity: boolean;
       category: string;
+      packSize?: number | null;
+      packUnit?: string | null;
     }): Promise<void> => {
       if (!listId) {
         setError("Lista não inicializada");
@@ -283,6 +289,9 @@ export const ListPageNew = (): ReactElement => {
           categoria: payload.category || matchedStockItem?.categoria || "Outros",
           price: payload.price,
           createdBy: userId,
+          packSize: payload.packSize ?? null,
+          packUnit: payload.packUnit ?? null,
+          packLabel: payload.packSize ? "pacote" : null,
         });
 
         if (pendingEan && groupId) {
@@ -300,6 +309,7 @@ export const ListPageNew = (): ReactElement => {
     },
     [listId, refreshItems, stockItems, userId, pendingEan, groupId],
   );
+
 
   const handleToggleItemChecked = useCallback(
     async (itemId: string): Promise<void> => {
@@ -528,6 +538,37 @@ export const ListPageNew = (): ReactElement => {
     [handleUpdateValidityDate],
   );
 
+  const handleUpdatePackSize = useCallback(
+    async (itemId: string, packLabel: string | null, packSize: number | null, packUnit: string | null): Promise<void> => {
+      if (!listId) return;
+
+      // Optimistic update
+      setShoppingItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? { ...item, pack_label: packLabel, pack_size: packSize, pack_unit: packUnit }
+            : item,
+        ),
+      );
+
+      try {
+        await updateListItemPackSize(itemId, packLabel, packSize, packUnit);
+      } catch (err) {
+        // Rollback on error
+        await refreshItems(listId);
+        setError(err instanceof Error ? err.message : "Falha ao atualizar embalagem");
+      }
+    },
+    [listId, refreshItems],
+  );
+
+  const fireUpdatePackSize = useCallback(
+    (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null): void => {
+      void handleUpdatePackSize(id, packLabel, packSize, packUnit);
+    },
+    [handleUpdatePackSize],
+  );
+
   const importPreview = useMemo(() => {
     return parseShoppingImportText(importText, { source: importSource });
   }, [importSource, importText]);
@@ -652,6 +693,7 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemQuantity={fireUpdateItemQuantity}
           onUpdateItemUnit={fireUpdateItemUnit}
           onUpdateValidityDate={fireUpdateValidityDate}
+          onUpdatePackSize={fireUpdatePackSize}
           onBulkRemove={async (itemIds: string[]) => {
             try {
               await deleteListItemsBulk(itemIds);

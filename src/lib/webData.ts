@@ -35,6 +35,12 @@ export interface ItemRecord {
   data_validade?: string | null;
   nao_aplica_validade?: boolean;
   product_id?: string | null;
+  /** Embalagem informada na compra (ex: "pacote", "caixa") */
+  pack_label?: string | null;
+  /** Rendimento por embalagem em unidade de estoque (ex: 5 para 5 kg) */
+  pack_size?: number | null;
+  /** Unidade do rendimento (ex: "Kg", "g", "Un") */
+  pack_unit?: string | null;
 }
 
 interface FinalizeShoppingRpcResult {
@@ -231,7 +237,7 @@ export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id",
+      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id, pack_label, pack_size, pack_unit",
     )
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
@@ -247,6 +253,12 @@ export interface AddListItemInput {
   categoria: string;
   price?: number | null;
   createdBy?: string | null;
+  /** Embalagem informada na compra (ex: "pacote") */
+  packLabel?: string | null;
+  /** Rendimento por embalagem em unidade de estoque */
+  packSize?: number | null;
+  /** Unidade do rendimento (ex: "Kg", "g") */
+  packUnit?: string | null;
 }
 
 export async function addListItem(input: AddListItemInput): Promise<void> {
@@ -262,6 +274,9 @@ export async function addListItem(input: AddListItemInput): Promise<void> {
     preco: input.price ?? null,
     comprado: false,
     criado_por: input.createdBy ?? null,
+    pack_label: input.packLabel ?? null,
+    pack_size: input.packSize ?? null,
+    pack_unit: input.packUnit ?? null,
   });
 
   if (error) throw new Error(error.message);
@@ -351,6 +366,29 @@ export async function updateListItemValidityDate(
   }
 
   const { error } = await supabase.from("items").update(updateData).eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Updates the pack/package conversion info for a shopping list item.
+ * This defines how many base units fit in each purchased package.
+ *
+ * @param itemId - UUID of the shopping list item
+ * @param packLabel - Package name (ex: "pacote", "caixa") — null to clear
+ * @param packSize - How many base units per package (ex: 5 for 5 kg) — null to clear
+ * @param packUnit - Unit of the pack size (ex: "Kg", "g", "Un") — null to clear
+ */
+export async function updateListItemPackSize(
+  itemId: string,
+  packLabel: string | null,
+  packSize: number | null,
+  packUnit: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("items")
+    .update({ pack_label: packLabel, pack_size: packSize, pack_unit: packUnit })
+    .eq("id", itemId);
 
   if (error) throw new Error(error.message);
 }
@@ -447,7 +485,7 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
   const { data: items, error: itemsError } = await supabase
     .from("items")
     .select(
-      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, data_validade",
+      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, data_validade, pack_label, pack_size, pack_unit",
     )
     .eq("list_id", listId);
 
@@ -493,7 +531,30 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
       let isPackConversion = false;
       let conversionFactor = 1;
 
-      if (!matchedStockItem) {
+      // Priority 1: item has explicit pack_size (informed by user in the shopping list)
+      if (boughtItem.pack_size && boughtItem.pack_size > 0) {
+        isPackConversion = true;
+        conversionFactor = boughtItem.pack_size;
+        // The stock unit is the pack_unit from the item (e.g., "Kg") or infer from stock
+        const stockUnit = (boughtItem.pack_unit ?? "").toLowerCase();
+        // Try to match by name + pack_unit as the base unit
+        if (!matchedStockItem && stockUnit) {
+          matchedStockItem = stockItemsArr.find(
+            (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
+          );
+          if (matchedStockItem) {
+            key = `${itemName}::${matchedStockItem.unidade.toLowerCase()}`;
+          }
+        }
+        if (!matchedStockItem) {
+          // Fallback: match by name only and use first result
+          matchedStockItem = stockItemsArr.find((si) => si.nome.trim().toLowerCase() === itemName);
+          if (matchedStockItem) {
+            key = `${itemName}::${matchedStockItem.unidade.toLowerCase()}`;
+          }
+        }
+      } else if (!matchedStockItem) {
+        // Priority 2: match by pack_label on stock_items (legacy behavior)
         matchedStockItem = stockItemsArr.find(
           (si) =>
             si.nome.trim().toLowerCase() === itemName &&
@@ -570,7 +631,21 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === itemUnit,
       );
 
-      if (!matchedStockItem) {
+      // Priority 1: use pack_size explicitly informed in the list item
+      if (boughtItem.pack_size && boughtItem.pack_size > 0) {
+        isPackConversion = true;
+        conversionFactor = boughtItem.pack_size;
+        const stockUnit = (boughtItem.pack_unit ?? "").toLowerCase();
+        if (!matchedStockItem && stockUnit) {
+          matchedStockItem = stockItemsArr.find(
+            (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
+          );
+        }
+        if (!matchedStockItem) {
+          matchedStockItem = stockItemsArr.find((si) => si.nome.trim().toLowerCase() === itemName);
+        }
+      } else if (!matchedStockItem) {
+        // Priority 2: legacy pack_label on stock_items
         matchedStockItem = stockItemsArr.find(
           (si) =>
             si.nome.trim().toLowerCase() === itemName &&

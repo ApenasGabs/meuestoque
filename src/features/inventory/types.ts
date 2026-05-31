@@ -48,6 +48,12 @@ export interface InventoryShoppingListItem {
   totalPrice?: number | null;
   validityDate?: string | null;
   naoAplicaValidade?: boolean;
+  /** Embalagem informada no momento da compra (ex: "pacote", "caixa") */
+  packLabel?: string | null;
+  /** Rendimento por embalagem em unidade de estoque (ex: 5 para "5 kg") */
+  packSize?: number | null;
+  /** Unidade do rendimento (ex: "Kg", "g", "Un") — usa o tipo Unit */
+  packUnit?: string | null;
 }
 
 export type InventoryTab = "stock" | "list" | "settings";

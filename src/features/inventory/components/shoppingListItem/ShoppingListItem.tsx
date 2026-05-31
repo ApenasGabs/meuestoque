@@ -21,6 +21,7 @@ interface ShoppingListItemProps {
   onUpdateQuantity?: (id: string, value: number) => void;
   onUpdateUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
+  onUpdatePackSize?: (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null) => void;
 }
 
 /**
@@ -30,7 +31,7 @@ interface ShoppingListItemProps {
  * - Optimistic toggle for purchased state
  * - Dual price input: Total price or Unit price (auto-converts)
  * - Quantity adjustment with unit display
- * - Pack/Box conversion hints
+ * - Pack/Box conversion: × [size] [unit] = total (inline)
  * - Validity date input (appears when item is checked)
  * - Visual indicator for stale prices (older than 30 days)
  * 
@@ -41,6 +42,7 @@ interface ShoppingListItemProps {
  * @param props.onUpdatePrice - Callback to update total price
  * @param props.onUpdateUnitPrice - Callback to update price per unit
  * @param props.onUpdateQuantity - Callback to update item quantity
+ * @param props.onUpdatePackSize - Callback to update pack size info
  * @param props.onUpdateValidityDate - Callback to update item validity
  */
 export const ShoppingListItem = memo(function ShoppingListItem({
@@ -53,6 +55,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   onUpdateQuantity,
   onUpdateUnit,
   onUpdateValidityDate,
+  onUpdatePackSize,
 }: ShoppingListItemProps): ReactElement {
   // ── Bulk mode plumbing for the shopping list (Spec Epic 1) ──
   const { isBulkMode, scope, isSelected, toggleItemSelection, enterBulkMode } = useBulkStore();
@@ -156,6 +159,43 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   const displayUnit = product.packLabel || baseUnit;
   const hasPack = Boolean(product.packLabel && product.packSize);
 
+  // ── Pack size draft (embalagem × rendimento) ──
+  const [packSizeDraft, setPackSizeDraft] = useState(
+    item.packSize != null ? String(item.packSize) : "",
+  );
+  const [packUnitDraft, setPackUnitDraft] = useState<Unit>(
+    (item.packUnit as Unit) ?? baseUnit,
+  );
+  const [showPackFields, setShowPackFields] = useState(
+    item.packSize != null && item.packSize > 0,
+  );
+
+  // ── Calculated stock quantity (qty × pack size) ──
+  const calculatedStockQty = useMemo(() => {
+    const packNum = Number.parseFloat(packSizeDraft.replace(",", "."));
+    if (!showPackFields || !Number.isFinite(packNum) || packNum <= 0) return null;
+    return Math.round(item.quantity * packNum * 1000) / 1000;
+  }, [showPackFields, packSizeDraft, item.quantity]);
+
+  const handlePackSizeBlur = (): void => {
+    if (!onUpdatePackSize) return;
+    const packNum = Number.parseFloat(packSizeDraft.replace(",", "."));
+    const validPack = Number.isFinite(packNum) && packNum > 0 ? packNum : null;
+    // Use the item quantity unit as packLabel when no dedicated label
+    const packLabel = validPack ? "pacote" : null;
+    onUpdatePackSize(item.id, packLabel, validPack, validPack ? packUnitDraft : null);
+  };
+
+  const handlePackUnitChange = (unit: Unit): void => {
+    setPackUnitDraft(unit);
+    if (!onUpdatePackSize) return;
+    const packNum = Number.parseFloat(packSizeDraft.replace(",", "."));
+    const validPack = Number.isFinite(packNum) && packNum > 0 ? packNum : null;
+    if (validPack) {
+      onUpdatePackSize(item.id, "pacote", validPack, unit);
+    }
+  };
+
   const handleLongPressStart = (): void => {
     longPressTriggeredRef.current = false;
     longPressTimeoutRef.current = setTimeout(() => {
@@ -240,10 +280,10 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               )}
             </div>
 
-            {/* Controls */}
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* Quantity + Pack size + Price + Validity row */}
+            <div className="mt-2 flex items-center gap-x-2 overflow-x-auto scrollbar-hide pb-1 w-full">
               {/* Quantity */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
                 <Input
                   value={quantityDraft}
@@ -252,12 +292,12 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                   onBlur={handleQuantityBlur}
                   inputMode="decimal"
                   size="sm"
-                  className="px-2 text-center tabular-nums"
+                  className="px-2 text-center tabular-nums h-6 min-h-6"
                   style={{ width: `${Math.max(quantityDraft.length, 2) + 2}ch` }}
                   data-testid="shopping-item-quantity"
                 />
                 <select
-                  className="select select-ghost select-xs h-7 min-h-7 px-1 py-0 text-[10px] uppercase font-bold text-base-content/40 border-none bg-transparent hover:bg-base-200/50 focus:outline-none cursor-pointer"
+                  className="select select-bordered select-xs h-6 min-h-6 px-1 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
                   value={baseUnit}
                   onChange={(event) => {
                     event.stopPropagation();
@@ -283,8 +323,55 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                 )}
               </div>
 
+              {/* Pack size toggle button */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
+                title={showPackFields ? "Ocultar rendimento" : "Informar rendimento por embalagem"}
+                className={`btn btn-xs px-1.5 min-h-0 h-6 rounded uppercase font-bold text-[10px] transition-colors shrink-0 ${
+                  showPackFields ? "btn-active text-primary bg-primary/10" : "btn-ghost text-base-content/60"
+                }`}
+              >
+                📦
+              </button>
+
+              {/* Pack size inline fields */}
+              {showPackFields && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] uppercase font-bold text-base-content/40">×</span>
+                  <Input
+                    value={packSizeDraft}
+                    onChange={(e) => setPackSizeDraft(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    onBlur={handlePackSizeBlur}
+                    placeholder="0"
+                    inputMode="decimal"
+                    size="sm"
+                    className="px-2 text-center tabular-nums h-6 min-h-6"
+                    style={{ width: `${Math.max(packSizeDraft.length, 2) + 2}ch` }}
+                    aria-label="Rendimento por embalagem"
+                  />
+                  <select
+                    className="select select-bordered select-xs h-6 min-h-6 px-1 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
+                    value={packUnitDraft}
+                    onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Unidade do rendimento"
+                  >
+                    {UNITS.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                  {calculatedStockQty !== null && (
+                    <span className="text-[10px] font-bold text-primary tabular-nums ml-1 whitespace-nowrap">
+                      = {calculatedStockQty} {packUnitDraft}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Price input + mode toggle */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0 ml-1">
                 <button
                   type="button"
                   onClick={togglePriceMode}
@@ -293,7 +380,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                       ? `Mudar para preço por ${displayUnit}`
                       : "Mudar para preço total"
                   }
-                  className="text-[10px] uppercase font-bold text-base-content/40 hover:text-primary transition-colors cursor-pointer select-none"
+                  className="btn btn-xs btn-ghost px-1.5 min-h-0 h-6 rounded text-[10px] uppercase font-bold text-base-content/60"
                 >
                   {priceMode === "total" ? "R$ total" : `R$/${displayUnit}`}
                 </button>
@@ -305,49 +392,48 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                   placeholder="0,00"
                   inputMode="decimal"
                   size="sm"
-                  className="px-2 text-center tabular-nums"
+                  className="px-2 text-center tabular-nums h-6 min-h-6"
                   style={{ width: `${Math.max(priceDraft.length, 4) + 2}ch` }}
                   data-testid="shopping-item-price"
                 />
+                {/* Calculated total hint in unit mode */}
+                {priceMode === "unit" && calculatedTotal != null && (
+                  <span className="text-[10px] font-bold text-primary tabular-nums ml-1 whitespace-nowrap">
+                    = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
+                  </span>
+                )}
+                {item.isPriceStale && (
+                  <Badge variant="warning" size="sm" className="ml-1 text-[10px] h-5 min-h-0">
+                    Antigo
+                  </Badge>
+                )}
               </div>
 
-              {/* Calculated total hint in unit mode */}
-              {priceMode === "unit" && calculatedTotal != null && (
-                <span className="text-xs font-bold text-primary tabular-nums">
-                  = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
-                </span>
-              )}
-
-              {item.isPriceStale && (
-                <Badge variant="warning" size="sm">
-                  Antigo
-                </Badge>
+              {/* Validity fields (inline when checked) */}
+              {item.checked && (
+                <>
+                  <div className="flex items-center gap-1 shrink-0 ml-2 border-l border-base-300 pl-3">
+                    <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
+                    <Input
+                      type="date"
+                      size="sm"
+                      value={item.validityDate || ""}
+                      onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                      className="w-[110px] px-1 text-[10px] h-6 min-h-6"
+                      disabled={item.naoAplicaValidade}
+                    />
+                  </div>
+                  <label className="flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap">
+                    <Checkbox 
+                      className="checkbox-xs shrink-0"
+                      checked={item.naoAplicaValidade || false}
+                      onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
+                    />
+                    <span className="text-[10px] uppercase font-bold text-base-content/60 whitespace-nowrap">N/A</span>
+                  </label>
+                </>
               )}
             </div>
-
-            {/* Validity Date Input when checked */}
-            {item.checked && (
-              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase font-bold text-base-content/50">Validade:</span>
-                  <Input
-                    type="date"
-                    size="sm"
-                    value={item.validityDate || ""}
-                    onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
-                    className="max-w-[150px] text-xs h-7"
-                    disabled={item.naoAplicaValidade}
-                  />
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer mt-1 sm:mt-0">
-                  <Checkbox 
-                    checked={item.naoAplicaValidade || false}
-                    onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
-                  />
-                  <span className="text-xs text-base-content/80">Não se aplica</span>
-                </label>
-              </div>
-            )}
           </div>
 
           <Button

@@ -501,3 +501,35 @@ SOLUÇÃO 2: A lógica inteira de consumo (incluindo o que sobra se faltarem lot
 - [x] Fallback no Supabase funcionando para itens sem registro em `stock_lots`.
 - [x] Scripts de build e lint executados sem erros (`npm run lint && npm run build`).
 
+---
+
+### 📦 (30/05/2026) Feature: Unidade de Compra vs Unidade de Estoque (Embalagens)
+
+**Resumo:** O usuário pode agora informar na lista de compras que está comprando uma unidade agregada (ex: `1 pacote` ou `1 fardo`), mas que seu rendimento para controle de estoque será convertido numa unidade menor (ex: `5 kg` ou `10 un`). Isso evita distorções ao consumir o estoque.
+
+#### Arquivos Modificados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20260531_01_add_pack_fields_to_items.sql` | Migration para adicionar `pack_label`, `pack_size`, e `pack_unit` na tabela `items` (Lista de Compras). |
+| `src/lib/webData.ts` | Refatoração da função `finishShoppingList` para dar prioridade ao fator de conversão inserido (`item.pack_size`) antes de procurar o fator padrão do catálogo (`stock_item.pack_size`). Criação da RPC wrapper `updateListItemPackSize`. |
+| `src/features/inventory/components/shoppingListItem/ShoppingListItem.tsx` | Adicionado botão inline "📦" com inputs extras para declarar o nome e rendimento do pacote (ex: "caixa", 12 un) durante a compra, mostrando a conversão `2 × 5 kg = 10 kg` em tempo real. |
+| `src/domain/shoppingImportParser.ts` | Adicionado suporte ao padrão visual de quantidade-vezes-fator na entrada rápida, extraindo valores na sintaxe `2x5kg` ou `2X5Kg` gerando automaticamente 2 pacotes de 5 kg. |
+| `src/features/inventory/components/productCard/ProductCard.tsx` | UI do Estoque atualizada para exibir o sumário em "pacotes". Em vez de `10 kg`, agora exibe `2 pacotes (10 kg)` se o item possuir `pack_size` igual a 5 configurado. |
+| `src/features/inventory/components/productFormModal/ProductFormModal.tsx` | Seção de "Unidade Composta" refatorada para UX mais clara, voltada para "Embalagem (Rendimento)". |
+
+#### Lógica de Decisão
+```text
+PROBLEMA: Usuário compra "1 pacote de 5kg de arroz" e relata comprar como "pacote", mas consome em "gramas/kg".
+SOLUÇÃO: O usuário declara os campos pack_label e pack_size na hora da compra. A lista usa a unidade comprada visualmente. Na finalização (finishShoppingList), multiplica-se `quantidade * pack_size` para inserir os dados no estoque em unidades menores de consumo.
+```
+
+#### Comportamento da Feature
+- Smart input aceita `Arroz, 2x5kg` na Lista de Compras, mapeando 2 quantidades e 5 como `packSize`.
+- Ao finalizar lista, as embalagens são "desempacotadas" pro lote: um fardo de 12 rolos entra como 12 unidades (un).
+- No Estoque, é exibido ao usuário `3.2 pacotes (16 kg)` para ajudar na visualização de caixas/fardos.
+
+#### Checklist de Aceite
+- [x] Banco de dados e schema de tipos (`items`) atualizados via migration versionada.
+- [x] Parser interpretando formato string corretamente (`NxYunit`).
+- [x] Front-end renderizando os campos e callback sem erros React de estado (JSX otimista).
+- [x] Scripts de build e lint executados sem erros.
