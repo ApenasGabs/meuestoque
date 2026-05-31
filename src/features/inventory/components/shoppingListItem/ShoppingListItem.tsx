@@ -1,10 +1,8 @@
 import { memo, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
-import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
 import { Checkbox } from "../../../../components/Checkbox/Checkbox";
-import { Input } from "../../../../components/Input/Input";
 import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
@@ -226,7 +224,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
       }}
     >
       <CardBody
-        className="p-3"
+        className="p-2 sm:p-3"
         onClick={() => {
           if (longPressTriggeredRef.current) {
             longPressTriggeredRef.current = false;
@@ -237,215 +235,219 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           }
         }}
       >
-        {/* Mobile-first layout: stacked on small screens, horizontal on larger */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
-          {/* Header row: checkbox + name + delete button */}
-          <div className="flex items-start gap-3 w-full sm:flex-1 sm:min-w-0">
-            {listBulk ? (
-              <Checkbox
-                checked={selected}
-                onChange={() => toggleItemSelection(item.id)}
-                onClick={(e) => e.stopPropagation()}
-                aria-label={`Selecionar ${product.name}`}
-                className="shrink-0 mt-0.5"
-              />
-            ) : (
-              <Checkbox
-                checked={item.checked}
-                onChange={() => onToggle(item.id)}
-                aria-label={`Marcar ${product.name}`}
-                data-testid={`shopping-item-checkbox-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
-                className="shrink-0 mt-0.5"
-              />
-            )}
+        {/* Linha 1: Checkbox + Nome + Badge + Lixeira */}
+        <div className="flex items-center gap-2">
+          {listBulk ? (
+            <Checkbox
+              checked={selected}
+              onChange={() => toggleItemSelection(item.id)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Selecionar ${product.name}`}
+              className="shrink-0"
+            />
+          ) : (
+            <Checkbox
+              checked={item.checked}
+              onChange={() => onToggle(item.id)}
+              aria-label={`Marcar ${product.name}`}
+              data-testid={`shopping-item-checkbox-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
+              className="shrink-0"
+            />
+          )}
 
-            <div className="flex-1 min-w-0">
-              {/* Product name */}
-              <p
-                className={`text-sm font-medium break-words ${item.checked ? "line-through text-base-content/50" : ""}`}
-              >
-                {product.name}
-              </p>
-              {/* Badges row - wrap nicely on mobile */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                {item.checked && (
-                  <Badge variant="success" size="sm">
-                    No carrinho
-                  </Badge>
-                )}
-                {item.naoAplicaValidade && (
-                  <Badge variant="info" size="sm">
-                    ♾️ Sem validade
-                  </Badge>
-                )}
-                {!item.naoAplicaValidade && item.validityDate && (
-                  <Badge variant="info" size="sm">
-                    📅 {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            {/* Delete button - always visible on mobile header */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRemove(item.id)}
-              data-testid="remove-item-button"
-              className="shrink-0 text-xs px-2"
+          <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+            <span
+              className={`text-sm font-medium truncate max-w-[200px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
             >
-              Excluir
-            </Button>
+              {product.name}
+            </span>
+            {item.checked && (
+              <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
+                No carrinho
+              </Badge>
+            )}
           </div>
 
-          {/* Controls section: stacked on mobile, inline on desktop */}
-          <div className="flex flex-col gap-2 pl-8 sm:pl-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-            {/* Row 1: Quantity + Unit + Pack toggle */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
-              <Input
-                value={quantityDraft}
-                onChange={(e) => setQuantityDraft(e.target.value)}
+          {/* Botão lixeira compacto */}
+          <button
+            type="button"
+            onClick={() => onRemove(item.id)}
+            data-testid="remove-item-button"
+            className="btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0"
+            title="Excluir"
+          >
+            <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Linha 2: Barra segmentada de controles */}
+        <div className="flex items-center border border-base-300 rounded-lg overflow-hidden h-8 mt-2 ml-6 sm:ml-7">
+          {/* Qtd + unidade */}
+          <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 shrink-0">
+            <input
+              value={quantityDraft}
+              onChange={(e) => setQuantityDraft(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={handleQuantityBlur}
+              inputMode="decimal"
+              className="w-8 text-center text-sm bg-transparent outline-none tabular-nums"
+              data-testid="shopping-item-quantity"
+            />
+            <select
+              className="text-xs bg-transparent border-none outline-none cursor-pointer text-base-content/70 uppercase font-bold pr-0"
+              value={baseUnit}
+              onChange={(event) => {
+                event.stopPropagation();
+                onUpdateUnit?.(item.id, event.target.value as Unit);
+              }}
+              onClick={(event) => event.stopPropagation()}
+              aria-label="Alterar unidade"
+            >
+              {UNITS.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+              {baseUnit && !UNITS.includes(baseUnit as Unit) && (
+                <option value={baseUnit}>{baseUnit}</option>
+              )}
+            </select>
+          </div>
+
+          {/* Embalagem toggle */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
+            title={showPackFields ? "Ocultar rendimento" : "Informar rendimento"}
+            className={`px-1.5 border-r border-base-300 h-full text-sm shrink-0 ${showPackFields ? "bg-primary/10 text-primary" : "text-base-content/60"}`}
+          >
+            📦
+          </button>
+
+          {/* Pack size inline (se ativo) */}
+          {showPackFields && (
+            <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 shrink-0">
+              <span className="text-xs text-base-content/40">×</span>
+              <input
+                value={packSizeDraft}
+                onChange={(e) => setPackSizeDraft(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                onBlur={handleQuantityBlur}
+                onBlur={handlePackSizeBlur}
+                placeholder="0"
                 inputMode="decimal"
-                size="sm"
-                className="px-2 text-center tabular-nums h-7 min-h-7 w-14"
-                data-testid="shopping-item-quantity"
+                className="w-6 text-center text-xs bg-transparent outline-none tabular-nums"
+                aria-label="Rendimento por embalagem"
               />
               <select
-                className="select select-bordered select-xs h-7 min-h-7 px-1.5 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
-                value={baseUnit}
-                onChange={(event) => {
-                  event.stopPropagation();
-                  onUpdateUnit?.(item.id, event.target.value as Unit);
-                }}
-                onClick={(event) => event.stopPropagation()}
-                aria-label="Alterar unidade"
-                title="Alterar unidade"
+                className="text-[10px] bg-transparent border-none outline-none cursor-pointer text-base-content/70 uppercase font-bold"
+                value={packUnitDraft}
+                onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Unidade do rendimento"
               >
                 {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
+                  <option key={u} value={u}>{u}</option>
                 ))}
-                {baseUnit && !UNITS.includes(baseUnit as Unit) && (
-                  <option value={baseUnit}>{baseUnit}</option>
-                )}
               </select>
-              {hasPack && (
-                <span className="text-[10px] text-base-content/40">
-                  (rende {product.packSize} {baseUnit})
-                </span>
-              )}
-              {/* Pack size toggle button */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
-                title={showPackFields ? "Ocultar rendimento" : "Informar rendimento por embalagem"}
-                className={`btn btn-xs px-1.5 min-h-0 h-7 rounded uppercase font-bold text-[10px] transition-colors ${
-                  showPackFields ? "btn-active text-primary bg-primary/10" : "btn-ghost text-base-content/60"
-                }`}
-              >
-                📦
-              </button>
-            </div>
-
-            {/* Pack size fields (conditionally shown) */}
-            {showPackFields && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] uppercase font-bold text-base-content/40">×</span>
-                <Input
-                  value={packSizeDraft}
-                  onChange={(e) => setPackSizeDraft(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onBlur={handlePackSizeBlur}
-                  placeholder="0"
-                  inputMode="decimal"
-                  size="sm"
-                  className="px-2 text-center tabular-nums h-7 min-h-7 w-14"
-                  aria-label="Rendimento por embalagem"
-                />
-                <select
-                  className="select select-bordered select-xs h-7 min-h-7 px-1.5 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
-                  value={packUnitDraft}
-                  onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Unidade do rendimento"
-                >
-                  {UNITS.map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-                {calculatedStockQty !== null && (
-                  <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
-                    = {calculatedStockQty} {packUnitDraft}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Row 2: Price controls */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={togglePriceMode}
-                title={
-                  priceMode === "total"
-                    ? `Mudar para preço por ${displayUnit}`
-                    : "Mudar para preço total"
-                }
-                className="btn btn-xs btn-ghost px-1.5 min-h-0 h-7 rounded text-[10px] uppercase font-bold text-base-content/60"
-              >
-                {priceMode === "total" ? "R$ TO" : `R$/${displayUnit}`}
-              </button>
-              <Input
-                value={priceDraft}
-                onChange={(e) => setPriceDraft(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                onBlur={handlePriceBlur}
-                placeholder="0,00"
-                inputMode="decimal"
-                size="sm"
-                className="px-2 text-center tabular-nums h-7 min-h-7 w-20"
-                data-testid="shopping-item-price"
-              />
-              {priceMode === "unit" && calculatedTotal != null && (
+              {calculatedStockQty !== null && (
                 <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
-                  = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
+                  ={calculatedStockQty}
                 </span>
               )}
-              {item.isPriceStale && (
-                <Badge variant="warning" size="sm" className="text-[10px] h-5 min-h-0">
-                  Antigo
-                </Badge>
-              )}
             </div>
+          )}
 
-            {/* Row 3: Validity fields (only when checked) */}
-            {item.checked && (
-              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-base-300 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-2">
-                <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={item.validityDate || ""}
-                  onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
-                  className="w-[120px] px-1.5 text-xs h-7 min-h-7"
-                  disabled={item.naoAplicaValidade}
-                />
-                <label className="flex items-center gap-1 cursor-pointer whitespace-nowrap">
-                  <Checkbox 
-                    className="checkbox-xs"
-                    checked={item.naoAplicaValidade || false}
-                    onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
-                  />
-                  <span className="text-[10px] uppercase font-bold text-base-content/60">N/A</span>
-                </label>
-              </div>
+          {/* Preço — flex-1 para ocupar espaço restante */}
+          <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={togglePriceMode}
+              title={priceMode === "total" ? `Mudar para R$/${displayUnit}` : "Mudar para total"}
+              className="text-[10px] font-bold text-base-content/50 uppercase shrink-0"
+            >
+              {priceMode === "total" ? "R$" : `/${displayUnit}`}
+            </button>
+            <input
+              value={priceDraft}
+              onChange={(e) => setPriceDraft(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={handlePriceBlur}
+              placeholder="0,00"
+              inputMode="decimal"
+              className="flex-1 min-w-0 text-sm bg-transparent text-center outline-none tabular-nums"
+              data-testid="shopping-item-price"
+            />
+            {priceMode === "unit" && calculatedTotal != null && (
+              <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap shrink-0">
+                ={calculatedTotal.toFixed(0)}
+              </span>
+            )}
+            {item.isPriceStale && (
+              <span className="text-[10px] text-warning shrink-0" title="Preço antigo">⚠</span>
             )}
           </div>
+
+          {/* Validade compacta */}
+          {item.checked ? (
+            <div className="flex items-center gap-1 px-1.5 shrink-0">
+              {item.naoAplicaValidade ? (
+                <button
+                  type="button"
+                  onClick={() => onUpdateValidityDate?.(item.id, item.validityDate || null, false)}
+                  className="text-sm text-primary"
+                  title="Clique para definir validade"
+                >
+                  ♾️
+                </button>
+              ) : (
+                <>
+                  <input
+                    type="date"
+                    value={item.validityDate || ""}
+                    onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                    className="w-[90px] text-[10px] bg-transparent border-none outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdateValidityDate?.(item.id, null, true)}
+                    className="text-[10px] text-base-content/40 hover:text-primary"
+                    title="Sem validade"
+                  >
+                    ♾️
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            /* Placeholder para manter layout consistente quando não checked */
+            <div className="w-8 shrink-0" />
+          )}
         </div>
+
+        {/* Badges de validade pré-definida (abaixo da barra, só se tiver) */}
+        {(item.naoAplicaValidade || (!item.naoAplicaValidade && item.validityDate && !item.checked)) && (
+          <div className="flex items-center gap-1.5 mt-1.5 ml-6 sm:ml-7">
+            {item.naoAplicaValidade && (
+              <Badge variant="info" size="sm" className="text-[10px] h-5">
+                ♾️ Sem validade
+              </Badge>
+            )}
+            {!item.naoAplicaValidade && item.validityDate && !item.checked && (
+              <Badge variant="info" size="sm" className="text-[10px] h-5">
+                📅 {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Pack info hint quando há rendimento definido no produto */}
+        {hasPack && !showPackFields && (
+          <div className="mt-1 ml-6 sm:ml-7">
+            <span className="text-[10px] text-base-content/40">
+              (rende {product.packSize} {baseUnit})
+            </span>
+          </div>
+        )}
       </CardBody>
     </Card>
   );
