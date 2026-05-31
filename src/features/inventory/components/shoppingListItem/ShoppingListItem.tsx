@@ -282,21 +282,22 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           </button>
         </div>
 
-        {/* Linha 2: Barra segmentada de controles */}
-        <div className="flex items-center border border-base-300 rounded-lg overflow-hidden h-8 mt-2 ml-6 sm:ml-7">
+        {/* Linha 2: Controles em linha */}
+        <div className="flex items-center gap-1.5 flex-wrap mt-2 ml-6 sm:ml-7">
           {/* Qtd + unidade */}
-          <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
             <input
               value={quantityDraft}
               onChange={(e) => setQuantityDraft(e.target.value)}
               onFocus={(e) => e.target.select()}
               onBlur={handleQuantityBlur}
               inputMode="decimal"
-              className="w-8 text-center text-sm bg-transparent outline-none tabular-nums"
+              className="input input-bordered input-sm w-12 h-7 min-h-7 px-1 text-center tabular-nums"
               data-testid="shopping-item-quantity"
             />
             <select
-              className="text-xs bg-transparent border-none outline-none cursor-pointer text-base-content/70 uppercase font-bold pr-0"
+              className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
               value={baseUnit}
               onChange={(event) => {
                 event.stopPropagation();
@@ -319,15 +320,15 @@ export const ShoppingListItem = memo(function ShoppingListItem({
             type="button"
             onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
             title={showPackFields ? "Ocultar rendimento" : "Informar rendimento"}
-            className={`px-1.5 border-r border-base-300 h-full text-sm shrink-0 ${showPackFields ? "bg-primary/10 text-primary" : "text-base-content/60"}`}
+            className={`btn btn-sm h-7 min-h-7 px-1.5 ${showPackFields ? "btn-primary btn-outline" : "btn-ghost"}`}
           >
             📦
           </button>
 
           {/* Pack size inline (se ativo) */}
           {showPackFields && (
-            <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 shrink-0">
-              <span className="text-xs text-base-content/40">×</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-xs text-base-content/40">x</span>
               <input
                 value={packSizeDraft}
                 onChange={(e) => setPackSizeDraft(e.target.value)}
@@ -335,11 +336,11 @@ export const ShoppingListItem = memo(function ShoppingListItem({
                 onBlur={handlePackSizeBlur}
                 placeholder="0"
                 inputMode="decimal"
-                className="w-6 text-center text-xs bg-transparent outline-none tabular-nums"
+                className="input input-bordered input-sm w-10 h-7 min-h-7 px-1 text-center tabular-nums"
                 aria-label="Rendimento por embalagem"
               />
               <select
-                className="text-[10px] bg-transparent border-none outline-none cursor-pointer text-base-content/70 uppercase font-bold"
+                className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
                 value={packUnitDraft}
                 onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
                 onClick={(e) => e.stopPropagation()}
@@ -351,21 +352,24 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               </select>
               {calculatedStockQty !== null && (
                 <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
-                  ={calculatedStockQty}
+                  = {calculatedStockQty}
                 </span>
               )}
             </div>
           )}
 
-          {/* Preço — flex-1 para ocupar espaço restante */}
-          <div className="flex items-center gap-0.5 px-1.5 border-r border-base-300 flex-1 min-w-0">
+          {/* Separador visual */}
+          <span className="text-base-content/20 hidden sm:inline">|</span>
+
+          {/* Preço */}
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={togglePriceMode}
               title={priceMode === "total" ? `Mudar para R$/${displayUnit}` : "Mudar para total"}
-              className="text-[10px] font-bold text-base-content/50 uppercase shrink-0"
+              className="btn btn-ghost btn-sm h-7 min-h-7 px-1.5 text-[10px] font-bold uppercase"
             >
-              {priceMode === "total" ? "R$" : `/${displayUnit}`}
+              {priceMode === "total" ? "R$ Total" : `R$/${displayUnit}`}
             </button>
             <input
               value={priceDraft}
@@ -374,53 +378,41 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               onBlur={handlePriceBlur}
               placeholder="0,00"
               inputMode="decimal"
-              className="flex-1 min-w-0 text-sm bg-transparent text-center outline-none tabular-nums"
+              className="input input-bordered input-sm w-16 h-7 min-h-7 px-1 text-center tabular-nums"
               data-testid="shopping-item-price"
             />
             {priceMode === "unit" && calculatedTotal != null && (
-              <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap shrink-0">
-                ={calculatedTotal.toFixed(0)}
+              <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
+                = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
               </span>
             )}
             {item.isPriceStale && (
-              <span className="text-[10px] text-warning shrink-0" title="Preço antigo">⚠</span>
+              <Badge variant="warning" size="sm" className="text-[10px] h-5 min-h-0">
+                Antigo
+              </Badge>
             )}
           </div>
 
-          {/* Validade compacta */}
-          {item.checked ? (
-            <div className="flex items-center gap-1 px-1.5 shrink-0">
-              {item.naoAplicaValidade ? (
-                <button
-                  type="button"
-                  onClick={() => onUpdateValidityDate?.(item.id, item.validityDate || null, false)}
-                  className="text-sm text-primary"
-                  title="Clique para definir validade"
-                >
-                  ♾️
-                </button>
-              ) : (
-                <>
-                  <input
-                    type="date"
-                    value={item.validityDate || ""}
-                    onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
-                    className="w-[90px] text-[10px] bg-transparent border-none outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onUpdateValidityDate?.(item.id, null, true)}
-                    className="text-[10px] text-base-content/40 hover:text-primary"
-                    title="Sem validade"
-                  >
-                    ♾️
-                  </button>
-                </>
-              )}
+          {/* Validade (quando checked) */}
+          {item.checked && (
+            <div className="flex items-center gap-1 shrink-0 border-l border-base-300 pl-2">
+              <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
+              <input
+                type="date"
+                value={item.validityDate || ""}
+                onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                className="input input-bordered input-sm w-[110px] h-7 min-h-7 px-1 text-xs"
+                disabled={item.naoAplicaValidade}
+              />
+              <label className="flex items-center gap-1 cursor-pointer">
+                <Checkbox
+                  className="checkbox-xs"
+                  checked={item.naoAplicaValidade || false}
+                  onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
+                />
+                <span className="text-[10px] uppercase font-bold text-base-content/60">N/A</span>
+              </label>
             </div>
-          ) : (
-            /* Placeholder para manter layout consistente quando não checked */
-            <div className="w-8 shrink-0" />
           )}
         </div>
 
