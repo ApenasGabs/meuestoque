@@ -220,21 +220,21 @@ export const ProductFormModal = ({
           </div>
         </div>
 
-        <Fieldset legend="Unidade composta (Conversão de Embalagem)">
+        <Fieldset legend="📦 Embalagem (Rendimento)">
           <Checkbox
             checked={compositeUnit}
             onChange={(event) => setCompositeUnit(event.target.checked)}
-            label="Item usa unidade composta (ex: fardo, caixa)"
+            label="Informar rendimento por embalagem (ex: 1 pacote rende 5 kg)"
           />
           {compositeUnit && (
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div>
-                <Label htmlFor="product-pack-label">Embalagem</Label>
+                <Label htmlFor="product-pack-label">Nome da Embalagem</Label>
                 <Input
                   id="product-pack-label"
                   value={packLabel}
                   onChange={(event) => setPackLabel(event.target.value)}
-                  placeholder="Ex: Fardo, Caixa"
+                  placeholder="Ex: pacote, caixa, fardo"
                 />
               </div>
               <div>

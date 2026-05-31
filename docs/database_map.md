@@ -70,6 +70,9 @@ erDiagram
         uuid criado_por "lógico → auth.users (sem FK)"
         date data_validade "✅ usado no bulk validity"
         boolean nao_aplica_validade "✅ flag para não-perecíveis"
+        text pack_label "✅ embalagem (ex: pacote)"
+        numeric pack_size "✅ rendimento em unidade base (ex: 5)"
+        text pack_unit "✅ unidade base do rendimento (ex: Kg)"
         timestamptz criado_em
         timestamptz atualizado_em
     }
