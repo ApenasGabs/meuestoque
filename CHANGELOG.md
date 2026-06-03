@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.17.1](https://github.com/ApenasGabs/meuestoque/compare/v1.17.0...v1.17.1) (2026-06-03)
+
+### 🐛 Bug Fixes
+
+* :wrench: ajusta comportamentos da UI na lista de compras para melhor responsividade e usabilidade ([3c05087](https://github.com/ApenasGabs/meuestoque/commit/3c05087b20376a3c4d65792dadd17aeecdb7eae9))
+
 ## [1.17.0](https://github.com/ApenasGabs/meuestoque/compare/v1.16.0...v1.17.0) (2026-05-31)
 
 ### ✨ Features
