@@ -1,10 +1,8 @@
 import { memo, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { Badge } from "../../../../components/Badge/Badge";
-import { Button } from "../../../../components/Button/Button";
 import { Card, CardBody } from "../../../../components/Card/Card";
 import { Checkbox } from "../../../../components/Checkbox/Checkbox";
-import { Input } from "../../../../components/Input/Input";
 import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryProduct, InventoryShoppingListItem } from "../../types";
 
@@ -45,7 +43,7 @@ interface ShoppingListItemProps {
  * @param props.onUpdatePackSize - Callback to update pack size info
  * @param props.onUpdateValidityDate - Callback to update item validity
  */
-export const ShoppingListItem = memo(function ShoppingListItem({
+export const ShoppingListItem = memo(({
   item,
   product,
   onToggle,
@@ -56,13 +54,16 @@ export const ShoppingListItem = memo(function ShoppingListItem({
   onUpdateUnit,
   onUpdateValidityDate,
   onUpdatePackSize,
-}: ShoppingListItemProps): ReactElement {
+}: ShoppingListItemProps): ReactElement => {
   // ── Bulk mode plumbing for the shopping list (Spec Epic 1) ──
   const { isBulkMode, scope, isSelected, toggleItemSelection, enterBulkMode } = useBulkStore();
   const listBulk = isBulkMode && scope === "shopping_list";
   const selected = isSelected(item.id);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef<boolean>(false);
+
+  // ── Mobile expand state ──
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // ── Price mode: 'total' = user enters full price; 'unit' = user enters R$/unit ──
   const [priceMode, setPriceMode] = useState<"total" | "unit">(
@@ -226,7 +227,7 @@ export const ShoppingListItem = memo(function ShoppingListItem({
       }}
     >
       <CardBody
-        className="p-3"
+        className="p-2 sm:p-3"
         onClick={() => {
           if (longPressTriggeredRef.current) {
             longPressTriggeredRef.current = false;
@@ -237,13 +238,15 @@ export const ShoppingListItem = memo(function ShoppingListItem({
           }
         }}
       >
-        <div className="flex items-start gap-3">
+        {/* Linha 1: Checkbox + Nome + Info compacta (mobile) + Expand/Lixeira */}
+        <div className="flex items-center gap-2">
           {listBulk ? (
             <Checkbox
               checked={selected}
               onChange={() => toggleItemSelection(item.id)}
               onClick={(e) => e.stopPropagation()}
               aria-label={`Selecionar ${product.name}`}
+              className="shrink-0"
             />
           ) : (
             <Checkbox
@@ -251,200 +254,229 @@ export const ShoppingListItem = memo(function ShoppingListItem({
               onChange={() => onToggle(item.id)}
               aria-label={`Marcar ${product.name}`}
               data-testid={`shopping-item-checkbox-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
+              className="shrink-0"
             />
           )}
 
           <div className="flex-1 min-w-0">
-            {/* Product name + badge */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <p
-                className={`text-sm font-medium ${item.checked ? "line-through text-base-content/50" : ""}`}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
               >
                 {product.name}
-              </p>
+              </span>
               {item.checked && (
-                <Badge variant="success" size="sm">
+                <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
                   No carrinho
                 </Badge>
               )}
-              {/* Visual chip showing pre-set validity (Epic 2 / Spec §4) */}
-              {item.naoAplicaValidade && (
-                <Badge variant="info" size="sm">
-                  ♾️ Sem validade
-                </Badge>
-              )}
-              {!item.naoAplicaValidade && item.validityDate && (
-                <Badge variant="info" size="sm">
-                  📅 {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
-                </Badge>
-              )}
             </div>
-
-            {/* Quantity + Pack size + Price + Validity row */}
-            <div className="mt-2 flex items-center gap-x-2 overflow-x-auto scrollbar-hide pb-1 w-full">
-              {/* Quantity */}
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
-                <Input
-                  value={quantityDraft}
-                  onChange={(e) => setQuantityDraft(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onBlur={handleQuantityBlur}
-                  inputMode="decimal"
-                  size="sm"
-                  className="px-2 text-center tabular-nums h-6 min-h-6"
-                  style={{ width: `${Math.max(quantityDraft.length, 2) + 2}ch` }}
-                  data-testid="shopping-item-quantity"
-                />
-                <select
-                  className="select select-bordered select-xs h-6 min-h-6 px-1 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
-                  value={baseUnit}
-                  onChange={(event) => {
-                    event.stopPropagation();
-                    onUpdateUnit?.(item.id, event.target.value as Unit);
-                  }}
-                  onClick={(event) => event.stopPropagation()}
-                  aria-label="Alterar unidade"
-                  title="Alterar unidade"
-                >
-                  {UNITS.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                  {baseUnit && !UNITS.includes(baseUnit as Unit) && (
-                    <option value={baseUnit}>{baseUnit}</option>
-                  )}
-                </select>
-                {hasPack && (
-                  <span className="text-[10px] text-base-content/40 ml-1">
-                    (rende {product.packSize} {baseUnit})
+            {/* Mobile: info compacta quando colapsado */}
+            <div className="flex items-center gap-2 mt-0.5 sm:hidden">
+              {!isExpanded && (
+                <>
+                  <span className="text-xs text-base-content/60 tabular-nums">
+                    {item.quantity} {baseUnit}
                   </span>
-                )}
-              </div>
-
-              {/* Pack size toggle button */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
-                title={showPackFields ? "Ocultar rendimento" : "Informar rendimento por embalagem"}
-                className={`btn btn-xs px-1.5 min-h-0 h-6 rounded uppercase font-bold text-[10px] transition-colors shrink-0 ${
-                  showPackFields ? "btn-active text-primary bg-primary/10" : "btn-ghost text-base-content/60"
-                }`}
-              >
-                📦
-              </button>
-
-              {/* Pack size inline fields */}
-              {showPackFields && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[10px] uppercase font-bold text-base-content/40">×</span>
-                  <Input
-                    value={packSizeDraft}
-                    onChange={(e) => setPackSizeDraft(e.target.value)}
-                    onFocus={(e) => e.target.select()}
-                    onBlur={handlePackSizeBlur}
-                    placeholder="0"
-                    inputMode="decimal"
-                    size="sm"
-                    className="px-2 text-center tabular-nums h-6 min-h-6"
-                    style={{ width: `${Math.max(packSizeDraft.length, 2) + 2}ch` }}
-                    aria-label="Rendimento por embalagem"
-                  />
-                  <select
-                    className="select select-bordered select-xs h-6 min-h-6 px-1 py-0 text-[10px] uppercase font-bold text-base-content/70 cursor-pointer"
-                    value={packUnitDraft}
-                    onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label="Unidade do rendimento"
-                  >
-                    {UNITS.map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                  {calculatedStockQty !== null && (
-                    <span className="text-[10px] font-bold text-primary tabular-nums ml-1 whitespace-nowrap">
-                      = {calculatedStockQty} {packUnitDraft}
+                  {item.price != null && (
+                    <span className="text-xs font-medium text-base-content/80 tabular-nums">
+                      R$ {item.price.toFixed(2).replace(".", ",")}
                     </span>
                   )}
-                </div>
-              )}
-
-              {/* Price input + mode toggle */}
-              <div className="flex items-center gap-1 shrink-0 ml-1">
-                <button
-                  type="button"
-                  onClick={togglePriceMode}
-                  title={
-                    priceMode === "total"
-                      ? `Mudar para preço por ${displayUnit}`
-                      : "Mudar para preço total"
-                  }
-                  className="btn btn-xs btn-ghost px-1.5 min-h-0 h-6 rounded text-[10px] uppercase font-bold text-base-content/60"
-                >
-                  {priceMode === "total" ? "R$ total" : `R$/${displayUnit}`}
-                </button>
-                <Input
-                  value={priceDraft}
-                  onChange={(e) => setPriceDraft(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onBlur={handlePriceBlur}
-                  placeholder="0,00"
-                  inputMode="decimal"
-                  size="sm"
-                  className="px-2 text-center tabular-nums h-6 min-h-6"
-                  style={{ width: `${Math.max(priceDraft.length, 4) + 2}ch` }}
-                  data-testid="shopping-item-price"
-                />
-                {/* Calculated total hint in unit mode */}
-                {priceMode === "unit" && calculatedTotal != null && (
-                  <span className="text-[10px] font-bold text-primary tabular-nums ml-1 whitespace-nowrap">
-                    = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
-                  </span>
-                )}
-                {item.isPriceStale && (
-                  <Badge variant="warning" size="sm" className="ml-1 text-[10px] h-5 min-h-0">
-                    Antigo
-                  </Badge>
-                )}
-              </div>
-
-              {/* Validity fields (inline when checked) */}
-              {item.checked && (
-                <>
-                  <div className="flex items-center gap-1 shrink-0 ml-2 border-l border-base-300 pl-3">
-                    <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
-                    <Input
-                      type="date"
-                      size="sm"
-                      value={item.validityDate || ""}
-                      onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
-                      className="w-[110px] px-1 text-[10px] h-6 min-h-6"
-                      disabled={item.naoAplicaValidade}
-                    />
-                  </div>
-                  <label className="flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap">
-                    <Checkbox 
-                      className="checkbox-xs shrink-0"
-                      checked={item.naoAplicaValidade || false}
-                      onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
-                    />
-                    <span className="text-[10px] uppercase font-bold text-base-content/60 whitespace-nowrap">N/A</span>
-                  </label>
                 </>
               )}
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
+          {/* Mobile: botao expandir */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+            className="btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 sm:hidden"
+            aria-label={isExpanded ? "Recolher" : "Expandir"}
+          >
+            <svg 
+              className={`w-4 h-4 text-base-content/40 transition-transform ${isExpanded ? "rotate-180" : ""}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Botao lixeira - sempre visivel no desktop, visivel no mobile quando expandido */}
+          <button
+            type="button"
             onClick={() => onRemove(item.id)}
             data-testid="remove-item-button"
+            className={`btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 ${isExpanded ? "" : "hidden sm:flex"}`}
+            title="Excluir"
           >
-            Excluir
-          </Button>
+            <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
+
+        {/* Linha 2: Controles - sempre visivel no desktop, apenas quando expandido no mobile */}
+        <div className={`flex items-center gap-1.5 flex-wrap mt-2 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:flex"}`}>
+          {/* Qtd + unidade */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
+            <input
+              value={quantityDraft}
+              onChange={(e) => setQuantityDraft(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={handleQuantityBlur}
+              inputMode="decimal"
+              className="input input-bordered input-sm w-12 h-7 min-h-7 px-1 text-center tabular-nums"
+              data-testid="shopping-item-quantity"
+            />
+            <select
+              className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
+              value={baseUnit}
+              onChange={(event) => {
+                event.stopPropagation();
+                onUpdateUnit?.(item.id, event.target.value as Unit);
+              }}
+              onClick={(event) => event.stopPropagation()}
+              aria-label="Alterar unidade"
+            >
+              {UNITS.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+              {baseUnit && !UNITS.includes(baseUnit as Unit) && (
+                <option value={baseUnit}>{baseUnit}</option>
+              )}
+            </select>
+          </div>
+
+          {/* Embalagem toggle */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
+            title={showPackFields ? "Ocultar rendimento" : "Informar rendimento"}
+            className={`btn btn-sm h-7 min-h-7 px-1.5 ${showPackFields ? "btn-primary btn-outline" : "btn-ghost"}`}
+          >
+            📦
+          </button>
+
+          {/* Pack size inline (se ativo) */}
+          {showPackFields && (
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-xs text-base-content/40">x</span>
+              <input
+                value={packSizeDraft}
+                onChange={(e) => setPackSizeDraft(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onBlur={handlePackSizeBlur}
+                placeholder="0"
+                inputMode="decimal"
+                className="input input-bordered input-sm w-10 h-7 min-h-7 px-1 text-center tabular-nums"
+                aria-label="Rendimento por embalagem"
+              />
+              <select
+                className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
+                value={packUnitDraft}
+                onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Unidade do rendimento"
+              >
+                {UNITS.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+              {calculatedStockQty !== null && (
+                <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
+                  = {calculatedStockQty}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Separador visual */}
+          <span className="text-base-content/20 hidden sm:inline">|</span>
+
+          {/* Preco */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={togglePriceMode}
+              title={priceMode === "total" ? `Mudar para R$/${displayUnit}` : "Mudar para total"}
+              className="btn btn-ghost btn-sm h-7 min-h-7 px-1.5 text-[10px] font-bold uppercase"
+            >
+              {priceMode === "total" ? "R$ Total" : `R$/${displayUnit}`}
+            </button>
+            <input
+              value={priceDraft}
+              onChange={(e) => setPriceDraft(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={handlePriceBlur}
+              placeholder="0,00"
+              inputMode="decimal"
+              className="input input-bordered input-sm w-16 h-7 min-h-7 px-1 text-center tabular-nums"
+              data-testid="shopping-item-price"
+            />
+            {priceMode === "unit" && calculatedTotal != null && (
+              <span className="text-[10px] font-bold text-primary tabular-nums whitespace-nowrap">
+                = R$ {calculatedTotal.toFixed(2).replace(".", ",")}
+              </span>
+            )}
+            {item.isPriceStale && (
+              <Badge variant="warning" size="sm" className="text-[10px] h-5 min-h-0">
+                Antigo
+              </Badge>
+            )}
+          </div>
+
+          {/* Validade (quando checked) */}
+          {item.checked && (
+            <div className="flex items-center gap-1 shrink-0 border-l border-base-300 pl-2">
+              <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
+              <input
+                type="date"
+                value={item.validityDate || ""}
+                onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
+                className="input input-bordered input-sm w-[110px] h-7 min-h-7 px-1 text-xs"
+                disabled={item.naoAplicaValidade}
+              />
+              <label className="flex items-center gap-1 cursor-pointer">
+                <Checkbox
+                  className="checkbox-xs"
+                  checked={item.naoAplicaValidade || false}
+                  onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
+                />
+                <span className="text-[10px] uppercase font-bold text-base-content/60">N/A</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Badges de validade pre-definida (abaixo da barra, so se tiver) - visivel apenas quando expandido no mobile */}
+        {(item.naoAplicaValidade || (!item.naoAplicaValidade && item.validityDate && !item.checked)) && (
+          <div className={`flex items-center gap-1.5 mt-1.5 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:flex"}`}>
+            {item.naoAplicaValidade && (
+              <Badge variant="info" size="sm" className="text-[10px] h-5">
+                Sem validade
+              </Badge>
+            )}
+            {!item.naoAplicaValidade && item.validityDate && !item.checked && (
+              <Badge variant="info" size="sm" className="text-[10px] h-5">
+                {new Date(item.validityDate + "T00:00:00").toLocaleDateString("pt-BR")}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Pack info hint quando ha rendimento definido no produto */}
+        {hasPack && !showPackFields && (
+          <div className={`mt-1 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:block"}`}>
+            <span className="text-[10px] text-base-content/40">
+              (rende {product.packSize} {baseUnit})
+            </span>
+          </div>
+        )}
       </CardBody>
     </Card>
   );

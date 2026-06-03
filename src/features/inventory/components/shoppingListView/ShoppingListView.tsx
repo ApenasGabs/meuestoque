@@ -320,30 +320,31 @@ export const ShoppingListView = ({
         )}
         {!listBulk && (
           <>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h1 className="text-base font-semibold" data-testid="shopping-list-heading">Lista de Compras</h1>
-                <p className="text-xs text-base-content/60">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+              <div className="min-w-0">
+                <h1 className="text-base font-semibold truncate" data-testid="shopping-list-heading">Lista de Compras</h1>
+                <p className="text-xs text-base-content/60 truncate">
                   {uncheckedCount} pendentes · {checkedCount} comprados
                   {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 shrink-0">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={onGenerateSmartList}
                   data-testid="smart-list-button"
+                  className="text-xs sm:text-sm"
                 >
                   Lista inteligente
                 </Button>
                 {onOpenImportModal && (
-                  <Button variant="ghost" size="sm" onClick={onOpenImportModal}>
-                    Importar compra
+                  <Button variant="ghost" size="sm" onClick={onOpenImportModal} className="text-xs sm:text-sm">
+                    Importar
                   </Button>
                 )}
                 {onViewHistory && (
-                  <Button variant="ghost" size="sm" onClick={onViewHistory}>
+                  <Button variant="ghost" size="sm" onClick={onViewHistory} className="text-xs sm:text-sm">
                     Histórico
                   </Button>
                 )}
@@ -371,8 +372,8 @@ export const ShoppingListView = ({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/70">
-                <Badge variant={parsedDraft.name ? "info" : "default"} size="sm">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-base-content/70">
+                <Badge variant={parsedDraft.name ? "info" : "default"} size="sm" className="max-w-[120px] sm:max-w-none truncate">
                   {parsedDraft.name || "Digite o nome"}
                 </Badge>
                 <Badge variant="secondary" size="sm">
@@ -383,8 +384,8 @@ export const ShoppingListView = ({
                   R$ {parsedDraft?.price?.toFixed(2).replace(".", ",") || 0}
                 </Badge>
                 {parsedDraft.hasQuantity && (
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="smart-unit" className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="smart-unit" className="text-xs sr-only sm:not-sr-only">
                       Unidade
                     </Label>
                     <Select
@@ -404,8 +405,8 @@ export const ShoppingListView = ({
                 )}
 
                 {(parsedDraft.hasQuantity || smartInput.includes(",")) && (
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="smart-category" className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="smart-category" className="text-xs sr-only sm:not-sr-only">
                       Categoria
                     </Label>
                     <Select
