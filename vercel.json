@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/api/tenda/:path*", "destination": "/api/tenda?path=:path*" },
+    { "source": "/((?!api/).*)", "destination": "/" }
   ],
   "ignoreCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then exit 0; else exit 1; fi"
 }
