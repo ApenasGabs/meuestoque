@@ -59,7 +59,7 @@ export const TendaPriceDrawer = ({
   const isQuotingRef = useRef<boolean>(false);
 
   const startQuoting = useCallback(
-    async (targetCep: string): Promise<void> => {
+    async (targetCep: string, bypassCache = false): Promise<void> => {
       if (isQuotingRef.current) return;
       isQuotingRef.current = true;
 
@@ -68,7 +68,7 @@ export const TendaPriceDrawer = ({
 
       let info: TendaBranchInfo | null = null;
       try {
-        info = await resolveTendaBranchByCep(targetCep);
+        info = await resolveTendaBranchByCep(targetCep, undefined, bypassCache);
         setBranchInfo(info);
       } catch (err: unknown) {
         const message =
@@ -98,7 +98,12 @@ export const TendaPriceDrawer = ({
       for (const item of items) {
         if (!hasFetchedRef.current) break;
         try {
-          const quote = await quoteShoppingItemOnTenda(item.name, activeBranchId);
+          const quote = await quoteShoppingItemOnTenda(
+            item.name,
+            activeBranchId,
+            undefined,
+            bypassCache,
+          );
           setQuotes((prev) => ({ ...prev, [item.id]: quote }));
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Erro ao cotar";
@@ -127,11 +132,16 @@ export const TendaPriceDrawer = ({
   );
 
   const handleQuoteSingle = useCallback(
-    async (item: ShoppingQuoteItem): Promise<void> => {
+    async (item: ShoppingQuoteItem, bypassCache = true): Promise<void> => {
       if (!branchInfo) return;
       setLoadingQuotes((prev) => ({ ...prev, [item.id]: true }));
       try {
-        const quote = await quoteShoppingItemOnTenda(item.name, branchInfo.branchId);
+        const quote = await quoteShoppingItemOnTenda(
+          item.name,
+          branchInfo.branchId,
+          undefined,
+          bypassCache,
+        );
         setQuotes((prev) => ({ ...prev, [item.id]: quote }));
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Erro ao cotar";
@@ -244,6 +254,9 @@ export const TendaPriceDrawer = ({
               {branchInfo.deliveryDays > 0 && (
                 <span className="text-base-content/70">Prazo: {branchInfo.deliveryDays} dias</span>
               )}
+              <span className="text-[11px] text-base-content/50">
+                (Preços válidos até as 23:59 de hoje)
+              </span>
             </div>
           )}
         </div>
@@ -260,7 +273,7 @@ export const TendaPriceDrawer = ({
                 variant="ghost"
                 className="btn-xs"
                 onClick={() => {
-                  void startQuoting(cep);
+                  void startQuoting(cep, true);
                 }}
               >
                 Recotar Todos

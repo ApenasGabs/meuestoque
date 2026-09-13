@@ -49,12 +49,18 @@ export default async (req: Request): Promise<Response> => {
 
     const responseBody = await upstreamRes.arrayBuffer();
 
+    const now = Date.now();
+    const midnight = new Date();
+    midnight.setHours(23, 59, 59, 999);
+    const secondsUntilMidnight = Math.max(60, Math.floor((midnight.getTime() - now) / 1000));
+    const edgeCacheMaxAge = Math.min(secondsUntilMidnight, 7200);
+
     return new Response(responseBody, {
       status: upstreamRes.status,
       headers: {
         "Content-Type": upstreamRes.headers.get("Content-Type") ?? "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": `public, s-maxage=${edgeCacheMaxAge}, stale-while-revalidate=300`,
       },
     });
   } catch (err: unknown) {

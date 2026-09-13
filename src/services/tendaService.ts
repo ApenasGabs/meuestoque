@@ -85,6 +85,84 @@ const safeFetchJson = async <T>(url: string): Promise<T> => {
   return (await response.json()) as T;
 };
 
+export interface CachedTendaPayload<T> {
+  data: T;
+  expiresAt: number;
+}
+
+/**
+ * Retorna o timestamp em milissegundos das 23:59:59.999 do dia atual.
+ * Garante que qualquer dado em cache expire rigorosamente na virada para o dia seguinte.
+ */
+export const getTodayMidnightTimestamp = (): number => {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  return midnight.getTime();
+};
+
+const CACHE_PREFIX = "tenda_cache_";
+
+/**
+ * Obtém dados armazenados em cache se ainda forem válidos para o dia de hoje.
+ * Caso o dado tenha expirado (ou seja do dia anterior), é removido automaticamente.
+ */
+export const getCachedTendaData = <T>(key: string): T | null => {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    const raw = localStorage.getItem(`${CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as CachedTendaPayload<T>;
+    if (!parsed || typeof parsed.expiresAt !== "number") return null;
+
+    if (Date.now() > parsed.expiresAt) {
+      localStorage.removeItem(`${CACHE_PREFIX}${key}`);
+      return null;
+    }
+
+    return parsed.data;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Salva dados no cache local com expiração definida para as 23:59:59 de hoje.
+ */
+export const setCachedTendaData = <T>(key: string, data: T): void => {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    const payload: CachedTendaPayload<T> = {
+      data,
+      expiresAt: getTodayMidnightTimestamp(),
+    };
+    localStorage.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(payload));
+  } catch {
+    // Falha silenciosa em caso de cota de localStorage excedida
+  }
+};
+
+/**
+ * Limpa todos os dados armazenados em cache do Tenda.
+ */
+export const clearTendaCache = (): void => {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(CACHE_PREFIX)) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+  } catch {
+    // Ignora erros
+  }
+};
+
 /**
  * Extrai a medida e unidade (ex: 5kg, 500ml, 1L) a partir do texto do produto.
  *
@@ -148,10 +226,17 @@ export const sanitizeItemSearchQuery = (name: string): string => {
 export const resolveTendaBranchByCep = async (
   cep: string,
   baseUrl: string = DEFAULT_BASE_API,
+  bypassCache = false,
 ): Promise<TendaBranchInfo> => {
   const cleanCep = cep.replace(/\D/g, "");
   if (cleanCep.length !== 8) {
     throw new Error("CEP inválido. Deve conter 8 dígitos.");
+  }
+
+  const cacheKey = `branch_${cleanCep}`;
+  if (!bypassCache) {
+    const cached = getCachedTendaData<TendaBranchInfo>(cacheKey);
+    if (cached) return cached;
   }
 
   const data = await safeFetchJson<RawShippingResponse>(
@@ -173,7 +258,7 @@ export const resolveTendaBranchByCep = async (
     .filter(Boolean)
     .join(", ");
 
-  return {
+  const branchInfo: TendaBranchInfo = {
     branchId: branch.id,
     branchName: branch.name,
     deliveryPrice: delivery?.price ?? 0,
@@ -181,6 +266,9 @@ export const resolveTendaBranchByCep = async (
     address: address || "Endereço não identificado",
     available: Boolean(delivery?.available),
   };
+
+  setCachedTendaData(cacheKey, branchInfo);
+  return branchInfo;
 };
 
 /**
@@ -234,14 +322,22 @@ export const quoteShoppingItemOnTenda = async (
   itemName: string,
   branchId: number,
   baseUrl: string = DEFAULT_BASE_API,
+  bypassCache = false,
 ): Promise<TendaItemQuote> => {
   const targetSize = extractProductSize(itemName);
+  const sanitized = sanitizeItemSearchQuery(itemName).toLowerCase();
+  const cacheKey = `quote_${branchId}_${sanitized}`;
+
+  if (!bypassCache) {
+    const cached = getCachedTendaData<TendaItemQuote>(cacheKey);
+    if (cached) return cached;
+  }
 
   try {
     const products = await searchTendaProducts(itemName, branchId, baseUrl);
 
     if (products.length === 0) {
-      return {
+      const emptyQuote: TendaItemQuote = {
         itemName,
         targetSize,
         startingFromPrice: null,
@@ -249,6 +345,8 @@ export const quoteShoppingItemOnTenda = async (
         options: [],
         totalFound: 0,
       };
+      setCachedTendaData(cacheKey, emptyQuote);
+      return emptyQuote;
     }
 
     const matchingSize = products.filter((p) => matchesProductSize(p.name, targetSize));
@@ -257,7 +355,7 @@ export const quoteShoppingItemOnTenda = async (
     const sortedByPrice = [...candidateList].sort((a, b) => a.price - b.price);
     const cheapest = sortedByPrice[0] || null;
 
-    return {
+    const quote: TendaItemQuote = {
       itemName,
       targetSize,
       startingFromPrice: cheapest ? cheapest.price : null,
@@ -265,6 +363,9 @@ export const quoteShoppingItemOnTenda = async (
       options: sortedByPrice.slice(0, 5),
       totalFound: candidateList.length,
     };
+
+    setCachedTendaData(cacheKey, quote);
+    return quote;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Falha ao cotar produto";
     return {

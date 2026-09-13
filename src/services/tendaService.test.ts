@@ -5,11 +5,16 @@ import {
   sanitizeItemSearchQuery,
   quoteShoppingItemOnTenda,
   resolveTendaBranchByCep,
+  getTodayMidnightTimestamp,
+  getCachedTendaData,
+  setCachedTendaData,
+  clearTendaCache,
 } from "./tendaService";
 
 describe("tendaService", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   describe("extractProductSize", () => {
@@ -156,8 +161,87 @@ describe("tendaService", () => {
       expect(branch.available).toBe(true);
     });
 
+    it("deve usar o cache na segunda chamada e permitir bypassCache", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({
+          addressInfo: {
+            city: "Campinas",
+            district: "Vila Boa Vista",
+            state: "SP",
+          },
+          delivery: {
+            available: true,
+            price: 14.9,
+            expectedDeliveryDays: 2,
+            branch: {
+              id: 40,
+              name: "Ceasa - Campinas",
+            },
+          },
+        }),
+      } as Response);
+
+      // Primeira chamada: busca via fetch
+      const first = await resolveTendaBranchByCep("13064-789");
+      expect(first.branchId).toBe(40);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      // Segunda chamada: vem do cache (fetchSpy não deve ser chamado novamente)
+      const cached = await resolveTendaBranchByCep("13064-789");
+      expect(cached.branchId).toBe(40);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      // Terceira chamada com bypassCache = true: deve forçar nova chamada de rede
+      const fresh = await resolveTendaBranchByCep("13064-789", undefined, true);
+      expect(fresh.branchId).toBe(40);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
     it("deve lançar erro se o CEP não tiver 8 dígitos", async () => {
       await expect(resolveTendaBranchByCep("123")).rejects.toThrow("CEP inválido");
+    });
+  });
+
+  describe("Cache com Expiração à Meia-Noite", () => {
+    it("deve calcular o timestamp para as 23:59:59.999 do dia atual", () => {
+      const midnight = getTodayMidnightTimestamp();
+      const date = new Date(midnight);
+      expect(date.getHours()).toBe(23);
+      expect(date.getMinutes()).toBe(59);
+      expect(date.getSeconds()).toBe(59);
+      expect(date.getMilliseconds()).toBe(999);
+      expect(midnight).toBeGreaterThan(Date.now());
+    });
+
+    it("deve salvar e recuperar dados do cache válidos", () => {
+      setCachedTendaData("teste_key", { preco: 10.5 });
+      const recuperado = getCachedTendaData<{ preco: number }>("teste_key");
+      expect(recuperado).toEqual({ preco: 10.5 });
+    });
+
+    it("deve expirar e descartar dados quando ultrapassar a meia-noite", () => {
+      // Simula dado salvo com timestamp expirado
+      const ontem = Date.now() - 1000;
+      localStorage.setItem("tenda_cache_expirado", JSON.stringify({ data: "antigo", expiresAt: ontem }));
+
+      const resultado = getCachedTendaData<string>("expirado");
+      expect(resultado).toBeNull();
+      // Deve ter sido removido do localStorage
+      expect(localStorage.getItem("tenda_cache_expirado")).toBeNull();
+    });
+
+    it("deve limpar todos os itens em cache via clearTendaCache", () => {
+      setCachedTendaData("item1", "valor1");
+      setCachedTendaData("item2", "valor2");
+      localStorage.setItem("outro_app_item", "preservar");
+
+      clearTendaCache();
+
+      expect(getCachedTendaData("item1")).toBeNull();
+      expect(getCachedTendaData("item2")).toBeNull();
+      expect(localStorage.getItem("outro_app_item")).toBe("preservar");
     });
   });
 });
