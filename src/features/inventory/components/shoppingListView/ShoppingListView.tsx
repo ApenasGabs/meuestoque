@@ -42,13 +42,19 @@ interface ShoppingListViewProps {
   onUpdateItemQuantity?: (id: string, value: number) => void;
   onUpdateItemUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
-  onUpdatePackSize?: (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null) => void;
+  onUpdatePackSize?: (
+    id: string,
+    packLabel: string | null,
+    packSize: number | null,
+    packUnit: string | null,
+  ) => void;
   onBulkUpdateValidity?: (
     itemIds: string[],
     validityDate: string | null,
     naoAplica: boolean,
   ) => Promise<void>;
   onBulkRemove?: (itemIds: string[]) => Promise<void>;
+  onOpenTendaQuotes?: () => void;
   onOpenImportModal?: () => void;
   onViewHistory?: () => void;
   onScannerOpen?: () => void;
@@ -100,6 +106,7 @@ export const ShoppingListView = ({
   onUpdatePackSize,
   onBulkUpdateValidity,
   onBulkRemove,
+  onOpenTendaQuotes,
   onOpenImportModal,
   onViewHistory,
   onScannerOpen,
@@ -322,7 +329,12 @@ export const ShoppingListView = ({
           <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div className="min-w-0">
-                <h1 className="text-base font-semibold truncate" data-testid="shopping-list-heading">Lista de Compras</h1>
+                <h1
+                  className="text-base font-semibold truncate"
+                  data-testid="shopping-list-heading"
+                >
+                  Lista de Compras
+                </h1>
                 <p className="text-xs text-base-content/60 truncate">
                   {uncheckedCount} pendentes · {checkedCount} comprados
                   {totalValue > 0 && ` · R$ ${totalValue.toFixed(2).replace(".", ",")}`}
@@ -338,13 +350,34 @@ export const ShoppingListView = ({
                 >
                   Lista inteligente
                 </Button>
+                {onOpenTendaQuotes && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onOpenTendaQuotes}
+                    data-testid="tenda-quote-button"
+                    className="border border-base-300 text-xs sm:text-sm"
+                  >
+                    Preços Tenda
+                  </Button>
+                )}
                 {onOpenImportModal && (
-                  <Button variant="ghost" size="sm" onClick={onOpenImportModal} className="text-xs sm:text-sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onOpenImportModal}
+                    className="text-xs sm:text-sm"
+                  >
                     Importar
                   </Button>
                 )}
                 {onViewHistory && (
-                  <Button variant="ghost" size="sm" onClick={onViewHistory} className="text-xs sm:text-sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onViewHistory}
+                    className="text-xs sm:text-sm"
+                  >
                     Histórico
                   </Button>
                 )}
@@ -365,7 +398,13 @@ export const ShoppingListView = ({
                     className="flex-1"
                   />
                   {canUseScanner && onScannerOpen && (
-                    <Button variant="ghost" className="px-3 text-xl" onClick={onScannerOpen} aria-label="Escanear código" data-testid="camera-scan-button">
+                    <Button
+                      variant="ghost"
+                      className="px-3 text-xl"
+                      onClick={onScannerOpen}
+                      aria-label="Escanear código"
+                      data-testid="camera-scan-button"
+                    >
                       📸
                     </Button>
                   )}
@@ -373,7 +412,11 @@ export const ShoppingListView = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-base-content/70">
-                <Badge variant={parsedDraft.name ? "info" : "default"} size="sm" className="max-w-[120px] sm:max-w-none truncate">
+                <Badge
+                  variant={parsedDraft.name ? "info" : "default"}
+                  size="sm"
+                  className="max-w-[120px] sm:max-w-none truncate"
+                >
                   {parsedDraft.name || "Digite o nome"}
                 </Badge>
                 <Badge variant="secondary" size="sm">

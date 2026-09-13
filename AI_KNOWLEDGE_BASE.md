@@ -43,6 +43,63 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🛒 (13/09/2026) Feature: Cotação de Preços no Tenda Atacado na Lista de Compras
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["ListPageNew (Lista de Compras)"] --> B["ShoppingListView"]
+    B -->|"Botão Preços Tenda"| C["TendaPriceDrawer"]
+    C -->|"Consulta CEP (ex: 13064-789)"| D["tendaService: resolveTendaBranchByCep"]
+    D -->|"/api/tenda"| E["Vite Proxy (Dev) / Vercel Edge api/tenda.ts (Prod)"]
+    E -->|"API Pública Tenda"| F["Loja Ceasa - Campinas (#40) + Frete R$ 14,90"]
+    C -->|"quoteShoppingItemOnTenda"| D
+    D -->|"Extrai Medida + Filtra Tamanho + Ordena Menor Preço"| G["Top 5 Ofertas Mais Baratas"]
+    G -->|"Exibe 'A partir de R$ X,XX' + Link Direto"| C
+    C -->|"Usar Preço"| A
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `api/tenda.ts` | **Criado**: Proxy serverless Vercel Edge com CORS liberado e cache de 5 minutos para as rotas do Tenda Atacado. |
+| `vite.config.ts` | Adicionado proxy `/api/tenda` para desenvolvimento local apontando para `https://api.tendaatacado.com.br/api`. |
+| `src/services/tendaService.ts` | **Criado**: Serviço tipado para resolução de filial por CEP, busca de produtos, extração de peso/medida e cotação inteligente. |
+| `src/services/tendaService.test.ts` | **Criado**: 12 testes unitários cobrindo extração de medidas, filtro estrito de peso e ordenação por menor preço. |
+| `src/components/TendaPriceDrawer/TendaPriceDrawer.tsx` | **Criado**: Drawer lateral com cotação dos itens da lista, badge da loja/frete, links oficiais e botão para sincronizar preço. |
+| `src/components/TendaPriceDrawer/TendaPriceDrawer.test.tsx` | **Criado**: Testes unitários para renderização e aplicação de preços. |
+| `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Adicionado botão de ação "Preços Tenda". |
+| `src/pages/ListPageNew.tsx` | Integração do estado do Drawer, mapeamento de itens da lista e handlers para aplicar preço unitário ou em lote. |
+
+#### Lógica de Decisão
+```text
+RESOLUÇÃO DE LOJA:
+1. Usuário informa CEP (padrão: 13064-789).
+2. API shipping-options identifica a filial de entrega (Ceasa - Campinas, ID 40) e frete.
+
+FILTRAGEM DE PESO E PREÇO:
+1. Extrai peso/medida do item da lista (ex: "Arroz Namorado 5kg" -> 5kg).
+2. Busca na API do Tenda para a filial identificada.
+3. Filtra apenas produtos com embalagem equivalente (evita falso positivo de 1kg ao cotar 5kg).
+4. Ordena os candidatos pelo MENOR PREÇO (não pelos primeiros da vitrine).
+5. Retorna o produto mais em conta como recomendado e lista os top 5 alternativos com links.
+```
+
+#### Comportamento
+- Botão "Preços Tenda" na Lista de Compras abre a gaveta lateral de cotação.
+- Sistema consulta a filial e o frete correspondente ao CEP informado.
+- Cada item da lista é pesquisado e exibe o menor valor ("A partir de R$ XX,XX"), link externo para conferir no site do Tenda Atacado e botão "Usar Preço".
+- Resumo com subtotal dos itens cotados, frete estimado e total da compra.
+
+#### Checklist de Aceite
+- [x] Zero erros TypeScript e ESLint (`npm run check` passando limpo).
+- [x] Testes unitários adicionados e passando (`vitest run`).
+- [x] Build de produção sem erros (`npm run build`).
+- [x] Filtro estrito de peso/medida evitando distorções de embalagem (1kg vs 5kg).
+- [x] Links oficiais para o Tenda com target blank.
+
+
 ### 📝 (24/04/2026) Contexto Dinâmico (Meu vs Nosso Estoque)
 
 #### Arquitetura

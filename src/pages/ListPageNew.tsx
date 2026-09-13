@@ -35,10 +35,11 @@ import type { Unit } from "../types/inventory.types";
 import { toUnit } from "../types/inventory.types";
 import { resolveProductByEan, saveEanMapping } from "../lib/barcodeService";
 import { BarcodeScannerModal } from "../components/Scanner/BarcodeScannerModal";
+import { TendaPriceDrawer } from "../components/TendaPriceDrawer/TendaPriceDrawer";
 
 /**
  * Main shopping list page with integrated inventory intelligence.
- * 
+ *
  * Features:
  * - Real-time sync with Supabase and optimistic UI updates
  * - Smart item parser supporting "Name, Qty, Price" format
@@ -74,6 +75,7 @@ export const ListPageNew = (): ReactElement => {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [pendingEan, setPendingEan] = useState<string | null>(null);
   const [smartInput, setSmartInput] = useState<string>("");
+  const [tendaDrawerOpen, setTendaDrawerOpen] = useState<boolean>(false);
   const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
@@ -310,7 +312,6 @@ export const ListPageNew = (): ReactElement => {
     [listId, refreshItems, stockItems, userId, pendingEan, groupId],
   );
 
-
   const handleToggleItemChecked = useCallback(
     async (itemId: string): Promise<void> => {
       const currentItems = shoppingItemsRef.current;
@@ -321,9 +322,7 @@ export const ListPageNew = (): ReactElement => {
 
       // Optimistic update — flip the checked state locally before awaiting the network.
       setShoppingItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, comprado: newPurchasedState } : item,
-        ),
+        prev.map((item) => (item.id === itemId ? { ...item, comprado: newPurchasedState } : item)),
       );
 
       setError(null);
@@ -517,7 +516,11 @@ export const ListPageNew = (): ReactElement => {
   );
 
   const handleUpdateValidityDate = useCallback(
-    async (itemId: string, validityDate: string | null, naoAplicaValidade?: boolean): Promise<void> => {
+    async (
+      itemId: string,
+      validityDate: string | null,
+      naoAplicaValidade?: boolean,
+    ): Promise<void> => {
       if (!listId) return;
 
       setError(null);
@@ -539,7 +542,12 @@ export const ListPageNew = (): ReactElement => {
   );
 
   const handleUpdatePackSize = useCallback(
-    async (itemId: string, packLabel: string | null, packSize: number | null, packUnit: string | null): Promise<void> => {
+    async (
+      itemId: string,
+      packLabel: string | null,
+      packSize: number | null,
+      packUnit: string | null,
+    ): Promise<void> => {
       if (!listId) return;
 
       // Optimistic update
@@ -563,7 +571,12 @@ export const ListPageNew = (): ReactElement => {
   );
 
   const fireUpdatePackSize = useCallback(
-    (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null): void => {
+    (
+      id: string,
+      packLabel: string | null,
+      packSize: number | null,
+      packUnit: string | null,
+    ): void => {
       void handleUpdatePackSize(id, packLabel, packSize, packUnit);
     },
     [handleUpdatePackSize],
@@ -623,38 +636,72 @@ export const ListPageNew = (): ReactElement => {
       }
       await refreshItems(nextListId);
       setNotice("Compra finalizada. Itens pendentes reaproveitados na nova lista.");
-      } catch (finishError) {
-        setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
-      } finally {
-        setSaving(false);
-      }
-    }, [groupId, listId, refreshItems, setListId]);
-
-  const handleBarcodeScan = useCallback(async (ean: string) => {
-    if (!groupId) return;
-    setScannerOpen(false);
-    setLoading(true);
-
-    try {
-      const result = await resolveProductByEan(ean, groupId);
-      
-      if (result.found && result.name) {
-        // Limpa EAN pendente anterior (se houver) para não associar ao produto errado
-        setPendingEan(null);
-        // Atualiza o input diretamente sem precisar do workaround do queueMicrotask
-        setSmartInput(`${result.name}, 1`);
-        setNotice(`📸 ${result.name}`);
-      } else {
-        // Produto desconhecido — guarda o EAN para salvar depois
-        setPendingEan(ean);
-        setNotice("Código não reconhecido. Digite o nome para o sistema aprender!");
-      }
-    } catch {
-      setError("Erro ao processar o código de barras.");
+    } catch (finishError) {
+      setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
-  }, [groupId]);
+  }, [groupId, listId, refreshItems, setListId]);
+
+  const handleBarcodeScan = useCallback(
+    async (ean: string) => {
+      if (!groupId) return;
+      setScannerOpen(false);
+      setLoading(true);
+
+      try {
+        const result = await resolveProductByEan(ean, groupId);
+
+        if (result.found && result.name) {
+          // Limpa EAN pendente anterior (se houver) para não associar ao produto errado
+          setPendingEan(null);
+          // Atualiza o input diretamente sem precisar do workaround do queueMicrotask
+          setSmartInput(`${result.name}, 1`);
+          setNotice(`📸 ${result.name}`);
+        } else {
+          // Produto desconhecido — guarda o EAN para salvar depois
+          setPendingEan(ean);
+          setNotice("Código não reconhecido. Digite o nome para o sistema aprender!");
+        }
+      } catch {
+        setError("Erro ao processar o código de barras.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [groupId],
+  );
+
+  const quoteItems = useMemo(() => {
+    return shoppingItems.map((item) => {
+      const parsed = parseListQuantity(item.quantidade);
+      return {
+        id: item.id,
+        name: item.nome,
+        quantity: parsed.quantity,
+        unit: parsed.unit,
+        currentPrice: item.preco ?? null,
+      };
+    });
+  }, [parseListQuantity, shoppingItems]);
+
+  const handleApplyTendaPrice = useCallback(
+    (itemId: string, price: number): void => {
+      fireUpdateItemPrice(itemId, price);
+      setNotice("Preço atualizado com a cotação do Tenda!");
+    },
+    [fireUpdateItemPrice],
+  );
+
+  const handleApplyAllTendaPrices = useCallback(
+    (updates: { itemId: string; price: number }[]): void => {
+      for (const update of updates) {
+        fireUpdateItemPrice(update.itemId, update.price);
+      }
+      setNotice(`${updates.length} preço(s) atualizado(s) com a cotação do Tenda!`);
+    },
+    [fireUpdateItemPrice],
+  );
 
   if (!groupId) {
     return <Alert type="warning">Selecione um grupo para continuar</Alert>;
@@ -708,15 +755,12 @@ export const ListPageNew = (): ReactElement => {
             // bulk RPC for the items table; the list is small enough that
             // sequential updates are acceptable.
             for (const id of itemIds) {
-              await updateListItemValidityDate(
-                id,
-                naoAplica ? null : validityDate,
-                naoAplica,
-              );
+              await updateListItemValidityDate(id, naoAplica ? null : validityDate, naoAplica);
             }
             if (listId) await refreshItems(listId);
             setNotice(`${itemIds.length} item(ns) atualizado(s).`);
           }}
+          onOpenTendaQuotes={() => setTendaDrawerOpen(true)}
           onOpenImportModal={() => setImportModalOpen(true)}
           onViewHistory={() => navigate("/history")}
           canUseScanner={canUseCamera}
@@ -761,15 +805,17 @@ export const ListPageNew = (): ReactElement => {
             />
 
             <div className="bg-base-200/50 p-3 rounded-lg border border-base-300">
-              <p className="text-xs font-bold uppercase text-base-content/40 mb-2">Prévia da importação</p>
+              <p className="text-xs font-bold uppercase text-base-content/40 mb-2">
+                Prévia da importação
+              </p>
               <p className="text-sm font-medium">
-                {importPreview.length > 0 
+                {importPreview.length > 0
                   ? `${importPreview.length} itens encontrados`
                   : "Nenhum item detectado ainda"}
               </p>
               {importPreview.length > 0 && (
                 <p className="text-[10px] text-base-content/60 mt-1 line-clamp-2">
-                  {importPreview.map(item => item.nome).join(", ")}
+                  {importPreview.map((item) => item.nome).join(", ")}
                 </p>
               )}
             </div>
@@ -805,6 +851,15 @@ export const ListPageNew = (): ReactElement => {
           onScan={handleBarcodeScan}
         />
       )}
+
+      <TendaPriceDrawer
+        open={tendaDrawerOpen}
+        onClose={() => setTendaDrawerOpen(false)}
+        items={quoteItems}
+        defaultCep="13064-789"
+        onApplyPrice={handleApplyTendaPrice}
+        onApplyAllPrices={handleApplyAllTendaPrices}
+      />
     </div>
   );
 };
