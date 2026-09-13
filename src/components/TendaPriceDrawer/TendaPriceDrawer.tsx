@@ -111,6 +111,10 @@ export const TendaPriceDrawer = ({
             ...prev,
             [item.id]: {
               itemName: item.name,
+              baseProduct: item.name,
+              requestedBrand: null,
+              sameBrandOffer: null,
+              cheaperAlternativeOffer: null,
               targetSize: null,
               startingFromPrice: null,
               recommended: null,
@@ -149,6 +153,10 @@ export const TendaPriceDrawer = ({
           ...prev,
           [item.id]: {
             itemName: item.name,
+            baseProduct: item.name,
+            requestedBrand: null,
+            sameBrandOffer: null,
+            cheaperAlternativeOffer: null,
             targetSize: null,
             startingFromPrice: null,
             recommended: null,
@@ -402,6 +410,62 @@ export const TendaPriceDrawer = ({
                         )}
                       </div>
                     </div>
+
+                    {/* Alerta de economia com marca alternativa */}
+                    {quote.cheaperAlternativeOffer && (
+                      <div className="mt-2 rounded-md bg-success/10 p-2.5 text-xs border border-success/20 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between font-medium text-success-content">
+                          <span className="flex items-center gap-1 font-semibold">
+                            <span>🤑</span> Alternativa mais barata (
+                            {quote.cheaperAlternativeOffer.brand}):
+                          </span>
+                          <span className="font-mono font-bold">
+                            R$ {quote.cheaperAlternativeOffer.price.toFixed(2)}
+                          </span>
+                        </div>
+                        <div
+                          className="text-base-content/80 text-[11px] truncate"
+                          title={quote.cheaperAlternativeOffer.name}
+                        >
+                          {quote.cheaperAlternativeOffer.name}
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-success/10 text-success-content/90 text-[11px]">
+                          <span className="font-medium">
+                            Economia de R${" "}
+                            {(
+                              quote.recommended.price - quote.cheaperAlternativeOffer.price
+                            ).toFixed(2)}{" "}
+                            (
+                            {(
+                              100 -
+                              (quote.cheaperAlternativeOffer.price / quote.recommended.price) * 100
+                            ).toFixed(0)}
+                            %)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={quote.cheaperAlternativeOffer.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="link link-primary text-xs"
+                            >
+                              Ver ↗
+                            </a>
+                            {onApplyPrice && (
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-success text-white px-2 h-6 min-h-0"
+                                onClick={() =>
+                                  onApplyPrice(item.id, quote.cheaperAlternativeOffer!.price)
+                                }
+                              >
+                                Trocar Marca
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Lista expandida de alternativas mais baratas */}
                     {isExpanded && (

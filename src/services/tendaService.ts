@@ -1,3 +1,5 @@
+import { extractProductParts, recordDiscoveredBrand } from "./brandDictionaryService";
+
 export interface ProductSize {
   value: number;
   unit: "kg" | "g" | "l" | "ml";
@@ -30,9 +32,13 @@ export interface TendaBranchInfo {
 
 export interface TendaItemQuote {
   itemName: string;
+  baseProduct: string;
+  requestedBrand: string | null;
   targetSize: ProductSize | null;
   startingFromPrice: number | null;
   recommended: TendaProduct | null;
+  sameBrandOffer: TendaProduct | null;
+  cheaperAlternativeOffer: TendaProduct | null;
   options: TendaProduct[];
   totalFound: number;
   error?: string | null;
@@ -460,7 +466,9 @@ export const quoteShoppingItemOnTenda = async (
   baseUrl: string = DEFAULT_BASE_API,
   bypassCache = false,
 ): Promise<TendaItemQuote> => {
-  const targetSize = extractProductSize(itemName);
+  const parts = extractProductParts(itemName);
+  const { baseProduct, brand: requestedBrand, size: targetSize } = parts;
+
   const sanitized = sanitizeItemSearchQuery(itemName).toLowerCase();
   const cacheKey = `quote_${branchId}_${sanitized}`;
 
@@ -469,11 +477,28 @@ export const quoteShoppingItemOnTenda = async (
     if (cached) return cached;
   }
 
-  try {
-    let products = await searchTendaProducts(itemName, branchId, baseUrl);
+  const emptyQuote: TendaItemQuote = {
+    itemName,
+    baseProduct,
+    requestedBrand,
+    targetSize,
+    startingFromPrice: null,
+    recommended: null,
+    sameBrandOffer: null,
+    cheaperAlternativeOffer: null,
+    options: [],
+    totalFound: 0,
+  };
 
-    // Fallback: se a busca com todos os termos não retornar nada,
-    // busca pelos dois primeiros tokens principais (ex: "feijao preto" ou "limao tahiti")
+  try {
+    // Busca inicial pelo produto base (evita viés de pesquisa apenas por marca limitando o Tenda)
+    let products = await searchTendaProducts(baseProduct, branchId, baseUrl);
+
+    // Fallback se não encontrar pelo base: tenta pelo nome original
+    if (products.length === 0 && baseProduct !== itemName) {
+      products = await searchTendaProducts(itemName, branchId, baseUrl);
+    }
+
     if (products.length === 0) {
       const coreTokens = extractCoreTokens(itemName);
       if (coreTokens.length > 1) {
@@ -483,32 +508,23 @@ export const quoteShoppingItemOnTenda = async (
     }
 
     if (products.length === 0) {
-      const emptyQuote: TendaItemQuote = {
-        itemName,
-        targetSize,
-        startingFromPrice: null,
-        recommended: null,
-        options: [],
-        totalFound: 0,
-      };
       setCachedTendaData(cacheKey, emptyQuote);
       return emptyQuote;
     }
 
-    // Filtra apenas produtos semanticamente relevantes (impede Arroz em Feijão, Goiaba em Limão)
+    // Registra marcas descobertas no background
+    products.forEach((p) => {
+      if (p.brand) {
+        recordDiscoveredBrand(p.brand).catch(() => {});
+      }
+    });
+
+    // Filtra apenas produtos semanticamente relevantes
     const relevantProducts = products.filter((p) =>
       isProductSemanticallyRelevant(p.name, itemName),
     );
 
     if (relevantProducts.length === 0) {
-      const emptyQuote: TendaItemQuote = {
-        itemName,
-        targetSize,
-        startingFromPrice: null,
-        recommended: null,
-        options: [],
-        totalFound: 0,
-      };
       setCachedTendaData(cacheKey, emptyQuote);
       return emptyQuote;
     }
@@ -520,11 +536,40 @@ export const quoteShoppingItemOnTenda = async (
     const sortedByPrice = [...finalCandidates].sort((a, b) => a.price - b.price);
     const cheapest = sortedByPrice[0] || null;
 
+    let sameBrandOffer: TendaProduct | null = null;
+    let cheaperAlternativeOffer: TendaProduct | null = null;
+
+    if (requestedBrand) {
+      const requestedBrandLower = requestedBrand.toLowerCase();
+      sameBrandOffer =
+        sortedByPrice.find(
+          (p) =>
+            (p.brand && p.brand.toLowerCase() === requestedBrandLower) ||
+            p.name.toLowerCase().includes(requestedBrandLower),
+        ) || null;
+
+      if (
+        sameBrandOffer &&
+        cheapest &&
+        cheapest.id !== sameBrandOffer.id &&
+        cheapest.price < sameBrandOffer.price
+      ) {
+        cheaperAlternativeOffer = cheapest;
+      } else if (!sameBrandOffer) {
+        // Se pediu marca e não achou, a sugestão mais barata continua valendo
+        cheaperAlternativeOffer = cheapest;
+      }
+    }
+
     const quote: TendaItemQuote = {
       itemName,
+      baseProduct,
+      requestedBrand,
       targetSize,
       startingFromPrice: cheapest ? cheapest.price : null,
-      recommended: cheapest,
+      recommended: sameBrandOffer || cheapest,
+      sameBrandOffer,
+      cheaperAlternativeOffer,
       options: sortedByPrice.slice(0, 5),
       totalFound: relevantProducts.length,
     };
@@ -534,12 +579,7 @@ export const quoteShoppingItemOnTenda = async (
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Falha ao cotar produto";
     return {
-      itemName,
-      targetSize,
-      startingFromPrice: null,
-      recommended: null,
-      options: [],
-      totalFound: 0,
+      ...emptyQuote,
       error: message,
     };
   }

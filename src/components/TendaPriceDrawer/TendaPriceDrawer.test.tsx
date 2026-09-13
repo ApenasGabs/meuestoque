@@ -27,6 +27,10 @@ describe("TendaPriceDrawer", () => {
       if (name.includes("Arroz")) {
         return {
           itemName: name,
+          baseProduct: name,
+          requestedBrand: null,
+          sameBrandOffer: null,
+          cheaperAlternativeOffer: null,
           targetSize: { value: 5, unit: "kg" },
           startingFromPrice: 19.45,
           recommended: {
@@ -45,6 +49,10 @@ describe("TendaPriceDrawer", () => {
       }
       return {
         itemName: name,
+        baseProduct: name,
+        requestedBrand: null,
+        sameBrandOffer: null,
+        cheaperAlternativeOffer: null,
         targetSize: { value: 1, unit: "kg" },
         startingFromPrice: 6.89,
         recommended: {
@@ -88,6 +96,10 @@ describe("TendaPriceDrawer", () => {
 
     vi.spyOn(tendaService, "quoteShoppingItemOnTenda").mockResolvedValueOnce({
       itemName: "Arroz 5kg",
+      baseProduct: "Arroz 5kg",
+      requestedBrand: null,
+      sameBrandOffer: null,
+      cheaperAlternativeOffer: null,
       targetSize: { value: 5, unit: "kg" },
       startingFromPrice: 19.45,
       recommended: {

@@ -171,6 +171,102 @@ describe("tendaService", () => {
       expect(quote.startingFromPrice).toBe(5.59);
     });
 
+    it("deve cotar marca solicitada (Camil) e identificar alternativa mais barata (Sabor Máximo)", async () => {
+      const mockProducts = [
+        {
+          id: 101,
+          name: "Feijão Preto Sabor Máximo 1kg",
+          price: 5.39,
+          brand: "Sabor Máximo",
+          wholesalePrices: null,
+          url: "https://tendaatacado.com.br/produto/feijao-preto-sabor-maximo-1kg",
+          thumbnail: null,
+          inStock: true,
+        },
+        {
+          id: 102,
+          name: "Feijão Preto Tipo 1 Select 1kg",
+          price: 5.59,
+          brand: "Select",
+          wholesalePrices: null,
+          url: "https://tendaatacado.com.br/produto/feijao-preto-select-1kg",
+          thumbnail: null,
+          inStock: true,
+        },
+        {
+          id: 103,
+          name: "Feijão Preto Camil 1kg",
+          price: 6.79,
+          brand: "Camil",
+          wholesalePrices: null,
+          url: "https://tendaatacado.com.br/produto/feijao-preto-camil-1kg",
+          thumbnail: null,
+          inStock: true,
+        },
+      ];
+
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ products: mockProducts }),
+      } as Response);
+
+      const quote = await quoteShoppingItemOnTenda("Feijão Preto Camil Tipo 1 1kg", 40);
+
+      // Deve identificar a marca solicitada
+      expect(quote.requestedBrand?.toLowerCase()).toBe("camil");
+      expect(quote.baseProduct).toBe("Feijão Preto");
+
+      // Deve recomendar a oferta da marca solicitada
+      expect(quote.recommended?.id).toBe(103);
+      expect(quote.recommended?.brand).toBe("Camil");
+      expect(quote.recommended?.price).toBe(6.79);
+
+      // Deve apontar Sabor Máximo como alternativa mais barata existente
+      expect(quote.cheaperAlternativeOffer).not.toBeNull();
+      expect(quote.cheaperAlternativeOffer?.id).toBe(101);
+      expect(quote.cheaperAlternativeOffer?.brand).toBe("Sabor Máximo");
+      expect(quote.cheaperAlternativeOffer?.price).toBe(5.39);
+      expect(quote.cheaperAlternativeOffer?.url).toBe(
+        "https://tendaatacado.com.br/produto/feijao-preto-sabor-maximo-1kg",
+      );
+    });
+
+    it("não deve sugerir alternativa se a marca solicitada já for a mais barata", async () => {
+      const mockProducts = [
+        {
+          id: 201,
+          name: "Arroz Camil 5kg",
+          price: 18.9,
+          brand: "Camil",
+          wholesalePrices: null,
+          url: "https://tenda/camil-5kg",
+          thumbnail: null,
+          inStock: true,
+        },
+        {
+          id: 202,
+          name: "Arroz Tio João 5kg",
+          price: 24.5,
+          brand: "Tio João",
+          wholesalePrices: null,
+          url: "https://tenda/tiojoao-5kg",
+          thumbnail: null,
+          inStock: true,
+        },
+      ];
+
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ products: mockProducts }),
+      } as Response);
+
+      const quote = await quoteShoppingItemOnTenda("Arroz Camil 5kg", 40);
+
+      expect(quote.recommended?.brand).toBe("Camil");
+      expect(quote.recommended?.price).toBe(18.9);
+      expect(quote.cheaperAlternativeOffer).toBeNull();
+    });
+
     it("deve rejeitar Goiaba, Alho e produtos derivados ao cotar Limão Taiti", async () => {
       const mockProducts = [
         {
