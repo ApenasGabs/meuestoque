@@ -288,6 +288,12 @@ export async function addListItem(input: AddListItemInput): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Atualiza o nome de um item da lista de compras e re-extrai sua marca e produto base.
+ *
+ * @param itemId - O identificador único do item
+ * @param nome - O novo nome textual do item
+ */
 export const updateListItemName = async (itemId: string, nome: string): Promise<void> => {
   const parts = extractProductParts(nome);
   const { error } = await supabase

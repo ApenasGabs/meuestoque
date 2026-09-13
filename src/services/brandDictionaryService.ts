@@ -200,15 +200,23 @@ export const syncBrandDictionaryFromSupabase = async (): Promise<void> => {
       .select("nome, nome_normalizado")
       .eq("ativo", true);
 
-    if (!error && data) {
+    if (error) {
+      console.warn(
+        "[brandDictionaryService] Falha ao sincronizar marcas do Supabase:",
+        error.message,
+      );
+      return;
+    }
+
+    if (data) {
       data.forEach((item) => {
         if (item.nome_normalizado) {
           KNOWN_BRANDS.add(item.nome_normalizado.toLowerCase());
         }
       });
     }
-  } catch {
-    // Ignora silenciosamente caso offline ou sem conexão inicial
+  } catch (err) {
+    console.warn("[brandDictionaryService] Erro inesperado ao sincronizar marcas:", err);
   }
 };
 
