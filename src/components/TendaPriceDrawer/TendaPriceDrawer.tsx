@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, type ReactElement } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactElement } from "react";
 import { Drawer } from "../Drawer/Drawer";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
@@ -55,58 +55,116 @@ export const TendaPriceDrawer = ({
   const [loadingQuotes, setLoadingQuotes] = useState<Record<string, boolean>>({});
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
-  const handleResolveBranch = useCallback(
-    async (targetCep: string): Promise<TendaBranchInfo | null> => {
+  const hasFetchedRef = useRef<boolean>(false);
+  const isQuotingRef = useRef<boolean>(false);
+
+  const startQuoting = useCallback(
+    async (targetCep: string): Promise<void> => {
+      if (isQuotingRef.current) return;
+      isQuotingRef.current = true;
+
       setLoadingBranch(true);
       setBranchError(null);
+
+      let info: TendaBranchInfo | null = null;
       try {
-        const info = await resolveTendaBranchByCep(targetCep);
+        info = await resolveTendaBranchByCep(targetCep);
         setBranchInfo(info);
-        return info;
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "Erro ao consultar filial para este CEP";
         setBranchError(message);
         setBranchInfo(null);
-        return null;
+        setLoadingBranch(false);
+        isQuotingRef.current = false;
+        return;
       } finally {
         setLoadingBranch(false);
       }
+
+      if (!info?.branchId) {
+        isQuotingRef.current = false;
+        return;
+      }
+
+      const initialLoading: Record<string, boolean> = {};
+      for (const item of items) {
+        initialLoading[item.id] = true;
+      }
+      setLoadingQuotes(initialLoading);
+
+      const activeBranchId = info.branchId;
+
+      for (const item of items) {
+        if (!hasFetchedRef.current) break;
+        try {
+          const quote = await quoteShoppingItemOnTenda(item.name, activeBranchId);
+          setQuotes((prev) => ({ ...prev, [item.id]: quote }));
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "Erro ao cotar";
+          setQuotes((prev) => ({
+            ...prev,
+            [item.id]: {
+              itemName: item.name,
+              targetSize: null,
+              startingFromPrice: null,
+              recommended: null,
+              options: [],
+              totalFound: 0,
+              error: message,
+            },
+          }));
+        } finally {
+          setLoadingQuotes((prev) => ({ ...prev, [item.id]: false }));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
+      isQuotingRef.current = false;
     },
-    [],
+    [items],
   );
 
-  const handleQuoteSingleItem = useCallback(
-    async (item: ShoppingQuoteItem, branchId: number): Promise<void> => {
+  const handleQuoteSingle = useCallback(
+    async (item: ShoppingQuoteItem): Promise<void> => {
+      if (!branchInfo) return;
       setLoadingQuotes((prev) => ({ ...prev, [item.id]: true }));
       try {
-        const quote = await quoteShoppingItemOnTenda(item.name, branchId);
+        const quote = await quoteShoppingItemOnTenda(item.name, branchInfo.branchId);
         setQuotes((prev) => ({ ...prev, [item.id]: quote }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Erro ao cotar";
+        setQuotes((prev) => ({
+          ...prev,
+          [item.id]: {
+            itemName: item.name,
+            targetSize: null,
+            startingFromPrice: null,
+            recommended: null,
+            options: [],
+            totalFound: 0,
+            error: message,
+          },
+        }));
       } finally {
         setLoadingQuotes((prev) => ({ ...prev, [item.id]: false }));
       }
     },
-    [],
-  );
-
-  const handleQuoteAllItems = useCallback(
-    async (activeBranchId: number): Promise<void> => {
-      for (const item of items) {
-        await handleQuoteSingleItem(item, activeBranchId);
-      }
-    },
-    [items, handleQuoteSingleItem],
+    [branchInfo],
   );
 
   useEffect(() => {
-    if (open && !branchInfo && !loadingBranch) {
-      handleResolveBranch(cep).then((info) => {
-        if (info) {
-          handleQuoteAllItems(info.branchId);
-        }
-      });
+    if (open) {
+      if (!hasFetchedRef.current) {
+        hasFetchedRef.current = true;
+        void startQuoting(cep);
+      }
+    } else {
+      hasFetchedRef.current = false;
+      isQuotingRef.current = false;
     }
-  }, [open, branchInfo, loadingBranch, cep, handleResolveBranch, handleQuoteAllItems]);
+  }, [open, cep, startQuoting]);
 
   const totalEstimated = useMemo(() => {
     let sum = 0;
@@ -162,9 +220,7 @@ export const TendaPriceDrawer = ({
               className="btn-xs"
               disabled={loadingBranch}
               onClick={() => {
-                handleResolveBranch(cep).then((info) => {
-                  if (info) handleQuoteAllItems(info.branchId);
-                });
+                void startQuoting(cep);
               }}
             >
               {loadingBranch ? (
@@ -203,7 +259,9 @@ export const TendaPriceDrawer = ({
                 size="sm"
                 variant="ghost"
                 className="btn-xs"
-                onClick={() => handleQuoteAllItems(branchInfo.branchId)}
+                onClick={() => {
+                  void startQuoting(cep);
+                }}
               >
                 Recotar Todos
               </Button>
@@ -248,6 +306,17 @@ export const TendaPriceDrawer = ({
                       <div className="font-mono text-base font-bold text-success">
                         R$ {quote.startingFromPrice.toFixed(2)}
                       </div>
+                    </div>
+                  ) : quote?.error ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-error font-medium">{quote.error}</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs text-primary p-0 h-auto min-h-0 underline"
+                        onClick={() => void handleQuoteSingle(item)}
+                      >
+                        Tentar novamente
+                      </button>
                     </div>
                   ) : (
                     <Badge variant="default" size="sm">

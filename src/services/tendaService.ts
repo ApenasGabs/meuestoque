@@ -69,6 +69,22 @@ interface RawShippingResponse {
 
 const DEFAULT_BASE_API = "/api/tenda";
 
+const safeFetchJson = async <T>(url: string): Promise<T> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Erro na consulta (HTTP ${response.status})`);
+  }
+
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (contentType && !contentType.includes("application/json")) {
+    throw new Error(
+      "A API retornou uma resposta inválida (HTML em vez de JSON). Se você estiver em desenvolvimento, certifique-se de reiniciar o servidor Vite (`npm run dev`) para que a regra de proxy seja ativada.",
+    );
+  }
+
+  return (await response.json()) as T;
+};
+
 /**
  * Extrai a medida e unidade (ex: 5kg, 500ml, 1L) a partir do texto do produto.
  *
@@ -138,12 +154,9 @@ export const resolveTendaBranchByCep = async (
     throw new Error("CEP inválido. Deve conter 8 dígitos.");
   }
 
-  const response = await fetch(`${baseUrl}/public/store/shipping-options/${cleanCep}`);
-  if (!response.ok) {
-    throw new Error(`Não foi possível consultar a filial do Tenda (status ${response.status})`);
-  }
-
-  const data: RawShippingResponse = await response.json();
+  const data = await safeFetchJson<RawShippingResponse>(
+    `${baseUrl}/public/store/shipping-options/${cleanCep}`,
+  );
   const delivery = data.delivery;
   const branch = delivery?.branch;
 
@@ -187,26 +200,25 @@ export const searchTendaProducts = async (
   if (!sanitized) return [];
 
   const url = `${baseUrl}/public/store/search?query=${encodeURIComponent(sanitized)}&branchId=${branchId}`;
-  const response = await fetch(url);
-  if (!response.ok) {
+  try {
+    const data = await safeFetchJson<{ products?: RawTendaProduct[] }>(url);
+    const rawProducts = data.products || [];
+
+    return rawProducts
+      .filter((p) => Number.isFinite(p.price) && p.price > 0)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        brand: p.brand || "",
+        price: p.price,
+        wholesalePrices: p.wholesalePrices,
+        url: p.url,
+        thumbnail: p.thumbnail || null,
+        inStock: (p.totalStock ?? 1) > 0,
+      }));
+  } catch {
     return [];
   }
-
-  const data: { products?: RawTendaProduct[] } = await response.json();
-  const rawProducts = data.products || [];
-
-  return rawProducts
-    .filter((p) => Number.isFinite(p.price) && p.price > 0)
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      brand: p.brand || "",
-      price: p.price,
-      wholesalePrices: p.wholesalePrices,
-      url: p.url,
-      thumbnail: p.thumbnail || null,
-      inStock: (p.totalStock ?? 1) > 0,
-    }));
 };
 
 /**

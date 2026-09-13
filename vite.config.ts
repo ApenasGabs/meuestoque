@@ -77,9 +77,13 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/api/tenda": {
-        target: "https://api.tendaatacado.com.br/api",
+        target: "https://api.tendaatacado.com.br",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/tenda/, ""),
+        rewrite: (path) => path.replace(/^\/api\/tenda/, "/api"),
+        headers: {
+          Origin: "https://www.tendaatacado.com.br",
+          Referer: "https://www.tendaatacado.com.br/",
+        },
       },
     },
     hmr: {
