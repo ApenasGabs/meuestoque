@@ -22,8 +22,18 @@ export default async (req: Request): Promise<Response> => {
   }
 
   const url = new URL(req.url);
-  const targetPath = url.pathname.replace(/^\/api\/tenda/, "");
-  const targetUrl = `https://api.tendaatacado.com.br/api${targetPath}${url.search}`;
+  const pathParam = url.searchParams.get("path");
+  url.searchParams.delete("path");
+
+  let targetPath = "";
+  if (pathParam) {
+    targetPath = pathParam.startsWith("/") ? pathParam : `/${pathParam}`;
+  } else {
+    targetPath = url.pathname.replace(/^\/api\/tenda/, "");
+  }
+
+  const queryString = url.searchParams.toString() ? `?${url.searchParams.toString()}` : "";
+  const targetUrl = `https://api.tendaatacado.com.br/api${targetPath}${queryString}`;
 
   try {
     const upstreamRes = await fetch(targetUrl, {
@@ -32,6 +42,8 @@ export default async (req: Request): Promise<Response> => {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json, text/plain, */*",
+        Origin: "https://www.tendaatacado.com.br",
+        Referer: "https://www.tendaatacado.com.br/",
       },
     });
 
