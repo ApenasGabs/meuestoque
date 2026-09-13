@@ -5,6 +5,20 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.19.0](https://github.com/ApenasGabs/meuestoque/compare/v1.18.0...v1.19.0) (2026-09-13)
+
+### ✨ Features
+
+* **brands:** persist brand and base product and sync brand dictionary with supabase ([3217ad0](https://github.com/ApenasGabs/meuestoque/commit/3217ad0072b2871465abd0a2bad4b80185d50214))
+* **tenda-drawer:** add product thumbnails and dynamic card update on brand swap ([d3fc7e1](https://github.com/ApenasGabs/meuestoque/commit/d3fc7e1f3287743d168304479ba64ad1f3e8aa3f))
+* **tenda-drawer:** update item name and brand in shopping list when swapping brand ([373c105](https://github.com/ApenasGabs/meuestoque/commit/373c1052bddb4e1ca947c8a2c4e644c41a19d43d))
+
+### 🐛 Bug Fixes
+
+* **brands:** batch brand discovery with upsert ignoreDuplicates to eliminate 409 spam ([d298993](https://github.com/ApenasGabs/meuestoque/commit/d2989939f1778d490ab4d22374eb000a7ef2fccb))
+* **brands:** resolve duplicate statements, add JSDoc, error logging and duplication tests ([17a874c](https://github.com/ApenasGabs/meuestoque/commit/17a874cfccd7fb1dd60884d84bc22c42730d0bf6))
+* **build:** resolve duplicate statements in webData, barcodeService and brandDictionaryService ([2083c21](https://github.com/ApenasGabs/meuestoque/commit/2083c215a659202a0996a08aaff46471dc1fd2a7))
+
 ## [1.18.0](https://github.com/ApenasGabs/meuestoque/compare/v1.17.1...v1.18.0) (2026-09-13)
 
 ### ✨ Features
