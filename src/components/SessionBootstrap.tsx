@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ComprasWebShell } from "../ComprasWebShell";
 import { supabase } from "../lib/supabase";
 import { restoreGroupContext } from "../lib/webData";
+import { syncBrandDictionaryFromSupabase } from "../services/brandDictionaryService";
 import { useAuthStore } from "../stores/authStore";
 import { getPersistedGroupSnapshotForUser, useGroupStore } from "../stores/groupStore";
 import { useSessionStore } from "../stores/sessionStore";
@@ -16,6 +17,9 @@ export function SessionBootstrap(): ReactElement {
   const ready = useSessionStore((state) => state.ready);
 
   useEffect(() => {
+    // Sincroniza marcas globais do Supabase em background
+    void syncBrandDictionaryFromSupabase();
+
     let active = true;
     let initialNoSessionTimer: ReturnType<typeof setTimeout> | null = null;
     const withTimeout = async <T,>(

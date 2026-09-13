@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { extractProductParts } from '../services/brandDictionaryService';
 
 export interface BarcodeResult {
   found: boolean;
@@ -132,10 +133,13 @@ export const saveEanMapping = async (
     .eq('unidade_estoque', unidade)
     .maybeSingle();
 
+  const parts = extractProductParts(nome);
+
   if (existing) {
     await supabase
       .from('product_catalog')
       .update({ ean })
+      .update({ ean, marca: parts.brand, produto_base: parts.baseProduct })
       .eq('id', existing.id);
     
     eanCache.set(`${groupId}:${ean}`, {
@@ -155,6 +159,8 @@ export const saveEanMapping = async (
     .insert({
       group_id: groupId,
       nome: nome.trim(),
+      marca: parts.brand,
+      produto_base: parts.baseProduct,
       categoria,
       ean,
       unidade_estoque: unidade,

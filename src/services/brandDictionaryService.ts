@@ -177,8 +177,39 @@ export const recordDiscoveredBrand = async (brandName: string): Promise<void> =>
         origem: "tenda",
       })
       .select(); // Em Supabase/Postgrest, erros de unique constraint são ignorados se usarmos upsert adequadamente ou ignorados no catch
+      .select();
   } catch {
     // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
+  }
+};
+
+/**
+ * Retorna a quantidade total de marcas ativas no cache em memória.
+ */
+export const getKnownBrandsCount = (): number => {
+  return KNOWN_BRANDS.size;
+};
+
+/**
+ * Carrega e sincroniza o dicionário de marcas a partir do Supabase.
+ * Enriquece a base em memória com todas as marcas cadastradas globalmente.
+ */
+export const syncBrandDictionaryFromSupabase = async (): Promise<void> => {
+  try {
+    const { data, error } = await supabase
+      .from("brand_dictionary")
+      .select("nome, nome_normalizado")
+      .eq("ativo", true);
+
+    if (!error && data) {
+      data.forEach((item) => {
+        if (item.nome_normalizado) {
+          KNOWN_BRANDS.add(item.nome_normalizado.toLowerCase());
+        }
+      });
+    }
+  } catch {
+    // Ignora silenciosamente caso offline ou sem conexão inicial
   }
 };
 
@@ -222,6 +253,10 @@ export const extractProductParts = (itemName: string): ProductParts => {
       .join("");
 
     const regexOriginal = new RegExp(`\\b${accentInsensitivePattern}\\b`, "i");
+    const regexOriginal = new RegExp(
+      `(?<=^|[^\\p{L}\\d])${accentInsensitivePattern}(?=$|[^\\p{L}\\d])`,
+      "iu",
+    );
     const originalMatch = nameWithoutSize.match(regexOriginal);
 
     if (originalMatch) {
@@ -237,6 +272,13 @@ export const extractProductParts = (itemName: string): ProductParts => {
     // Usamos o originalMatch ou a string exata para a remoção no texto base original
     // Mas para manter a string bonita, tentamos remover usando o original case
     baseProduct = baseProduct.replace(new RegExp(`\\b${brandOriginalCase}\\b`, "gi"), "");
+    // Escapa caracteres especiais do case original para o regex de substituição
+    const escapedCase = brandOriginalCase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const removeRegex = new RegExp(
+      `(?<=^|[^\\p{L}\\d])${escapedCase}(?=$|[^\\p{L}\\d])`,
+      "gu",
+    );
+    baseProduct = baseProduct.replace(removeRegex, "");
   }
 
   // Limpa espaços duplos e stopwords comuns residuais (tipo, de, com) que possam ter ficado nas pontas

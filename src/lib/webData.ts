@@ -2,6 +2,7 @@ import { normalizeInviteCode } from "../domain/listRules";
 import { pickActiveGroup, type GroupRecord } from "../domain/sessionRules";
 import { supabase } from "./supabase";
 import { toUnit, type Unit } from "../types/inventory.types";
+import { extractProductParts } from "../services/brandDictionaryService";
 
 export interface UserSessionData {
   id: string;
@@ -21,6 +22,8 @@ export interface ShoppingListRecord {
 export interface ItemRecord {
   id: string;
   nome: string;
+  marca?: string | null;
+  produto_base?: string | null;
   quantidade: string;
   categoria: string;
   comprado: boolean;
@@ -238,6 +241,7 @@ export async function loadListItems(listId: string): Promise<ItemRecord[]> {
     .from("items")
     .select(
       "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id, pack_label, pack_size, pack_unit",
+      "id, nome, marca, produto_base, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id, pack_label, pack_size, pack_unit",
     )
     .eq("list_id", listId)
     .order("criado_em", { ascending: true });
@@ -263,9 +267,12 @@ export interface AddListItemInput {
 
 export async function addListItem(input: AddListItemInput): Promise<void> {
   const parsed = parseListQuantityLabel(input.quantidade);
+  const parts = extractProductParts(input.nome);
   const { error } = await supabase.from("items").insert({
     list_id: input.listId,
     nome: input.nome,
+    marca: parts.brand,
+    produto_base: parts.baseProduct,
     quantidade: input.quantidade,
     quantidade_raw: input.quantidade,
     quantidade_num: parsed.quantidade,
@@ -281,6 +288,20 @@ export async function addListItem(input: AddListItemInput): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export const updateListItemName = async (itemId: string, nome: string): Promise<void> => {
+  const parts = extractProductParts(nome);
+  const { error } = await supabase
+    .from("items")
+    .update({
+      nome,
+      marca: parts.brand,
+      produto_base: parts.baseProduct,
+    })
+    .eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+};
 
 export async function toggleListItemPurchased(itemId: string, purchased: boolean): Promise<void> {
   const { error } = await supabase.from("items").update({ comprado: purchased }).eq("id", itemId);
@@ -426,6 +447,20 @@ export async function duplicateShoppingListToActive(
       comprado: false,
       criado_por: createdBy ?? item.criado_por ?? null,
     }));
+    .map((item) => {
+      const parts = extractProductParts(item.nome);
+      return {
+        list_id: activeList.id,
+        nome: item.nome,
+        marca: parts.brand,
+        produto_base: parts.baseProduct,
+        quantidade: item.quantidade,
+        categoria: item.categoria,
+        preco: item.preco,
+        comprado: false,
+        criado_por: createdBy ?? item.criado_por ?? null,
+      };
+    });
 
   if (itemsToInsert.length === 0) {
     return { targetListId: activeList.id, duplicatedCount: 0 };
