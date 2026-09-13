@@ -9,6 +9,7 @@ import {
   getCachedTendaData,
   setCachedTendaData,
   clearTendaCache,
+  isProductSemanticallyRelevant,
 } from "./tendaService";
 
 describe("tendaService", () => {
@@ -58,9 +59,9 @@ describe("tendaService", () => {
   });
 
   describe("sanitizeItemSearchQuery", () => {
-    it("deve normalizar acentos e remover caracteres especiais", () => {
-      expect(sanitizeItemSearchQuery("Feijão Carioca #1")).toBe("Feijao Carioca 1");
-      expect(sanitizeItemSearchQuery("Café Pilão - 500g")).toBe("Cafe Pilao - 500g");
+    it("deve normalizar acentos, minusculas, pesos e remover caracteres especiais", () => {
+      expect(sanitizeItemSearchQuery("Feijão Carioca #1")).toBe("feijao carioca 1");
+      expect(sanitizeItemSearchQuery("Café Pilão - 500g")).toBe("cafe pilao");
     });
   });
 
@@ -127,6 +128,138 @@ describe("tendaService", () => {
       expect(quote.recommended).toBeNull();
       expect(quote.options).toEqual([]);
       expect(quote.totalFound).toBe(0);
+    });
+
+    it("deve rejeitar Arroz ao cotar Feijão Preto, mesmo se o arroz for mais barato", async () => {
+      const mockProducts = [
+        {
+          id: 1,
+          name: "Arroz Tipo 1 Select 1Kg",
+          price: 3.99, // Mais barato que o feijão!
+          brand: "Select",
+          wholesalePrices: null,
+          url: "http://tenda/arroz-select",
+        },
+        {
+          id: 2,
+          name: "Feijão Preto Tipo 1 Select 1kg",
+          price: 5.59,
+          brand: "Select",
+          wholesalePrices: null,
+          url: "http://tenda/feijao-select",
+        },
+        {
+          id: 3,
+          name: "Feijão Preto Camil 1kg",
+          price: 6.79,
+          brand: "Camil",
+          wholesalePrices: null,
+          url: "http://tenda/feijao-camil",
+        },
+      ];
+
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ products: mockProducts }),
+      } as Response);
+
+      const quote = await quoteShoppingItemOnTenda("Feijão Preto Camil Tipo 1 1kg", 40);
+
+      // Nunca deve escolher o Arroz de R$ 3,99!
+      expect(quote.recommended?.name).not.toContain("Arroz");
+      expect(quote.recommended?.name).toContain("Feijão Preto");
+      expect(quote.startingFromPrice).toBe(5.59);
+    });
+
+    it("deve rejeitar Goiaba, Alho e produtos derivados ao cotar Limão Taiti", async () => {
+      const mockProducts = [
+        {
+          id: 10,
+          name: "Goiaba Vermelha 200g",
+          price: 2.38, // 200g e super barata
+          brand: "",
+          wholesalePrices: null,
+          url: "http://tenda/goiaba",
+        },
+        {
+          id: 11,
+          name: "Alho Select 200g",
+          price: 9.39,
+          brand: "Select",
+          wholesalePrices: null,
+          url: "http://tenda/alho",
+        },
+        {
+          id: 12,
+          name: "Detergente Líquido Limpol Limão 500ml",
+          price: 1.99,
+          brand: "Limpol",
+          wholesalePrices: null,
+          url: "http://tenda/detergente",
+        },
+        {
+          id: 13,
+          name: "Refresco em pó Tang Limão 18g",
+          price: 0.95,
+          brand: "Tang",
+          wholesalePrices: null,
+          url: "http://tenda/tang",
+        },
+        {
+          id: 14,
+          name: "Limão Tahiti Saco 500g",
+          price: 5.95,
+          brand: "",
+          wholesalePrices: null,
+          url: "http://tenda/limao-tahiti",
+        },
+      ];
+
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ products: mockProducts }),
+      } as Response);
+
+      const quote = await quoteShoppingItemOnTenda("Limão Taiti 200g", 40);
+
+      // Nunca deve escolher Goiaba de 200g, Alho de 200g nem Detergente!
+      expect(quote.recommended?.name).toBe("Limão Tahiti Saco 500g");
+      expect(quote.startingFromPrice).toBe(5.95);
+    });
+  });
+
+  describe("isProductSemanticallyRelevant", () => {
+    it("deve rejeitar produtos de outra categoria ou grão", () => {
+      expect(
+        isProductSemanticallyRelevant("Arroz Tipo 1 Select 1Kg", "Feijão Preto Camil Tipo 1 1kg"),
+      ).toBe(false);
+      expect(isProductSemanticallyRelevant("Feijão Carioca 1kg", "Feijão Preto 1kg")).toBe(false);
+      expect(isProductSemanticallyRelevant("Goiaba Vermelha 200g", "Limão Taiti 200g")).toBe(false);
+      expect(isProductSemanticallyRelevant("Alho Select 200g", "Limão Taiti 200g")).toBe(false);
+    });
+
+    it("deve rejeitar produtos de limpeza ou bebidas aromatizadas quando solicitado alimento in natura", () => {
+      expect(
+        isProductSemanticallyRelevant("Detergente Líquido Limpol Limão 500ml", "Limão Taiti 200g"),
+      ).toBe(false);
+      expect(
+        isProductSemanticallyRelevant("Refresco em pó Tang Limão 18g", "Limão Taiti 200g"),
+      ).toBe(false);
+      expect(
+        isProductSemanticallyRelevant("Biscoito Wafer Limão Select 125g", "Limão Taiti 200g"),
+      ).toBe(false);
+    });
+
+    it("deve aceitar produtos legítimos com variações de grafia", () => {
+      expect(isProductSemanticallyRelevant("Limão Tahiti Saco 500g", "Limão Taiti 200g")).toBe(
+        true,
+      );
+      expect(
+        isProductSemanticallyRelevant("Feijão Preto Camil 1kg", "Feijão Preto Camil Tipo 1 1kg"),
+      ).toBe(true);
+      expect(
+        isProductSemanticallyRelevant("Feijão Preto Tipo 1 Select 1kg", "Feijão Preto 1kg"),
+      ).toBe(true);
     });
   });
 
@@ -224,7 +357,10 @@ describe("tendaService", () => {
     it("deve expirar e descartar dados quando ultrapassar a meia-noite", () => {
       // Simula dado salvo com timestamp expirado
       const ontem = Date.now() - 1000;
-      localStorage.setItem("tenda_cache_expirado", JSON.stringify({ data: "antigo", expiresAt: ontem }));
+      localStorage.setItem(
+        "tenda_cache_expirado",
+        JSON.stringify({ data: "antigo", expiresAt: ontem }),
+      );
 
       const resultado = getCachedTendaData<string>("expirado");
       expect(resultado).toBeNull();

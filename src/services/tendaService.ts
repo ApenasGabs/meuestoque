@@ -209,11 +209,147 @@ export const matchesProductSize = (
  */
 export const sanitizeItemSearchQuery = (name: string): string => {
   return name
+    .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s.,-]/gi, " ")
+    .replace(/\btaiti\b/g, "tahiti")
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml)\b/g, " ")
+    .replace(/\btipo\s*\d+\b/g, " ")
+    .replace(/[^\w\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+};
+
+const STOP_WORDS = new Set([
+  "de",
+  "do",
+  "da",
+  "dos",
+  "das",
+  "com",
+  "em",
+  "para",
+  "tipo",
+  "1",
+  "2",
+  "3",
+  "pct",
+  "un",
+  "unidade",
+  "kg",
+  "g",
+  "l",
+  "ml",
+]);
+
+const DERIVATIVE_WORDS = new Set([
+  "detergente",
+  "desengordurante",
+  "amaciante",
+  "desinfetante",
+  "sabao",
+  "refrigerante",
+  "suco",
+  "refresco",
+  "cha",
+  "biscoito",
+  "gelatina",
+  "sorvete",
+  "bala",
+  "wafer",
+  "isotonico",
+  "aromatizador",
+  "vela",
+  "shampoo",
+  "maionese",
+  "amido",
+  "molho",
+  "lasanha",
+  "alho",
+  "goiaba",
+]);
+
+const SUBTYPE_KEYWORDS = [
+  "preto",
+  "carioca",
+  "branco",
+  "integral",
+  "parboilizado",
+  "tahiti",
+  "siciliano",
+  "extra",
+  "virgem",
+  "desnatado",
+  "semidesnatado",
+];
+
+const normalizeText = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\btaiti\b/g, "tahiti")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+/**
+ * Extrai os tokens centrais de um item ignorando pesos, medidas e stop words.
+ *
+ * @param name - Nome original do produto
+ * @returns Lista de palavras-chave canônicas
+ */
+export const extractCoreTokens = (name: string): string[] => {
+  const sanitized = sanitizeItemSearchQuery(name);
+  const normalized = normalizeText(sanitized);
+  return normalized.split(" ").filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+};
+
+/**
+ * Valida se um produto do catálogo do Tenda é semanticamente relevante para o item solicitado.
+ * Previne que "Arroz" seja sugerido para "Feijão", ou que "Goiaba" / "Detergente Limão" seja sugerido para "Limão Taiti".
+ *
+ * @param candidateName - Nome do produto retornado pelo Tenda
+ * @param requestedName - Nome do item na lista do usuário
+ * @returns Verdadeiro se o produto for realmente do mesmo tipo
+ */
+export const isProductSemanticallyRelevant = (
+  candidateName: string,
+  requestedName: string,
+): boolean => {
+  const reqTokens = extractCoreTokens(requestedName);
+  if (reqTokens.length === 0) return true;
+
+  const candNorm = normalizeText(candidateName);
+  const candTokens = candNorm.split(" ");
+  const primaryNoun = reqTokens[0]; // ex: "limao", "feijao", "arroz"
+
+  // O produto candidato PRECISA conter o substantivo principal do item solicitado
+  if (!candNorm.includes(primaryNoun)) {
+    return false;
+  }
+
+  // Se o item solicitado não for um produto derivado (ex: detergente, biscoito, refrigerante),
+  // o candidato não pode ser um produto derivado aromatizado com o ingrediente
+  const reqHasDerivative = reqTokens.some((t) => DERIVATIVE_WORDS.has(t));
+  if (!reqHasDerivative) {
+    for (const deriv of DERIVATIVE_WORDS) {
+      if (candTokens.includes(deriv) && !reqTokens.includes(deriv)) {
+        return false;
+      }
+    }
+  }
+
+  // Subtipos específicos (ex: feijão preto vs carioca, limão tahiti vs siciliano)
+  const subtypes = reqTokens.slice(1).filter((t) => SUBTYPE_KEYWORDS.includes(t));
+  for (const sub of subtypes) {
+    if (!candNorm.includes(sub)) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 /**
@@ -334,7 +470,17 @@ export const quoteShoppingItemOnTenda = async (
   }
 
   try {
-    const products = await searchTendaProducts(itemName, branchId, baseUrl);
+    let products = await searchTendaProducts(itemName, branchId, baseUrl);
+
+    // Fallback: se a busca com todos os termos não retornar nada,
+    // busca pelos dois primeiros tokens principais (ex: "feijao preto" ou "limao tahiti")
+    if (products.length === 0) {
+      const coreTokens = extractCoreTokens(itemName);
+      if (coreTokens.length > 1) {
+        const fallbackTerm = coreTokens.slice(0, 2).join(" ");
+        products = await searchTendaProducts(fallbackTerm, branchId, baseUrl);
+      }
+    }
 
     if (products.length === 0) {
       const emptyQuote: TendaItemQuote = {
@@ -349,10 +495,29 @@ export const quoteShoppingItemOnTenda = async (
       return emptyQuote;
     }
 
-    const matchingSize = products.filter((p) => matchesProductSize(p.name, targetSize));
-    const candidateList = matchingSize.length > 0 ? matchingSize : products;
+    // Filtra apenas produtos semanticamente relevantes (impede Arroz em Feijão, Goiaba em Limão)
+    const relevantProducts = products.filter((p) =>
+      isProductSemanticallyRelevant(p.name, itemName),
+    );
 
-    const sortedByPrice = [...candidateList].sort((a, b) => a.price - b.price);
+    if (relevantProducts.length === 0) {
+      const emptyQuote: TendaItemQuote = {
+        itemName,
+        targetSize,
+        startingFromPrice: null,
+        recommended: null,
+        options: [],
+        totalFound: 0,
+      };
+      setCachedTendaData(cacheKey, emptyQuote);
+      return emptyQuote;
+    }
+
+    // Se houver produtos com tamanho/peso compatível, prioriza-os estritamente
+    const matchingSize = relevantProducts.filter((p) => matchesProductSize(p.name, targetSize));
+    const finalCandidates = matchingSize.length > 0 ? matchingSize : relevantProducts;
+
+    const sortedByPrice = [...finalCandidates].sort((a, b) => a.price - b.price);
     const cheapest = sortedByPrice[0] || null;
 
     const quote: TendaItemQuote = {
@@ -361,7 +526,7 @@ export const quoteShoppingItemOnTenda = async (
       startingFromPrice: cheapest ? cheapest.price : null,
       recommended: cheapest,
       options: sortedByPrice.slice(0, 5),
-      totalFound: candidateList.length,
+      totalFound: relevantProducts.length,
     };
 
     setCachedTendaData(cacheKey, quote);
