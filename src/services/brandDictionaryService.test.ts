@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-import { extractProductParts } from "./brandDictionaryService";
 import { describe, expect, it, vi } from "vitest";
 import {
   extractProductParts,

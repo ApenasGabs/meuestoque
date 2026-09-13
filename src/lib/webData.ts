@@ -240,7 +240,6 @@ export async function loadListItems(listId: string): Promise<ItemRecord[]> {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, nome, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id, pack_label, pack_size, pack_unit",
       "id, nome, marca, produto_base, quantidade, quantidade_num, unidade, categoria, comprado, preco, preco_unitario, preco_total, criado_por, list_id, criado_em, data_validade, nao_aplica_validade, product_id, pack_label, pack_size, pack_unit",
     )
     .eq("list_id", listId)
@@ -438,15 +437,6 @@ export async function duplicateShoppingListToActive(
       const key = `${item.nome.trim().toLowerCase()}::${item.quantidade.trim().toLowerCase()}::${item.categoria.trim().toLowerCase()}`;
       return !existingKeys.has(key);
     })
-    .map((item) => ({
-      list_id: activeList.id,
-      nome: item.nome,
-      quantidade: item.quantidade,
-      categoria: item.categoria,
-      preco: item.preco,
-      comprado: false,
-      criado_por: createdBy ?? item.criado_por ?? null,
-    }));
     .map((item) => {
       const parts = extractProductParts(item.nome);
       return {
@@ -575,7 +565,8 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         // Try to match by name + pack_unit as the base unit
         if (!matchedStockItem && stockUnit) {
           matchedStockItem = stockItemsArr.find(
-            (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
+            (si) =>
+              si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
           );
           if (matchedStockItem) {
             key = `${itemName}::${matchedStockItem.unidade.toLowerCase()}`;
@@ -673,7 +664,8 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
         const stockUnit = (boughtItem.pack_unit ?? "").toLowerCase();
         if (!matchedStockItem && stockUnit) {
           matchedStockItem = stockItemsArr.find(
-            (si) => si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
+            (si) =>
+              si.nome.trim().toLowerCase() === itemName && si.unidade.toLowerCase() === stockUnit,
           );
         }
         if (!matchedStockItem) {
@@ -1002,11 +994,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
-  const { data, error } = await supabase
-    .from("groups")
-    .delete()
-    .eq("id", groupId)
-    .select("id");
+  const { data, error } = await supabase.from("groups").delete().eq("id", groupId).select("id");
 
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {

@@ -176,7 +176,6 @@ export const recordDiscoveredBrand = async (brandName: string): Promise<void> =>
         nome_normalizado: normalized,
         origem: "tenda",
       })
-      .select(); // Em Supabase/Postgrest, erros de unique constraint são ignorados se usarmos upsert adequadamente ou ignorados no catch
       .select();
   } catch {
     // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
@@ -252,7 +251,6 @@ export const extractProductParts = (itemName: string): ProductParts => {
       })
       .join("");
 
-    const regexOriginal = new RegExp(`\\b${accentInsensitivePattern}\\b`, "i");
     const regexOriginal = new RegExp(
       `(?<=^|[^\\p{L}\\d])${accentInsensitivePattern}(?=$|[^\\p{L}\\d])`,
       "iu",
@@ -269,15 +267,9 @@ export const extractProductParts = (itemName: string): ProductParts => {
   let baseProduct = nameWithoutSize;
 
   if (foundBrand && brandOriginalCase) {
-    // Usamos o originalMatch ou a string exata para a remoção no texto base original
-    // Mas para manter a string bonita, tentamos remover usando o original case
-    baseProduct = baseProduct.replace(new RegExp(`\\b${brandOriginalCase}\\b`, "gi"), "");
     // Escapa caracteres especiais do case original para o regex de substituição
     const escapedCase = brandOriginalCase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const removeRegex = new RegExp(
-      `(?<=^|[^\\p{L}\\d])${escapedCase}(?=$|[^\\p{L}\\d])`,
-      "gu",
-    );
+    const removeRegex = new RegExp(`(?<=^|[^\\p{L}\\d])${escapedCase}(?=$|[^\\p{L}\\d])`, "gu");
     baseProduct = baseProduct.replace(removeRegex, "");
   }
 

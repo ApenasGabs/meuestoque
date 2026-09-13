@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { normalizeInviteCode } from "../domain/listRules";
 import { pickActiveGroup } from "../domain/sessionRules";
