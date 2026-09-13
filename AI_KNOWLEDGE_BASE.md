@@ -43,6 +43,51 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🏷️ (13/09/2026) Feature: Dicionário Dinâmico de Marcas & Comparação de Preços Tenda (Fase 2)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["SessionBootstrap"] -->|"syncBrandDictionaryFromSupabase (Startup)"| B["brand_dictionary (Supabase DB)"]
+    B -->|"Carrega marcas ativas"| C["brandDictionaryService (Cache em Memória)"]
+    D["Tenda Search API"] -->|"recordDiscoveredBrands (Batch Upsert)"| B
+    E["ListPageNew / Parser / Barcode"] -->|"extractProductParts"| C
+    E -->|"Persiste marca & produto_base"| F["items & product_catalog (DB)"]
+    G["TendaPriceDrawer"] -->|"quoteShoppingItemOnTenda"| H["tendaService"]
+    H -->|"Busca por produto_base + Compara marca solicitada vs mais barata"| I["Oferta Mesma Marca + Alternativa Mais Barata"]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/services/brandDictionaryService.ts` | Adicionado carregamento de inicialização via Supabase (`syncBrandDictionaryFromSupabase`), registro em lote com `upsert ignoreDuplicates` (`recordDiscoveredBrands`) e suporte a regex unicode. |
+| `src/services/tendaService.ts` | Chamada em lote para registrar marcas descobertas e busca por produto_base mantendo alternativas de marcas. |
+| `src/lib/webData.ts` | Persistência e leitura das colunas `marca` e `produto_base` na tabela `items`. |
+| `src/lib/barcodeService.ts` | Persistência de `marca` e `produto_base` no `product_catalog`. |
+| `src/components/SessionBootstrap.tsx` | Background sync do dicionário no login. |
+| `src/components/TendaPriceDrawer/TendaPriceDrawer.tsx` | Banner verde de economia com botão "Trocar Marca" e link direto para o produto. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Ao inicializar a sessão, carregar todas as marcas ativas de `brand_dictionary` em cache local (Set/Map).
+REGRA 2: Ao extrair partes do produto (`extractProductParts`), isolar a marca e definir `produto_base`.
+REGRA 3: Ao buscar no Tenda, cotar pelo `produto_base` para trazer alternativas mais baratas, destacando a marca original quando solicitada.
+REGRA 4: Marcas novas descobertas na API são salvas em lote via `.upsert({ onConflict: 'nome_normalizado', ignoreDuplicates: true })` sem poluição 409 na rede.
+```
+
+#### Comportamento
+- Usuário vê oferta da marca solicitada ou genérica.
+- Se houver marca alternativa compatível mais barata com economia relevante, exibe banner verde com cálculo de economia e botão "Trocar Marca".
+- Clicar em "Trocar Marca" atualiza o preço do item na lista instantaneamente.
+- Requisições na aba Network totalmente limpas (sem erros 409 de conflito).
+
+#### Checklist de Aceite
+- [x] Testes unitários passando (`npx vitest run`)
+- [x] Lint passando com 0 erros (`npm run lint`)
+- [x] Build de produção passando (`tsc -b && vite build`)
+- [x] Validação E2E no navegador (DevTools MCP) confirmando banner verde, troca de marca e ausência de erros 409.
+
 ### 🛒 (13/09/2026) Feature: Cotação de Preços no Tenda Atacado na Lista de Compras
 
 #### Arquitetura

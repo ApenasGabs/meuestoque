@@ -211,6 +211,30 @@ export const TendaPriceDrawer = ({
     onApplyAllPrices(updates);
   };
 
+  const handleSelectProduct = (itemId: string, selectedProduct: TendaProduct): void => {
+    setQuotes((prev) => {
+      const currentQuote = prev[itemId];
+      if (!currentQuote) return prev;
+
+      return {
+        ...prev,
+        [itemId]: {
+          ...currentQuote,
+          startingFromPrice: selectedProduct.price,
+          recommended: selectedProduct,
+          cheaperAlternativeOffer:
+            currentQuote.cheaperAlternativeOffer?.id === selectedProduct.id
+              ? null
+              : currentQuote.cheaperAlternativeOffer,
+        },
+      };
+    });
+
+    if (onApplyPrice) {
+      onApplyPrice(itemId, selectedProduct.price);
+    }
+  };
+
   return (
     <Drawer
       open={open}
@@ -354,7 +378,7 @@ export const TendaPriceDrawer = ({
                         <img
                           src={quote.recommended.thumbnail}
                           alt={quote.recommended.name}
-                          className="h-10 w-10 rounded object-contain bg-white p-0.5"
+                          className="h-10 w-10 rounded object-contain bg-white p-0.5 border border-base-300 flex-shrink-0"
                           loading="lazy"
                         />
                       )}
@@ -403,7 +427,7 @@ export const TendaPriceDrawer = ({
                             size="sm"
                             variant="secondary"
                             className="btn-xs"
-                            onClick={() => onApplyPrice(item.id, quote.recommended!.price)}
+                            onClick={() => handleSelectProduct(item.id, quote.recommended!)}
                           >
                             Usar Preço
                           </Button>
@@ -413,22 +437,35 @@ export const TendaPriceDrawer = ({
 
                     {/* Alerta de economia com marca alternativa */}
                     {quote.cheaperAlternativeOffer && (
-                      <div className="mt-2 rounded-md bg-success/10 p-2.5 text-xs border border-success/20 flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between font-medium text-success-content">
-                          <span className="flex items-center gap-1 font-semibold">
-                            <span>🤑</span> Alternativa mais barata (
-                            {quote.cheaperAlternativeOffer.brand}):
-                          </span>
-                          <span className="font-mono font-bold">
-                            R$ {quote.cheaperAlternativeOffer.price.toFixed(2)}
-                          </span>
+                      <div className="mt-2 rounded-md bg-success/10 p-2.5 text-xs border border-success/20 flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          {quote.cheaperAlternativeOffer.thumbnail && (
+                            <img
+                              src={quote.cheaperAlternativeOffer.thumbnail}
+                              alt={quote.cheaperAlternativeOffer.name}
+                              className="h-9 w-9 rounded object-contain bg-white p-0.5 border border-success/30 flex-shrink-0"
+                              loading="lazy"
+                            />
+                          )}
+                          <div className="flex-1 overflow-hidden">
+                            <div className="flex items-center justify-between font-medium text-success-content">
+                              <span className="flex items-center gap-1 font-semibold">
+                                <span>🤑</span> Alternativa mais barata (
+                                {quote.cheaperAlternativeOffer.brand}):
+                              </span>
+                              <span className="font-mono font-bold">
+                                R$ {quote.cheaperAlternativeOffer.price.toFixed(2)}
+                              </span>
+                            </div>
+                            <div
+                              className="text-base-content/80 text-[11px] truncate"
+                              title={quote.cheaperAlternativeOffer.name}
+                            >
+                              {quote.cheaperAlternativeOffer.name}
+                            </div>
+                          </div>
                         </div>
-                        <div
-                          className="text-base-content/80 text-[11px] truncate"
-                          title={quote.cheaperAlternativeOffer.name}
-                        >
-                          {quote.cheaperAlternativeOffer.name}
-                        </div>
+
                         <div className="flex items-center justify-between pt-1 border-t border-success/10 text-success-content/90 text-[11px]">
                           <span className="font-medium">
                             Economia de R${" "}
@@ -456,7 +493,7 @@ export const TendaPriceDrawer = ({
                                 type="button"
                                 className="btn btn-xs btn-success text-white px-2 h-6 min-h-0"
                                 onClick={() =>
-                                  onApplyPrice(item.id, quote.cheaperAlternativeOffer!.price)
+                                  handleSelectProduct(item.id, quote.cheaperAlternativeOffer!)
                                 }
                               >
                                 Trocar Marca
@@ -473,39 +510,58 @@ export const TendaPriceDrawer = ({
                         <div className="font-semibold text-base-content/80 text-xs">
                           Outras opções disponíveis:
                         </div>
-                        {quote.options.slice(1).map((opt: TendaProduct) => (
-                          <div
-                            key={opt.id}
-                            className="flex items-center justify-between rounded bg-base-100 p-1.5"
-                          >
-                            <div className="truncate pr-2">
-                              <span className="font-medium">{opt.name}</span>
-                              <span className="text-base-content/60"> ({opt.brand})</span>
-                            </div>
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                              <span className="font-mono font-semibold">
-                                R$ {opt.price.toFixed(2)}
-                              </span>
-                              <a
-                                href={opt.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-ghost btn-xs text-primary"
-                              >
-                                Ver ↗
-                              </a>
-                              {onApplyPrice && (
-                                <button
-                                  type="button"
-                                  className="btn btn-outline btn-xs"
-                                  onClick={() => onApplyPrice(item.id, opt.price)}
+                        {quote.options
+                          .filter((opt) => opt.id !== quote.recommended?.id)
+                          .map((opt: TendaProduct) => (
+                            <div
+                              key={opt.id}
+                              className="flex items-center justify-between rounded bg-base-100 p-2 gap-2 border border-base-200"
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                {opt.thumbnail && (
+                                  <img
+                                    src={opt.thumbnail}
+                                    alt={opt.name}
+                                    className="h-8 w-8 rounded object-contain bg-white p-0.5 border border-base-300 flex-shrink-0"
+                                    loading="lazy"
+                                  />
+                                )}
+                                <div className="truncate">
+                                  <div
+                                    className="font-medium text-xs text-base-content truncate"
+                                    title={opt.name}
+                                  >
+                                    {opt.name}
+                                  </div>
+                                  <div className="text-[11px] text-base-content/60">
+                                    {opt.brand ?? "Sem marca"}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 whitespace-nowrap">
+                                <span className="font-mono font-semibold text-xs">
+                                  R$ {opt.price.toFixed(2)}
+                                </span>
+                                <a
+                                  href={opt.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="link link-primary text-xs"
                                 >
-                                  Usar
-                                </button>
-                              )}
+                                  Ver ↗
+                                </a>
+                                {onApplyPrice && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-xs"
+                                    onClick={() => handleSelectProduct(item.id, opt)}
+                                  >
+                                    Usar
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </div>
