@@ -153,32 +153,83 @@ const normalizeText = (text: string): string => {
 };
 
 /**
+ * Registra assincronamente um lote de novas marcas no banco de dados e no cache local.
+ * Utiliza upsert com ignoreDuplicates para evitar requisições 409 repetitivas.
+ *
+ * @param brandNames Lista de nomes de marcas retornados pela API
+ */
+export const recordDiscoveredBrands = async (brandNames: string[]): Promise<void> => {
+  const newBrandsToInsert: { nome: string; nome_normalizado: string; origem: string }[] = [];
+
+  for (const brandName of brandNames) {
+    if (!brandName || brandName.trim() === "") continue;
+    const normalized = normalizeText(brandName);
+
+    if (!KNOWN_BRANDS.has(normalized)) {
+      KNOWN_BRANDS.add(normalized);
+      newBrandsToInsert.push({
+        nome: brandName.trim(),
+        nome_normalizado: normalized,
+        origem: "tenda",
+      });
+    }
+  }
+
+  if (newBrandsToInsert.length === 0) return;
+
+  try {
+    await supabase
+      .from("brand_dictionary")
+      .upsert(newBrandsToInsert, { onConflict: "nome_normalizado", ignoreDuplicates: true });
+  } catch {
+    // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
+  }
+};
+
+/**
  * Registra assincronamente uma nova marca no banco de dados e no cache local.
  *
  * @param brandName O nome da marca original retornado pela API
  */
 export const recordDiscoveredBrand = async (brandName: string): Promise<void> => {
-  if (!brandName || brandName.trim() === "") return;
+  await recordDiscoveredBrands([brandName]);
+};
 
-  const normalized = normalizeText(brandName);
+/**
+ * Retorna a quantidade total de marcas ativas no cache em memória.
+ */
+export const getKnownBrandsCount = (): number => {
+  return KNOWN_BRANDS.size;
+};
 
-  if (KNOWN_BRANDS.has(normalized)) return;
-
-  // Adiciona ao cache local imediatamente
-  KNOWN_BRANDS.add(normalized);
-
+/**
+ * Carrega e sincroniza o dicionário de marcas a partir do Supabase.
+ * Enriquece a base em memória com todas as marcas cadastradas globalmente.
+ */
+export const syncBrandDictionaryFromSupabase = async (): Promise<void> => {
   try {
-    // Upsert no banco de dados
-    await supabase
+    const { data, error } = await supabase
       .from("brand_dictionary")
-      .insert({
-        nome: brandName.trim(),
-        nome_normalizado: normalized,
-        origem: "tenda",
-      })
-      .select(); // Em Supabase/Postgrest, erros de unique constraint são ignorados se usarmos upsert adequadamente ou ignorados no catch
-  } catch {
-    // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
+      .select("nome, nome_normalizado")
+      .eq("ativo", true);
+
+    if (error) {
+      console.warn(
+        "[brandDictionaryService] Falha ao sincronizar marcas do Supabase:",
+        error.message,
+      );
+      return;
+    }
+
+    if (data) {
+      data.forEach((item) => {
+        if (item.nome_normalizado) {
+          KNOWN_BRANDS.add(item.nome_normalizado.toLowerCase());
+        }
+      });
+    }
+  } catch (err) {
+    console.warn("[brandDictionaryService] Erro inesperado ao sincronizar marcas:", err);
   }
 };
 
@@ -221,7 +272,10 @@ export const extractProductParts = (itemName: string): ProductParts => {
       })
       .join("");
 
-    const regexOriginal = new RegExp(`\\b${accentInsensitivePattern}\\b`, "i");
+    const regexOriginal = new RegExp(
+      `(?<=^|[^\\p{L}\\d])${accentInsensitivePattern}(?=$|[^\\p{L}\\d])`,
+      "iu",
+    );
     const originalMatch = nameWithoutSize.match(regexOriginal);
 
     if (originalMatch) {
@@ -234,9 +288,10 @@ export const extractProductParts = (itemName: string): ProductParts => {
   let baseProduct = nameWithoutSize;
 
   if (foundBrand && brandOriginalCase) {
-    // Usamos o originalMatch ou a string exata para a remoção no texto base original
-    // Mas para manter a string bonita, tentamos remover usando o original case
-    baseProduct = baseProduct.replace(new RegExp(`\\b${brandOriginalCase}\\b`, "gi"), "");
+    // Escapa caracteres especiais do case original para o regex de substituição
+    const escapedCase = brandOriginalCase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const removeRegex = new RegExp(`(?<=^|[^\\p{L}\\d])${escapedCase}(?=$|[^\\p{L}\\d])`, "gu");
+    baseProduct = baseProduct.replace(removeRegex, "");
   }
 
   // Limpa espaços duplos e stopwords comuns residuais (tipo, de, com) que possam ter ficado nas pontas

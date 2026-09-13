@@ -19,6 +19,7 @@ import {
   finishShoppingList,
   loadListItems,
   toggleListItemPurchased,
+  updateListItemName,
   updateListItemPrice,
   updateListItemUnitPrice,
   updateListItemQuantity,
@@ -686,11 +687,34 @@ export const ListPageNew = (): ReactElement => {
   }, [parseListQuantity, shoppingItems]);
 
   const handleApplyTendaPrice = useCallback(
-    (itemId: string, price: number): void => {
-      fireUpdateItemPrice(itemId, price);
-      setNotice("Preço atualizado com a cotação do Tenda!");
+    (itemId: string, price: number, newName?: string): void => {
+      if (newName) {
+        setShoppingItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId ? { ...item, nome: newName, preco: price } : item,
+          ),
+        );
+        void (async () => {
+          try {
+            await updateListItemName(itemId, newName);
+            await updateListItemPrice(itemId, price);
+            if (listId) {
+              await refreshItems(listId);
+            }
+            setNotice(`Marca trocada para "${newName}" e preço atualizado!`);
+          } catch (err) {
+            if (listId) {
+              await refreshItems(listId);
+            }
+            setError(err instanceof Error ? err.message : "Falha ao trocar marca na lista");
+          }
+        })();
+      } else {
+        fireUpdateItemPrice(itemId, price);
+        setNotice("Preço atualizado com a cotação do Tenda!");
+      }
     },
-    [fireUpdateItemPrice],
+    [fireUpdateItemPrice, listId, refreshItems],
   );
 
   const handleApplyAllTendaPrices = useCallback(

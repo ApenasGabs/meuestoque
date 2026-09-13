@@ -1,8 +1,9 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
+import { extractProductParts } from "../services/brandDictionaryService";
 
 export interface BarcodeResult {
   found: boolean;
-  source: 'supabase' | 'openfoodfacts' | 'none';
+  source: "supabase" | "openfoodfacts" | "none";
   ean: string;
   name?: string;
   unit?: string;
@@ -34,12 +35,9 @@ const OPENFOODFACTS_TIMEOUT_MS = 5000;
  * @param groupId - O ID do grupo/estoque atual
  * @returns Promessa com o resultado do produto resolvido
  */
-export const resolveProductByEan = async (
-  ean: string,
-  groupId: string,
-): Promise<BarcodeResult> => {
+export const resolveProductByEan = async (ean: string, groupId: string): Promise<BarcodeResult> => {
   if (!isValidEan(ean)) {
-    return { found: false, source: 'none', ean };
+    return { found: false, source: "none", ean };
   }
 
   const cached = eanCache.get(`${groupId}:${ean}`);
@@ -47,16 +45,16 @@ export const resolveProductByEan = async (
 
   // Busca interna (Supabase)
   const { data: localProduct } = await supabase
-    .from('product_catalog')
-    .select('id, nome, categoria, unidade_estoque')
-    .eq('group_id', groupId)
-    .eq('ean', ean)
+    .from("product_catalog")
+    .select("id, nome, categoria, unidade_estoque")
+    .eq("group_id", groupId)
+    .eq("ean", ean)
     .maybeSingle();
 
   if (localProduct) {
     const result: BarcodeResult = {
       found: true,
-      source: 'supabase',
+      source: "supabase",
       ean,
       name: localProduct.nome,
       unit: localProduct.unidade_estoque,
@@ -72,10 +70,9 @@ export const resolveProductByEan = async (
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), OPENFOODFACTS_TIMEOUT_MS);
 
-    const response = await fetch(
-      `https://world.openfoodfacts.org/api/v0/product/${ean}.json`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
 
     const data = await response.json();
@@ -87,7 +84,7 @@ export const resolveProductByEan = async (
 
       const result: BarcodeResult = {
         found: true,
-        source: 'openfoodfacts',
+        source: "openfoodfacts",
         ean,
         name: fullName,
       };
@@ -95,14 +92,14 @@ export const resolveProductByEan = async (
       return result;
     }
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      console.warn('OpenFoodFacts timeout para EAN:', ean);
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.warn("OpenFoodFacts timeout para EAN:", ean);
     } else {
-      console.warn('Erro ao consultar OpenFoodFacts:', error);
+      console.warn("Erro ao consultar OpenFoodFacts:", error);
     }
   }
 
-  const result: BarcodeResult = { found: false, source: 'none', ean };
+  const result: BarcodeResult = { found: false, source: "none", ean };
   eanCache.set(`${groupId}:${ean}`, result);
   return result;
 };
@@ -121,26 +118,28 @@ export const saveEanMapping = async (
   groupId: string,
   ean: string,
   nome: string,
-  unidade: string = 'Un',
-  categoria: string = 'Outros',
+  unidade: string = "Un",
+  categoria: string = "Outros",
 ): Promise<string> => {
   const { data: existing } = await supabase
-    .from('product_catalog')
-    .select('id')
-    .eq('group_id', groupId)
-    .ilike('nome', nome.trim())
-    .eq('unidade_estoque', unidade)
+    .from("product_catalog")
+    .select("id")
+    .eq("group_id", groupId)
+    .ilike("nome", nome.trim())
+    .eq("unidade_estoque", unidade)
     .maybeSingle();
+
+  const parts = extractProductParts(nome);
 
   if (existing) {
     await supabase
-      .from('product_catalog')
-      .update({ ean })
-      .eq('id', existing.id);
-    
+      .from("product_catalog")
+      .update({ ean, marca: parts.brand, produto_base: parts.baseProduct })
+      .eq("id", existing.id);
+
     eanCache.set(`${groupId}:${ean}`, {
       found: true,
-      source: 'supabase',
+      source: "supabase",
       ean,
       name: nome,
       productId: existing.id,
@@ -151,25 +150,27 @@ export const saveEanMapping = async (
   }
 
   const { data: created, error } = await supabase
-    .from('product_catalog')
+    .from("product_catalog")
     .insert({
       group_id: groupId,
       nome: nome.trim(),
+      marca: parts.brand,
+      produto_base: parts.baseProduct,
       categoria,
       ean,
       unidade_estoque: unidade,
-      unidade_tipo: 'simple',
+      unidade_tipo: "simple",
       porcao_padrao: 1,
-      unidade_porcao: 'un',
+      unidade_porcao: "un",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) throw new Error(error.message);
 
   eanCache.set(`${groupId}:${ean}`, {
     found: true,
-    source: 'supabase',
+    source: "supabase",
     ean,
     name: nome.trim(),
     productId: created.id,
@@ -200,4 +201,3 @@ export const isEanInCooldown = (ean: string): boolean => {
 export const markEanProcessed = (ean: string): void => {
   lastProcessed.set(ean, Date.now());
 };
-

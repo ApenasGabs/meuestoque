@@ -1,4 +1,4 @@
-import { extractProductParts, recordDiscoveredBrand } from "./brandDictionaryService";
+import { extractProductParts, recordDiscoveredBrands } from "./brandDictionaryService";
 
 export interface ProductSize {
   value: number;
@@ -512,12 +512,11 @@ export const quoteShoppingItemOnTenda = async (
       return emptyQuote;
     }
 
-    // Registra marcas descobertas no background
-    products.forEach((p) => {
-      if (p.brand) {
-        recordDiscoveredBrand(p.brand).catch(() => {});
-      }
-    });
+    // Registra marcas descobertas no background em lote
+    const brandsToRegister = products.map((p) => p.brand).filter(Boolean);
+    if (brandsToRegister.length > 0) {
+      recordDiscoveredBrands(brandsToRegister).catch(() => {});
+    }
 
     // Filtra apenas produtos semanticamente relevantes
     const relevantProducts = products.filter((p) =>
