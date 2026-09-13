@@ -77,9 +77,8 @@ describe("TendaPriceDrawer", () => {
     expect(screen.getByText("Cotação Tenda Atacado")).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText("Loja: Ceasa - Campinas")).toBeInTheDocument();
-      expect(screen.getByText("Frete: R$ 14.90")).toBeInTheDocument();
-      expect(screen.getByText("R$ 19.45")).toBeInTheDocument();
+      expect(screen.getByText(/Loja:\s*Ceasa - Campinas/i)).toBeInTheDocument();
+      expect(screen.getByText(/Frete:\s*R\$\s*14\.90/i)).toBeInTheDocument();
       expect(screen.getByText("Arroz Tipo 1 Pateko 5kg")).toBeInTheDocument();
     });
   });

@@ -153,33 +153,46 @@ const normalizeText = (text: string): string => {
 };
 
 /**
+ * Registra assincronamente um lote de novas marcas no banco de dados e no cache local.
+ * Utiliza upsert com ignoreDuplicates para evitar requisições 409 repetitivas.
+ *
+ * @param brandNames Lista de nomes de marcas retornados pela API
+ */
+export const recordDiscoveredBrands = async (brandNames: string[]): Promise<void> => {
+  const newBrandsToInsert: { nome: string; nome_normalizado: string; origem: string }[] = [];
+
+  for (const brandName of brandNames) {
+    if (!brandName || brandName.trim() === "") continue;
+    const normalized = normalizeText(brandName);
+
+    if (!KNOWN_BRANDS.has(normalized)) {
+      KNOWN_BRANDS.add(normalized);
+      newBrandsToInsert.push({
+        nome: brandName.trim(),
+        nome_normalizado: normalized,
+        origem: "tenda",
+      });
+    }
+  }
+
+  if (newBrandsToInsert.length === 0) return;
+
+  try {
+    await supabase
+      .from("brand_dictionary")
+      .upsert(newBrandsToInsert, { onConflict: "nome_normalizado", ignoreDuplicates: true });
+  } catch {
+    // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
+  }
+};
+
+/**
  * Registra assincronamente uma nova marca no banco de dados e no cache local.
  *
  * @param brandName O nome da marca original retornado pela API
  */
 export const recordDiscoveredBrand = async (brandName: string): Promise<void> => {
-  if (!brandName || brandName.trim() === "") return;
-
-  const normalized = normalizeText(brandName);
-
-  if (KNOWN_BRANDS.has(normalized)) return;
-
-  // Adiciona ao cache local imediatamente
-  KNOWN_BRANDS.add(normalized);
-
-  try {
-    // Upsert no banco de dados
-    await supabase
-      .from("brand_dictionary")
-      .insert({
-        nome: brandName.trim(),
-        nome_normalizado: normalized,
-        origem: "tenda",
-      })
-      .select();
-  } catch {
-    // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
-  }
+  await recordDiscoveredBrands([brandName]);
 };
 
 /**
