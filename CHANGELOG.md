@@ -5,6 +5,20 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.18.0](https://github.com/ApenasGabs/meuestoque/compare/v1.17.1...v1.18.0) (2026-09-13)
+
+### ✨ Features
+
+* ✨ adiciona cotação de preços e ofertas do Tenda Atacado na lista de compras ([ca25b3d](https://github.com/ApenasGabs/meuestoque/commit/ca25b3df1babe9cdb96db283c6ee73dc5ab0d7fb))
+* **tenda:** adiciona cache local e edge com expiracao a meia-noite e opcao de recotar ([ed08f96](https://github.com/ApenasGabs/meuestoque/commit/ed08f968933e9d17af2d993b3ca661604fffd0cd))
+* **tenda:** implement brand dictionary and cheaper alternatives comparison ([ad98152](https://github.com/ApenasGabs/meuestoque/commit/ad98152bf0d63ad7d7d6df619021fedb54f8a796))
+
+### 🐛 Bug Fixes
+
+* **tenda:** previne loop de requisicoes, adiciona throttling e corrige proxy vite ([a4286e4](https://github.com/ApenasGabs/meuestoque/commit/a4286e40a72466fe65e5bec885a90bf55d563d1a))
+* **tenda:** valida relevancia semantica de produtos e ajusta cache ate meia-noite ([614c6de](https://github.com/ApenasGabs/meuestoque/commit/614c6de23c30d52be9104e7d5b3b0e1553039f21))
+* **vercel:** configura rewrite para edge function api/tenda e exclui api do fallback spa ([223d54f](https://github.com/ApenasGabs/meuestoque/commit/223d54fb85c3f9da14772210f7a7cbff487c1c8a))
+
 ## [1.17.1](https://github.com/ApenasGabs/meuestoque/compare/v1.17.0...v1.17.1) (2026-06-03)
 
 ### 🐛 Bug Fixes
