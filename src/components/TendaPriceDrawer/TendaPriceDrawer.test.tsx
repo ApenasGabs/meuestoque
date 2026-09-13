@@ -132,6 +132,69 @@ describe("TendaPriceDrawer", () => {
     });
 
     fireEvent.click(screen.getByText("Usar Preço"));
-    expect(onApplyPrice).toHaveBeenCalledWith("1", 19.45);
+    expect(onApplyPrice).toHaveBeenCalledWith("1", 19.45, undefined);
+  });
+
+  it("deve permitir trocar marca passando o novo nome e preço", async () => {
+    vi.spyOn(tendaService, "resolveTendaBranchByCep").mockResolvedValueOnce({
+      branchId: 40,
+      branchName: "Ceasa - Campinas",
+      deliveryPrice: 14.9,
+      deliveryDays: 2,
+      address: "Vila Boa Vista, Campinas - SP",
+      available: true,
+    });
+
+    vi.spyOn(tendaService, "quoteShoppingItemOnTenda").mockResolvedValueOnce({
+      itemName: "Feijão Camil 1kg",
+      baseProduct: "Feijão 1kg",
+      requestedBrand: "Camil",
+      sameBrandOffer: null,
+      cheaperAlternativeOffer: {
+        id: 202,
+        name: "Feijão Carioca 5 Estrelas 1kg",
+        brand: "5 Estrelas",
+        price: 6.89,
+        wholesalePrices: null,
+        url: "https://tenda/feijao-5-estrelas",
+        thumbnail: null,
+        inStock: true,
+      },
+      targetSize: { value: 1, unit: "kg" },
+      startingFromPrice: 6.89,
+      recommended: {
+        id: 201,
+        name: "Feijão Carioca Camil 1kg",
+        brand: "Camil",
+        price: 8.59,
+        wholesalePrices: null,
+        url: "https://tenda/feijao-camil",
+        thumbnail: null,
+        inStock: true,
+      },
+      options: [],
+      totalFound: 2,
+    });
+
+    const onApplyPrice = vi.fn();
+
+    render(
+      <TendaPriceDrawer
+        open={true}
+        onClose={vi.fn()}
+        items={[
+          { id: "10", name: "Feijão Camil 1kg", quantity: 1, unit: "pct", currentPrice: null },
+        ]}
+        defaultCep="13064-789"
+        onApplyPrice={onApplyPrice}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Trocar Marca")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Trocar Marca"));
+    expect(onApplyPrice).toHaveBeenCalledWith("10", 6.89, "Feijão Carioca 5 Estrelas 1kg");
   });
 });

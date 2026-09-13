@@ -23,7 +23,7 @@ interface TendaPriceDrawerProps {
   onClose: () => void;
   items: ShoppingQuoteItem[];
   defaultCep?: string;
-  onApplyPrice?: (itemId: string, price: number) => void;
+  onApplyPrice?: (itemId: string, price: number, newName?: string) => void;
   onApplyAllPrices?: (updates: { itemId: string; price: number }[]) => void;
 }
 
@@ -211,7 +211,11 @@ export const TendaPriceDrawer = ({
     onApplyAllPrices(updates);
   };
 
-  const handleSelectProduct = (itemId: string, selectedProduct: TendaProduct): void => {
+  const handleSelectProduct = (
+    itemId: string,
+    selectedProduct: TendaProduct,
+    shouldUpdateName = false,
+  ): void => {
     setQuotes((prev) => {
       const currentQuote = prev[itemId];
       if (!currentQuote) return prev;
@@ -231,7 +235,11 @@ export const TendaPriceDrawer = ({
     });
 
     if (onApplyPrice) {
-      onApplyPrice(itemId, selectedProduct.price);
+      onApplyPrice(
+        itemId,
+        selectedProduct.price,
+        shouldUpdateName ? selectedProduct.name : undefined,
+      );
     }
   };
 
@@ -427,7 +435,7 @@ export const TendaPriceDrawer = ({
                             size="sm"
                             variant="secondary"
                             className="btn-xs"
-                            onClick={() => handleSelectProduct(item.id, quote.recommended!)}
+                            onClick={() => handleSelectProduct(item.id, quote.recommended!, false)}
                           >
                             Usar Preço
                           </Button>
@@ -493,7 +501,7 @@ export const TendaPriceDrawer = ({
                                 type="button"
                                 className="btn btn-xs btn-success text-white px-2 h-6 min-h-0"
                                 onClick={() =>
-                                  handleSelectProduct(item.id, quote.cheaperAlternativeOffer!)
+                                  handleSelectProduct(item.id, quote.cheaperAlternativeOffer!, true)
                                 }
                               >
                                 Trocar Marca
@@ -554,7 +562,7 @@ export const TendaPriceDrawer = ({
                                   <button
                                     type="button"
                                     className="btn btn-outline btn-xs"
-                                    onClick={() => handleSelectProduct(item.id, opt)}
+                                    onClick={() => handleSelectProduct(item.id, opt, true)}
                                   >
                                     Usar
                                   </button>

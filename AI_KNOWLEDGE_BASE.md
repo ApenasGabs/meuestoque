@@ -78,8 +78,9 @@ REGRA 4: Marcas novas descobertas na API são salvas em lote via `.upsert({ onCo
 
 #### Comportamento
 - Usuário vê oferta da marca solicitada ou genérica.
-- Se houver marca alternativa compatível mais barata com economia relevante, exibe banner verde com cálculo de economia e botão "Trocar Marca".
-- Clicar em "Trocar Marca" atualiza o preço do item na lista instantaneamente.
+- Se houver marca alternativa compatível mais barata com economia relevante, exibe banner verde com cálculo de economia, foto da nova marca e botão "Trocar Marca".
+- Clicar em "Usar Preço" na oferta original atualiza apenas o valor do item.
+- Clicar em "Trocar Marca" (ou "Usar" em outra opção da lista) promove o produto no drawer (atualizando imagem, nome e link) e **atualiza tanto o nome quanto o preço do item na lista de compras**, sincronizando `marca` e `produto_base` no banco de dados.
 - Requisições na aba Network totalmente limpas (sem erros 409 de conflito).
 
 #### Checklist de Aceite
