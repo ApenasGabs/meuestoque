@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ComprasWebShell } from "../ComprasWebShell";
 import { supabase } from "../lib/supabase";
 import { restoreGroupContext } from "../lib/webData";
@@ -8,18 +8,16 @@ import { useAuthStore } from "../stores/authStore";
 import { getPersistedGroupSnapshotForUser, useGroupStore } from "../stores/groupStore";
 import { useSessionStore } from "../stores/sessionStore";
 
-export function SessionBootstrap(): ReactElement {
+export const SessionBootstrap = (): ReactElement => {
   const setUser = useAuthStore((state) => state.setUser);
   const clearUser = useAuthStore((state) => state.clearUser);
   const { setGroup, setListId, setAllGroups, clearGroup, clearAllGroupState, setSnapshotUserId } =
     useGroupStore();
   const setReady = useSessionStore((state) => state.setReady);
   const ready = useSessionStore((state) => state.ready);
+  const syncedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Sincroniza marcas globais do Supabase em background
-    void syncBrandDictionaryFromSupabase();
-
     let active = true;
     let initialNoSessionTimer: ReturnType<typeof setTimeout> | null = null;
     const withTimeout = async <T,>(
@@ -38,6 +36,7 @@ export function SessionBootstrap(): ReactElement {
     const finishWithoutSession = (): void => {
       if (!active) return;
 
+      syncedUserIdRef.current = null;
       clearUser();
       clearAllGroupState();
       setReady(true);
@@ -73,6 +72,14 @@ export function SessionBootstrap(): ReactElement {
 
       setUser(session.user.id, session.user.user_metadata?.nome ?? session.user.email ?? "");
       setSnapshotUserId(session.user.id);
+
+      // Sincroniza marcas globais do Supabase apenas no login/troca de usuário
+      if (session.user.id !== syncedUserIdRef.current) {
+        syncedUserIdRef.current = session.user.id;
+        syncBrandDictionaryFromSupabase().catch((err: unknown) => {
+          console.warn("[SessionBootstrap] Falha ao sincronizar marcas:", err);
+        });
+      }
 
       const persistedSnapshot = getPersistedGroupSnapshotForUser(session.user.id);
 
@@ -166,4 +173,4 @@ export function SessionBootstrap(): ReactElement {
   }
 
   return <ComprasWebShell />;
-}
+};

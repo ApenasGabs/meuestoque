@@ -256,6 +256,16 @@ Toda vez que você (a IA) for documentar a conclusão de uma tarefa no `AI_KNOWL
 
 _(Nunca escreva apenas parágrafos longos, use sempre os recursos visuais acima)_
 
+### Documentação no Anytype (Catálogo de Projetos)
+
+Ao gerar a documentação de repositórios no Anytype via API:
+1. Criar objeto da página com o Modelo de Engenharia completo (`POST /objects` com `body`).
+2. Fazer upload do diagrama Mermaid renderizado (`POST /files`) e embuti-lo.
+3. Vincular contexto (`PATCH /objects/{id}` com `created_in_context`).
+4. Adicionar à coleção (`POST /lists/{catalog_id}/objects`).
+5. **Atualizar o texto do Catálogo com link clicável**: `PATCH /objects/{catalog_id}` com campo `markdown` contendo `- **[repo](anytype://object?objectId=<id>&spaceId=<spaceId>)** — descrição`.
+
+
 ### JSDoc - OBRIGATÓRIO
 
 - ✅ **APENAS** usar JSDoc para documentar funções públicas

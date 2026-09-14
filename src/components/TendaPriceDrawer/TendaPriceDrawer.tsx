@@ -9,6 +9,12 @@ import {
   type TendaItemQuote,
   type TendaProduct,
 } from "../../services/tendaService";
+import {
+  recordStorePriceHistory,
+  getPriceHistoryForBaseProduct,
+  calculatePriceTrend,
+  type PriceTrendSummary,
+} from "../../services/priceHistoryService";
 
 export interface ShoppingQuoteItem {
   id: string;
@@ -53,10 +59,25 @@ export const TendaPriceDrawer = ({
 
   const [quotes, setQuotes] = useState<Record<string, TendaItemQuote>>({});
   const [loadingQuotes, setLoadingQuotes] = useState<Record<string, boolean>>({});
+  const [priceTrends, setPriceTrends] = useState<Record<string, PriceTrendSummary>>({});
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   const hasFetchedRef = useRef<boolean>(false);
   const isQuotingRef = useRef<boolean>(false);
+
+  const loadPriceTrendForItem = useCallback(
+    async (itemId: string, quote: TendaItemQuote): Promise<void> => {
+      if (!quote.baseProduct || !quote.startingFromPrice) return;
+      try {
+        const history = await getPriceHistoryForBaseProduct(quote.baseProduct, 45);
+        const trend = calculatePriceTrend(quote.startingFromPrice, history, quote.requestedBrand);
+        setPriceTrends((prev) => ({ ...prev, [itemId]: trend }));
+      } catch {
+        // Silencioso
+      }
+    },
+    [],
+  );
 
   const startQuoting = useCallback(
     async (targetCep: string, bypassCache = false): Promise<void> => {
@@ -94,6 +115,7 @@ export const TendaPriceDrawer = ({
       setLoadingQuotes(initialLoading);
 
       const activeBranchId = info.branchId;
+      const collectedQuotes: TendaItemQuote[] = [];
 
       for (const item of items) {
         if (!hasFetchedRef.current) break;
@@ -105,6 +127,8 @@ export const TendaPriceDrawer = ({
             bypassCache,
           );
           setQuotes((prev) => ({ ...prev, [item.id]: quote }));
+          collectedQuotes.push(quote);
+          void loadPriceTrendForItem(item.id, quote);
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Erro ao cotar";
           setQuotes((prev) => ({
@@ -130,9 +154,13 @@ export const TendaPriceDrawer = ({
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
 
+      if (info && collectedQuotes.length > 0) {
+        void recordStorePriceHistory(collectedQuotes, info);
+      }
+
       isQuotingRef.current = false;
     },
-    [items],
+    [items, loadPriceTrendForItem],
   );
 
   const handleQuoteSingle = useCallback(
@@ -147,6 +175,8 @@ export const TendaPriceDrawer = ({
           bypassCache,
         );
         setQuotes((prev) => ({ ...prev, [item.id]: quote }));
+        void loadPriceTrendForItem(item.id, quote);
+        void recordStorePriceHistory([quote], branchInfo);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Erro ao cotar";
         setQuotes((prev) => ({
@@ -169,7 +199,7 @@ export const TendaPriceDrawer = ({
         setLoadingQuotes((prev) => ({ ...prev, [item.id]: false }));
       }
     },
-    [branchInfo],
+    [branchInfo, loadPriceTrendForItem],
   );
 
   useEffect(() => {
@@ -359,6 +389,26 @@ export const TendaPriceDrawer = ({
                       <div className="font-mono text-base font-bold text-success">
                         R$ {quote.startingFromPrice.toFixed(2)}
                       </div>
+                      {priceTrends[item.id] && priceTrends[item.id].direction !== "none" && (
+                        <div
+                          className={`text-[10px] font-medium ${
+                            priceTrends[item.id].direction === "down"
+                              ? "text-success"
+                              : priceTrends[item.id].direction === "up"
+                                ? "text-warning"
+                                : "text-base-content/60"
+                          }`}
+                          title={`Comparado a ${priceTrends[item.id].previousPrice ? `R$ ${priceTrends[item.id].previousPrice?.toFixed(2)} em ` : ""}${priceTrends[item.id].previousDate || "data anterior"}`}
+                        >
+                          {priceTrends[item.id].direction === "down" && (
+                            <span>↓ {Math.abs(priceTrends[item.id].percentageChange!)}%</span>
+                          )}
+                          {priceTrends[item.id].direction === "up" && (
+                            <span>↑ {priceTrends[item.id].percentageChange}%</span>
+                          )}
+                          {priceTrends[item.id].direction === "stable" && <span>= Estável</span>}
+                        </div>
+                      )}
                     </div>
                   ) : quote?.error ? (
                     <div className="flex flex-col items-end gap-1">

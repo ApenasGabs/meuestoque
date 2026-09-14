@@ -84,5 +84,27 @@ describe("brandDictionaryService", () => {
 
       await expect(syncBrandDictionaryFromSupabase()).resolves.toBeUndefined();
     });
+
+    it("deve sincronizar aliases a partir de global_brands e resolver nome canonico", async () => {
+      vi.spyOn(supabase, "from").mockReturnValueOnce({
+        select: vi.fn().mockReturnValueOnce({
+          eq: vi.fn().mockResolvedValueOnce({
+            data: [
+              {
+                nome: "3 Corações",
+                nome_normalizado: "3 coracoes",
+                aliases: ["Tres Coracoes", "3 Coracoes Cafe"],
+              },
+            ],
+            error: null,
+          }),
+        }),
+      } as unknown as ReturnType<typeof supabase.from>);
+
+      await syncBrandDictionaryFromSupabase();
+
+      const parts = extractProductParts("Café Tres Coracoes 500g");
+      expect(parts.brand).toBe("Tres Coracoes");
+    });
   });
 });

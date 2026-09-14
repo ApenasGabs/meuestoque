@@ -476,4 +476,106 @@ describe("tendaService", () => {
       expect(localStorage.getItem("outro_app_item")).toBe("preservar");
     });
   });
+
+  describe("isProductSemanticallyRelevant e DERIVATIVE_WORDS", () => {
+    const exclusionTestCases = [
+      {
+        requested: "Cenoura 200g",
+        candidate: "Bolo Cenoura com Chocolate Bauducco 200g",
+        word: "bolo",
+      },
+      {
+        requested: "Cenoura 1kg",
+        candidate: "Torta de Cenoura com Requeijao 400g",
+        word: "torta",
+      },
+      {
+        requested: "Batata 1kg",
+        candidate: "Batata Palha Extra Fina Select 120g",
+        word: "palha",
+      },
+      {
+        requested: "Batata Inglesa 1kg",
+        candidate: "Pure de Batata Instantaneo Maggi 100g",
+        word: "pure",
+      },
+      {
+        requested: "Milho Verde 1kg",
+        candidate: "Flocos de Milho Sem Acucar Kellogg's 300g",
+        word: "flocos",
+      },
+      {
+        requested: "Chocolate em barra 100g",
+        candidate: "Pudim de Chocolate Dr Oetker 50g",
+        word: "pudim",
+      },
+      {
+        requested: "Morango Fresco 250g",
+        candidate: "Iogurte de Morango Integral Vigor 170g",
+        word: "iogurte",
+      },
+      {
+        requested: "Banana Prata 1kg",
+        candidate: "Vitamina de Banana e Maca Piracanjuba 200ml",
+        word: "vitamina",
+      },
+      {
+        requested: "Palmito 300g",
+        candidate: "Palmito Picado em Conserva Qualita 300g",
+        word: "conserva",
+      },
+      {
+        requested: "Limao Taiti 200g",
+        candidate: "Detergente Liquido Limao Ype 500ml",
+        word: "detergente",
+      },
+    ];
+
+    it.each(exclusionTestCases)(
+      "deve excluir derivado '$word' quando solicitado ingrediente puro ($requested vs $candidate)",
+      ({ requested, candidate }) => {
+        expect(isProductSemanticallyRelevant(candidate, requested)).toBe(false);
+      },
+    );
+
+    const matchTestCases = [
+      {
+        requested: "Bolo de Cenoura Bauducco 200g",
+        candidate: "Bolo Cenoura com Chocolate Bauducco 200g",
+        description: "permite bolo quando o usuario solicita bolo",
+      },
+      {
+        requested: "Batata Palha Tradicional",
+        candidate: "Batata Palha Yoki 120g",
+        description: "permite batata palha quando o usuario solicita batata palha",
+      },
+      {
+        requested: "Iogurte de Morango Vigor",
+        candidate: "Iogurte de Morango Integral Vigor 170g",
+        description: "permite iogurte quando solicitado explicitamente",
+      },
+      {
+        requested: "Pure de Batata Maggi",
+        candidate: "Pure de Batata Instantaneo Maggi 100g",
+        description: "permite pure quando solicitado explicitamente",
+      },
+      {
+        requested: "Cenoura 1kg",
+        candidate: "Cenoura Selecionada a Vacuo 500g",
+        description: "permite cenoura in natura",
+      },
+      {
+        requested: "Feijao Preto Camil 1kg",
+        candidate: "Feijao Preto Namorado Tipo 1 1kg",
+        description: "permite mesma categoria e subtipo de feijao",
+      },
+    ];
+
+    it.each(matchTestCases)(
+      "deve manter compatibilidade legitima: $description",
+      ({ requested, candidate }) => {
+        expect(isProductSemanticallyRelevant(candidate, requested)).toBe(true);
+      },
+    );
+  });
 });

@@ -43,6 +43,85 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🏷️ (13/09/2026) Bugfix: Preparação Dicionário de Produtos (Fase 3)
+### 📊 (13/09/2026) Feature: Dicionário Global de Marcas e Histórico de Preços (Fase 3)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["TendaPriceDrawer (Cotação)"] -->|"Cotações obtidas"| B["priceHistoryService.recordStorePriceHistory"]
+    B -->|"Upsert idempotente diário"| C["store_price_history (Supabase DB)"]
+    D["SessionBootstrap"] -->|"syncBrandDictionaryFromSupabase"| E["global_brands (Supabase DB)"]
+    E -->|"Carrega marcas & aliases"| F["brandDictionaryService (Cache Local)"]
+    A -->|"getPriceHistoryForBaseProduct"| C
+    A -->|"calculatePriceTrend"| G["Badge de Tendência (↓ % / ↑ % / = Estável)"]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20260913_01_phase_3_global_dictionary_and_price_history.sql` | **Criado**: Migration criando `global_brands` (com aliases), `global_base_products` e `store_price_history` com RLS e índices. |
+| `src/services/priceHistoryService.ts` | **Criado**: Serviço para persistência de histórico de cotações por filial, consulta temporal e cálculo de tendência de preço. |
+| `src/services/priceHistoryService.test.ts` | **Criado**: Testes unitários para cálculo de tendências, desconsideração de data atual e consulta de histórico. |
+| `src/services/brandDictionaryService.ts` | Atualizado para carregar de `global_brands` com aliases e gravar descobertas em ambas as tabelas para retrocompatibilidade. |
+| `src/services/brandDictionaryService.test.ts` | Adicionados testes de sincronização de aliases e resolução de nomes canônicos. |
+| `src/components/TendaPriceDrawer/TendaPriceDrawer.tsx` | Integrada gravação assíncrona de histórico de cotações e badge visual de tendência de preço nos cards de ofertas. |
+| `src/components/SessionBootstrap.tsx` | Refatorado para arrow function e controle com `syncedUserIdRef` para evitar syncs duplicados em refresh de tokens. |
+| `src/components/__tests__/SessionBootstrap.test.tsx` | **Criado**: Testes unitários para ciclo de vida de autenticação e disparo isolado do sync de marcas. |
+| `src/services/tendaService.test.ts` | Adicionados 16 testes de tabela cobrindo exclusões e compatibilidade de `DERIVATIVE_WORDS` e relevância semântica. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Cotações realizadas na gaveta lateral são gravadas assincronamente em `store_price_history` com constraint UNIQUE por (loja, filial_id, produto_nome, data_cotacao).
+REGRA 2: O cálculo de tendência compara o preço atual com a cotação imediatamente anterior do mesmo produto base/marca (ignorando cotações da data corrente).
+REGRA 3: O dicionário de marcas sincroniza a partir de `global_brands` suportando arrays de aliases para mapeamento flexível de marcas variantes.
+REGRA 4: O SessionBootstrap dispara a sincronização de marcas apenas na primeira autenticação ou na troca de usuário autenticado (`session.user.id !== syncedUserIdRef.current`), evitando chamadas desnecessárias em refreshes de token.
+```
+
+#### Comportamento
+- Toda cotação realizada no Tenda alimenta o histórico de preços da filial no Supabase sem travar a navegação do usuário.
+- Produtos cotados que já possuem histórico prévio exibem indicadores visuais de variação (ex: `↓ 5.2%` ou `↑ 10%`) comparando com o último preço visto.
+- O sistema de reconhecimento de marcas agora suporta múltiplos aliases mapeados para a marca canônica.
+- O filtro semântico possui regras testadas e documentadas contra falsos positivos em derivados.
+
+#### Checklist de Aceite
+- [x] Migration criada com RLS e backfill automático de dados existentes.
+- [x] Zero erros de ESLint (`npm run lint`).
+- [x] Zero erros de TypeScript (`npm run typecheck`).
+- [x] Testes unitários cobrindo SessionBootstrap, histórico de preços, aliases e palavras derivadas passando com 100% de sucesso (69/69).
+- [x] Build de produção concluído com sucesso (`npm run build`).
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["SessionBootstrap"] -->|"onAuthStateChange (SIGNED_IN)"| B["syncBrandDictionaryFromSupabase"]
+    C["isProductSemanticallyRelevant"] -->|"Filtro expandido (Bolo, Torta, etc.)"| D["Cotação mais precisa"]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/components/SessionBootstrap.tsx` | Movida a chamada `syncBrandDictionaryFromSupabase` para dentro do listener de autenticação, prevenindo falha silenciosa de RLS. |
+| `src/services/tendaService.ts` | Adicionadas palavras derivativas (`bolo`, `torta`, `palha`, `pure`, `flocos`, `pudim`, `iogurte`, `vitamina`, `conserva`) ao `DERIVATIVE_WORDS` para evitar falsos positivos na comparação semântica. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Sincronização do dicionário com o Supabase só deve ocorrer *após* a resolução do estado de autenticação, para respeitar políticas de RLS `TO authenticated`.
+REGRA 2: Produtos derivativos compostos (ex: "Bolo de Cenoura") não devem ser considerados como alternativas válidas para ingredientes base (ex: "Cenoura").
+```
+
+#### Comportamento
+- O dicionário de marcas agora carrega de forma confiável após o login, em vez de falhar silenciosamente no mount inicial da aplicação.
+- A cotação de ingredientes puros (como "Cenoura 200g") não retorna mais produtos processados não relacionados (como "Bolo Cenoura Bauducco").
+
+#### Checklist de Aceite
+- [x] Sincronização rodando no momento correto da sessão.
+- [x] Testes passando e build concluído.
+- [x] O terreno agora está totalmente livre e validado para a continuação da Fase 3.
+
+
 ### 🏷️ (13/09/2026) Feature: Dicionário Dinâmico de Marcas & Comparação de Preços Tenda (Fase 2)
 
 #### Arquitetura
