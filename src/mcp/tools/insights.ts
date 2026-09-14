@@ -1,6 +1,19 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
+const extractContext = (extra: unknown): AuthenticatedContext => {
+  const e = extra as Record<string, unknown> | undefined;
+  const http = e?.http as Record<string, unknown> | undefined;
+  const ctx = (http?.authInfo ?? e?.authInfo ?? e?.auth ?? e?.context) as AuthenticatedContext | undefined;
+  if (!ctx) {
+    const keys = e ? Object.keys(e).join(",") : "null";
+    const httpKeys = http ? Object.keys(http).join(",") : "none";
+    throw new Error(`Contexto de autenticação não encontrado. Extra: [${keys}], Http: [${httpKeys}]`);
+  }
+  return ctx;
+};
+
+
 export const registerInsightTools = (server: unknown) => {
   (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_consumption_history",
@@ -13,8 +26,7 @@ export const registerInsightTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extra.authInfo;
-      if (!context) throw new Error("Contexto de autenticação não encontrado");
+      const context = extractContext(extra);
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -68,8 +80,7 @@ export const registerInsightTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extra.authInfo;
-      if (!context) throw new Error("Contexto de autenticação não encontrado");
+      const context = extractContext(extra);
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -115,8 +126,7 @@ export const registerInsightTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extra.authInfo;
-      if (!context) throw new Error("Contexto de autenticação não encontrado");
+      const context = extractContext(extra);
       const { supabase } = context;
 
       const threshold = new Date();
