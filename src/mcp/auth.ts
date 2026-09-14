@@ -7,7 +7,7 @@ const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? "";
 export interface AuthenticatedContext {
   supabase: SupabaseClient;
   userId: string;
-  groupId: string | null;
+  groups: { id: string }[];
 }
 
 /**
@@ -43,17 +43,20 @@ export const authenticateRequest = async (
     throw new Error("Token invalido ou expirado");
   }
 
-  // Busca o grupo ativo do usuario (primeiro grupo encontrado)
-  const { data: memberData } = await supabase
+  // Busca todos os grupos do usuário
+  const { data: memberData, error: memberError } = await supabase
     .from("group_members")
     .select("group_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
+    .eq("user_id", user.id);
+
+  if (memberError) {
+    console.error("[MCP Auth] Erro ao buscar grupos:", memberError);
+    throw new Error("Erro interno ao validar grupos do usuário");
+  }
 
   return {
     supabase,
     userId: user.id,
-    groupId: memberData?.group_id ?? null,
+    groups: memberData ? memberData.map(m => ({ id: m.group_id })) : [],
   };
 };

@@ -9,9 +9,17 @@ export const registerListTools = (server: unknown) => {
       description: "Retorna todos os itens da lista de compras ativa do grupo",
     },
     z.object({}),
-    async (_args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       const { data: activeList } = await supabase
         .from("shopping_lists")
@@ -50,8 +58,16 @@ export const registerListTools = (server: unknown) => {
       preco: z.number().optional(),
     }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId, userId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+      const { supabase, userId } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       const { data: activeList } = await supabase
         .from("shopping_lists")
@@ -63,7 +79,7 @@ export const registerListTools = (server: unknown) => {
 
       if (!activeList) throw new Error("Lista ativa não encontrada");
 
-      // Simplified addition for MCP
+      // TODO: Refatorar para usar a procedure "add_item_to_list" em vez de inserção direta com valores default otimistas.
       const { error } = await supabase.from("items").insert({
         list_id: activeList.id,
         nome: (args as { nome: string }).nome,

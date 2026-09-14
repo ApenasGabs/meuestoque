@@ -13,8 +13,16 @@ export const registerInsightTools = (server: unknown) => {
       dias: z.number().int().default(30),
     }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       const threshold = new Date();
       threshold.setDate(threshold.getDate() - (args as { dias: number }).dias);
@@ -34,9 +42,9 @@ export const registerInsightTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
 
-      const formatted = data.map((d) => ({
+      const formatted = (data || []).map((d) => ({
         data: d.criado_em,
         nome: (d.stock_items as unknown as Record<string, unknown>).nome,
         unidade: (d.stock_items as unknown as Record<string, unknown>).unidade,
@@ -58,8 +66,16 @@ export const registerInsightTools = (server: unknown) => {
       ate: z.string(),
     }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       const { data, error } = await supabase
         .from("stock_lots")
@@ -68,7 +84,7 @@ export const registerInsightTools = (server: unknown) => {
         .gte("data_compra", (args as { de: string }).de)
         .lte("data_compra", (args as { ate: string }).ate);
 
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
 
       const summary = (data || []).reduce((acc: unknown, row: unknown) => {
         const cat = ((row as Record<string, unknown>).stock_items as Record<string, string>)?.categoria || "Outros";
@@ -108,7 +124,7 @@ export const registerInsightTools = (server: unknown) => {
         .order("data_cotacao", { ascending: false })
         .limit(30);
 
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );

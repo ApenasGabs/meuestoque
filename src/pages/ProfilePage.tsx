@@ -295,9 +295,14 @@ Assim que configurar, me avise para testarmos a conexão!`;
             </Badge>
           </div>
           <p className="text-sm text-base-content/80 mb-4">
-            Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model
-            Context Protocol (MCP).
+            Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model Context Protocol (MCP).
           </p>
+          <div className="alert alert-warning text-sm p-3 mb-4 flex gap-2 rounded-lg">
+            <span className="text-lg">⚠️</span>
+            <span>
+              <strong>Atenção:</strong> Por segurança, o token gerado reflete a sua sessão atual e pode expirar. Se a conexão da IA falhar no futuro, volte aqui e gere um novo token!
+            </span>
+          </div>
 
           {!mcpToken ? (
             <Button type="button" variant="secondary" onClick={() => void handleGenerateMcpToken()}>

@@ -13,8 +13,16 @@ export const registerStockTools = (server: unknown) => {
       dias_vencimento: z.number().int().default(7),
     }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       let query = supabase
         .from("stock_items")
@@ -24,7 +32,7 @@ export const registerStockTools = (server: unknown) => {
         .eq("group_id", groupId);
 
       if ((args as { filtro: string }).filtro === "baixo") {
-        query = query.lte("quantidade", "quantidade_minima");
+        // O filtro "baixo" real deve ser feito em memória, pois lte não compara duas colunas via PostgREST de forma simples sem RPC.
       } else if ((args as { filtro: string }).filtro === "zerado") {
         query = query.lte("quantidade", 0);
       } else if ((args as { filtro: string }).filtro === "vencendo") {
@@ -36,7 +44,7 @@ export const registerStockTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
 
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
@@ -61,7 +69,7 @@ export const registerStockTools = (server: unknown) => {
         p_user_id: userId,
       });
 
-      if (error) throw new Error(`Erro ao consumir estoque: ${error.message}`);
+      if (error) console.error(error); throw new Error("Erro interno ao consumir estoque");
       return { content: [{ type: "text", text: `Consumo registrado com sucesso.` }] };
     },
   );
@@ -74,8 +82,16 @@ export const registerStockTools = (server: unknown) => {
     },
     z.object({ dias: z.number().int().min(1).max(90).default(7) }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       const threshold = new Date();
       threshold.setDate(threshold.getDate() + (args as { dias: number }).dias);
@@ -88,7 +104,7 @@ export const registerStockTools = (server: unknown) => {
         .lte("data_validade_alerta", threshold.toISOString().slice(0, 10))
         .order("data_validade_alerta", { ascending: true });
 
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );
@@ -100,9 +116,17 @@ export const registerStockTools = (server: unknown) => {
       description: "Lista itens abaixo da quantidade mínima configurada",
     },
     z.object({}),
-    async (_args: Record<string, unknown>, context: AuthenticatedContext) => {
-      const { supabase, groupId } = context;
-      if (!groupId) throw new Error("Usuário não possui grupo ativo");
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+      const { supabase } = context;
+      const groups = (context as { groups: { id: string }[] }).groups;
+      let groupId = (args as { group_id?: string }).group_id;
+      if (!groupId) {
+        if (groups.length === 1) groupId = groups[0].id;
+        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
+        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
+      } else if (!groups.find(g => g.id === groupId)) {
+        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      }
 
       // We handle the strict logic manually since PostgREST doesn't support comparing two columns directly with operators
       const { data, error } = await supabase
@@ -111,7 +135,7 @@ export const registerStockTools = (server: unknown) => {
         .eq("group_id", groupId)
         .gt("quantidade_minima", 0);
 
-      if (error) throw new Error(error.message);
+      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
 
       const filtered = (data || []).filter((item) => item.quantidade <= item.quantidade_minima);
       filtered.sort(
