@@ -67,24 +67,29 @@ graph TD
 | `src/services/brandDictionaryService.ts` | Atualizado para carregar de `global_brands` com aliases e gravar descobertas em ambas as tabelas para retrocompatibilidade. |
 | `src/services/brandDictionaryService.test.ts` | Adicionados testes de sincronização de aliases e resolução de nomes canônicos. |
 | `src/components/TendaPriceDrawer/TendaPriceDrawer.tsx` | Integrada gravação assíncrona de histórico de cotações e badge visual de tendência de preço nos cards de ofertas. |
+| `src/components/SessionBootstrap.tsx` | Refatorado para arrow function e controle com `syncedUserIdRef` para evitar syncs duplicados em refresh de tokens. |
+| `src/components/__tests__/SessionBootstrap.test.tsx` | **Criado**: Testes unitários para ciclo de vida de autenticação e disparo isolado do sync de marcas. |
+| `src/services/tendaService.test.ts` | Adicionados 16 testes de tabela cobrindo exclusões e compatibilidade de `DERIVATIVE_WORDS` e relevância semântica. |
 
 #### Lógica de Decisão
 ```text
 REGRA 1: Cotações realizadas na gaveta lateral são gravadas assincronamente em `store_price_history` com constraint UNIQUE por (loja, filial_id, produto_nome, data_cotacao).
 REGRA 2: O cálculo de tendência compara o preço atual com a cotação imediatamente anterior do mesmo produto base/marca (ignorando cotações da data corrente).
 REGRA 3: O dicionário de marcas sincroniza a partir de `global_brands` suportando arrays de aliases para mapeamento flexível de marcas variantes.
+REGRA 4: O SessionBootstrap dispara a sincronização de marcas apenas na primeira autenticação ou na troca de usuário autenticado (`session.user.id !== syncedUserIdRef.current`), evitando chamadas desnecessárias em refreshes de token.
 ```
 
 #### Comportamento
 - Toda cotação realizada no Tenda alimenta o histórico de preços da filial no Supabase sem travar a navegação do usuário.
 - Produtos cotados que já possuem histórico prévio exibem indicadores visuais de variação (ex: `↓ 5.2%` ou `↑ 10%`) comparando com o último preço visto.
 - O sistema de reconhecimento de marcas agora suporta múltiplos aliases mapeados para a marca canônica.
+- O filtro semântico possui regras testadas e documentadas contra falsos positivos em derivados.
 
 #### Checklist de Aceite
 - [x] Migration criada com RLS e backfill automático de dados existentes.
 - [x] Zero erros de ESLint (`npm run lint`).
 - [x] Zero erros de TypeScript (`npm run typecheck`).
-- [x] Testes unitários cobrindo histórico de preços e aliases passando com 100% de sucesso.
+- [x] Testes unitários cobrindo SessionBootstrap, histórico de preços, aliases e palavras derivadas passando com 100% de sucesso (69/69).
 - [x] Build de produção concluído com sucesso (`npm run build`).
 
 #### Arquitetura
