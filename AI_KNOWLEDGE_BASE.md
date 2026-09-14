@@ -44,6 +44,48 @@ Documentação fora de `docs/ai/`:
 ## 📜 Log Recente de Modificações por IAs
 
 ### 🏷️ (13/09/2026) Bugfix: Preparação Dicionário de Produtos (Fase 3)
+### 📊 (13/09/2026) Feature: Dicionário Global de Marcas e Histórico de Preços (Fase 3)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["TendaPriceDrawer (Cotação)"] -->|"Cotações obtidas"| B["priceHistoryService.recordStorePriceHistory"]
+    B -->|"Upsert idempotente diário"| C["store_price_history (Supabase DB)"]
+    D["SessionBootstrap"] -->|"syncBrandDictionaryFromSupabase"| E["global_brands (Supabase DB)"]
+    E -->|"Carrega marcas & aliases"| F["brandDictionaryService (Cache Local)"]
+    A -->|"getPriceHistoryForBaseProduct"| C
+    A -->|"calculatePriceTrend"| G["Badge de Tendência (↓ % / ↑ % / = Estável)"]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20260913_01_phase_3_global_dictionary_and_price_history.sql` | **Criado**: Migration criando `global_brands` (com aliases), `global_base_products` e `store_price_history` com RLS e índices. |
+| `src/services/priceHistoryService.ts` | **Criado**: Serviço para persistência de histórico de cotações por filial, consulta temporal e cálculo de tendência de preço. |
+| `src/services/priceHistoryService.test.ts` | **Criado**: Testes unitários para cálculo de tendências, desconsideração de data atual e consulta de histórico. |
+| `src/services/brandDictionaryService.ts` | Atualizado para carregar de `global_brands` com aliases e gravar descobertas em ambas as tabelas para retrocompatibilidade. |
+| `src/services/brandDictionaryService.test.ts` | Adicionados testes de sincronização de aliases e resolução de nomes canônicos. |
+| `src/components/TendaPriceDrawer/TendaPriceDrawer.tsx` | Integrada gravação assíncrona de histórico de cotações e badge visual de tendência de preço nos cards de ofertas. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Cotações realizadas na gaveta lateral são gravadas assincronamente em `store_price_history` com constraint UNIQUE por (loja, filial_id, produto_nome, data_cotacao).
+REGRA 2: O cálculo de tendência compara o preço atual com a cotação imediatamente anterior do mesmo produto base/marca (ignorando cotações da data corrente).
+REGRA 3: O dicionário de marcas sincroniza a partir de `global_brands` suportando arrays de aliases para mapeamento flexível de marcas variantes.
+```
+
+#### Comportamento
+- Toda cotação realizada no Tenda alimenta o histórico de preços da filial no Supabase sem travar a navegação do usuário.
+- Produtos cotados que já possuem histórico prévio exibem indicadores visuais de variação (ex: `↓ 5.2%` ou `↑ 10%`) comparando com o último preço visto.
+- O sistema de reconhecimento de marcas agora suporta múltiplos aliases mapeados para a marca canônica.
+
+#### Checklist de Aceite
+- [x] Migration criada com RLS e backfill automático de dados existentes.
+- [x] Zero erros de ESLint (`npm run lint`).
+- [x] Zero erros de TypeScript (`npm run typecheck`).
+- [x] Testes unitários cobrindo histórico de preços e aliases passando com 100% de sucesso.
+- [x] Build de produção concluído com sucesso (`npm run build`).
 
 #### Arquitetura
 ```mermaid

@@ -200,3 +200,28 @@ Este projeto possui skills customizadas em `.agents/skills/`:
 - **`supabase-postgres-best-practices`** — Use ao escrever ou revisar queries Postgres
 
 > Para ativar uma skill no Antigravity, leia o respectivo `SKILL.md` antes de executar a tarefa.
+
+---
+
+## 11. Documentação no Anytype & Catálogo de Projetos
+
+Quando solicitado para documentar repositórios ou projetos no Anytype:
+
+1. **API Local & Autenticação:**
+   - Base URL: `http://192.168.31.60:31009/v1/spaces/<space_id>`
+   - Header: `Authorization: Bearer $ANYTYPE_API_KEY`
+   - Space ID Padrão: `bafyreiesudr3yvac65l3vtyfyu7oesc6cpkr2p5cluqhnhjgvch5shuugy.n5psirv676ui`
+   - Catálogo de Projetos ID: `bafyreicwlrg4hk75l65qmydrylmqvtllrnm66or36coo7a4upof6qza32i`
+
+2. **Criação da Página:**
+   - Fazer `POST /objects` com `{ "type_key": "page", "name": "[Emoji] [Nome do Repo]", "body": "<markdown>" }` seguindo estritamente o Modelo de Engenharia (Ficha Técnica, Objetivo, Arquitetura com Mermaid, Setup, Toggles colapsáveis para Arquivos, Funções, Envs e Troubleshooting).
+   - Renderizar o diagrama Mermaid em imagem (ex: Kroki PNG) e fazer upload em `POST /files`, embutindo a imagem via `http://127.0.0.1:47800/image/<file_object_id>`.
+
+3. **Vínculo com Catálogo de Projetos (Tríplice Obrigatório):**
+   - **Propriedade:** `PATCH /objects/{new_object_id}` com `{"properties": [{"key": "created_in_context", "objects": ["<CATALOG_ID>"]}]}`.
+   - **Coleção:** `POST /lists/{CATALOG_ID}/objects` com `{"objects": ["<new_object_id>"]}`.
+   - **Link Clicável no Texto (CRÍTICO):** `PATCH /objects/{CATALOG_ID}` com `{ "markdown": "<markdown_atualizado>" }` substituindo a linha do repositório por `- **[<nome-do-repo>](anytype://object?objectId=<new_object_id>&spaceId=<space_id>)** — <descrição curta>.`
+
+4. **Homelab (Se Aplicável):**
+   - Se o serviço rodar no Homelab (`gabisa`), atualizar também a respectiva seção no Runbook "Serviços da casa" (ID `bafyreif4tqigm6vyoljni35alhftdzhrbwwwn4z6v4r277ypizz24fsz4a`).
+

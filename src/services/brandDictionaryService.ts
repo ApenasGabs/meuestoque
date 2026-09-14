@@ -152,9 +152,30 @@ const normalizeText = (text: string): string => {
     .trim();
 };
 
+interface BrandRecord {
+  nome: string;
+  nome_normalizado: string;
+  aliases?: string[] | null;
+}
+
+const BRAND_ALIASES_MAP = new Map<string, string>();
+
+/**
+ * Retorna o nome canônico homologado da marca a partir de um alias ou nome grafado.
+ *
+ * @param brandName - Nome ou alias da marca
+ * @returns Nome canônico oficial ou o próprio nome se não mapeado
+ */
+export const getBrandCanonicalName = (brandName: string): string => {
+  if (!brandName) return brandName;
+  const normalized = normalizeText(brandName);
+  return BRAND_ALIASES_MAP.get(normalized) || brandName;
+};
+
 /**
  * Registra assincronamente um lote de novas marcas no banco de dados e no cache local.
  * Utiliza upsert com ignoreDuplicates para evitar requisições 409 repetitivas.
+ * Grava tanto em global_brands quanto em brand_dictionary (para compatibilidade).
  *
  * @param brandNames Lista de nomes de marcas retornados pela API
  */
@@ -178,11 +199,18 @@ export const recordDiscoveredBrands = async (brandNames: string[]): Promise<void
   if (newBrandsToInsert.length === 0) return;
 
   try {
+    // Grava na tabela global da Fase 3
+    await supabase
+      .from("global_brands")
+      .upsert(newBrandsToInsert, { onConflict: "nome_normalizado", ignoreDuplicates: true });
+
+    // Grava também na tabela de dicionário legada para compatibilidade contínua
     await supabase
       .from("brand_dictionary")
       .upsert(newBrandsToInsert, { onConflict: "nome_normalizado", ignoreDuplicates: true });
   } catch {
     // Erros silenciosos (ex: offline, tabela ainda não criada pela migration)
+    // Erros silenciosos (ex: offline)
   }
 };
 
@@ -205,9 +233,39 @@ export const getKnownBrandsCount = (): number => {
 /**
  * Carrega e sincroniza o dicionário de marcas a partir do Supabase.
  * Enriquece a base em memória com todas as marcas cadastradas globalmente.
+ * Consulta prioritariamente a tabela global_brands da Fase 3 (com aliases),
+ * com fallback transparente para brand_dictionary.
  */
 export const syncBrandDictionaryFromSupabase = async (): Promise<void> => {
   try {
+    // 1. Tenta carregar da tabela global_brands (Fase 3)
+    const { data: globalData, error: globalError } = await supabase
+      .from("global_brands")
+      .select("nome, nome_normalizado, aliases")
+      .eq("ativo", true);
+
+    if (!globalError && globalData && globalData.length > 0) {
+      (globalData as BrandRecord[]).forEach((item) => {
+        if (item.nome_normalizado) {
+          const norm = item.nome_normalizado.toLowerCase();
+          KNOWN_BRANDS.add(norm);
+          BRAND_ALIASES_MAP.set(norm, item.nome);
+        }
+
+        if (Array.isArray(item.aliases)) {
+          item.aliases.forEach((alias) => {
+            if (alias && alias.trim()) {
+              const normAlias = normalizeText(alias);
+              KNOWN_BRANDS.add(normAlias);
+              BRAND_ALIASES_MAP.set(normAlias, item.nome);
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // 2. Fallback para brand_dictionary legado caso global_brands ainda não esteja populada
     const { data, error } = await supabase
       .from("brand_dictionary")
       .select("nome, nome_normalizado")
@@ -225,6 +283,9 @@ export const syncBrandDictionaryFromSupabase = async (): Promise<void> => {
       data.forEach((item) => {
         if (item.nome_normalizado) {
           KNOWN_BRANDS.add(item.nome_normalizado.toLowerCase());
+          const norm = item.nome_normalizado.toLowerCase();
+          KNOWN_BRANDS.add(norm);
+          BRAND_ALIASES_MAP.set(norm, item.nome);
         }
       });
     }
