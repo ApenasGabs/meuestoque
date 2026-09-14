@@ -4,12 +4,7 @@ import { registerListTools } from "../src/mcp/tools/list";
 import { registerStockTools } from "../src/mcp/tools/stock";
 import { registerInsightTools } from "../src/mcp/tools/insights";
 
-/**
- * Endpoint MCP do MeuEstoque.
- * Suporta Streamable HTTP transport (compatível com qualquer cliente MCP).
- * Autenticação via JWT Supabase no header Authorization.
- */
-const handler = createMcpHandler(
+const mcp = createMcpHandler(
   (server) => {
     registerListTools(server);
     registerStockTools(server);
@@ -18,14 +13,25 @@ const handler = createMcpHandler(
   {
     name: "meuestoque-mcp",
     version: "1.0.0",
-  },
-  {
-    // Middleware de autenticação executado antes de cada tool call
-    beforeRequest: async (req) => {
-      const authHeader = req.headers.get("Authorization");
-      return authenticateRequest(authHeader);
-    },
-  },
+  }
 );
 
-export default handler;
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*" } });
+  }
+
+  const authHeader = req.headers.get("Authorization");
+  try {
+    const context = await authenticateRequest(authHeader);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (req as any).auth = context;
+    return await mcp(req);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unauthorized";
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}

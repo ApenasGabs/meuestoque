@@ -9,7 +9,9 @@ export const registerListTools = (server: unknown) => {
       description: "Retorna todos os itens da lista de compras ativa do grupo",
     },
     z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -57,7 +59,9 @@ export const registerListTools = (server: unknown) => {
       categoria: z.string().default("Outros"),
       preco: z.number().optional(),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase, userId } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -121,7 +125,9 @@ export const registerListTools = (server: unknown) => {
       comprado: z.boolean().default(true),
       preco: z.number().optional(),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
       const updateData: Record<string, unknown> = { comprado: (args as { comprado: boolean }).comprado };
       if ((args as { preco?: number }).preco !== undefined) {
@@ -149,7 +155,9 @@ export const registerListTools = (server: unknown) => {
       list_id: z.string().uuid(),
       data_compra: z.string().optional(),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
       const { data, error } = await supabase.rpc("rpc_finalize_shopping_list", {
         p_list_id: (args as { list_id: string }).list_id,

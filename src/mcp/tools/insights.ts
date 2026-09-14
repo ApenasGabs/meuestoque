@@ -12,7 +12,9 @@ export const registerInsightTools = (server: unknown) => {
       produto: z.string().optional(),
       dias: z.number().int().default(30),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -65,7 +67,9 @@ export const registerInsightTools = (server: unknown) => {
       de: z.string(),
       ate: z.string(),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -110,7 +114,9 @@ export const registerInsightTools = (server: unknown) => {
       produto: z.string().min(1),
       dias: z.number().int().default(30),
     }),
-    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extra.authInfo;
+      if (!context) throw new Error("Contexto de autenticação não encontrado");
       const { supabase } = context;
 
       const threshold = new Date();
