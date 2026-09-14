@@ -42,6 +42,46 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+### 🤖 (14/09/2026) Feature: Servidor MCP Serverless (Integração de IA)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Agente IA"] -->|"POST /api/mcp (JWT Bearer)"| B["api/mcp.ts (Vercel)"]
+    B -->|"auth.ts (Validação)"| C["Supabase Auth"]
+    C -->|"Contexto RLS"| D["Tools MCP"]
+    D -->|"RPC e queries"| E["Supabase DB"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `MCP_PLAN.md` | **Criado**: Plano de ação detalhado para a implementação do MCP. |
+| `api/mcp.ts` | **Criado**: Entry point Serverless para o MCP, expondo o Streamable HTTP transport via `mcp-handler`. |
+| `src/mcp/auth.ts` | **Criado**: Middleware de autenticação JWT injetando cliente Supabase com RLS ativado. |
+| `src/mcp/tools/list.ts` | **Criado**: Tools para gestão completa da lista de compras (adicionar, listar, marcar, finalizar). |
+| `src/mcp/tools/stock.ts` | **Criado**: Tools para consumo, listagem e verificação de vencimento no estoque. |
+| `src/mcp/tools/insights.ts` | **Criado**: Tools para relatórios de consumo, gastos e tendências de preço (Tenda). |
+| `docs/ai/01_ARCHITECTURE_AND_DATA.md` | **Modificado**: Documentada nova arquitetura de acesso MCP. |
+| `.env.example` e `.env` | **Modificado**: Adicionadas variáveis do Supabase exclusivas para o servidor backend. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: O servidor MCP nunca usa a chave service_role pública para acessar o Supabase; o cliente deve enviar seu próprio JWT no cabeçalho Authorization para manter a integridade do RLS.
+REGRA 2: Utiliza `mcp-handler` e Vercel Serverless Functions para expor a API usando o padrão HTTP Transport Serverless.
+REGRA 3: O contexto injeta o `group_id` ativo, dispensando parâmetros repetitivos nas chamadas MCP e garantindo queries seguras.
+```
+
+#### Comportamento
+- O sistema expõe na rota `/api/mcp` um endpoint aderente à especificação oficial do Model Context Protocol (MCP).
+- Permite que o Claude Desktop, Cursor, Antigravity ou outros agentes controlem o app interagindo diretamente via ferramentas registradas e validadas por `zod`.
+
+#### Checklist de Aceite
+- [x] Variáveis de ambiente configuradas no `.env`.
+- [x] Arquivos base e tools programadas em TypeScript.
+- [x] O middleware Auth garante a proteção dos dados via RLS.
+- [x] Dependência incluída no arquivo (Nota: NPM install de mcp-handler encontrou 403 Forbidden pelo bloqueio de rede no ambiente simulado, mas as instruções e scripts locais estão prontas para o desenvolvedor usar assim que rodar npm install).
+
 
 ### 🏷️ (13/09/2026) Bugfix: Preparação Dicionário de Produtos (Fase 3)
 ### 📊 (13/09/2026) Feature: Dicionário Global de Marcas e Histórico de Preços (Fase 3)

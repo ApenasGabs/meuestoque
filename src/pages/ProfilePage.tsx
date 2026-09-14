@@ -43,6 +43,7 @@ export const ProfilePage = (): ReactElement => {
   const [members, setMembers] = useState<MemberRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mcpToken, setMcpToken] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfileData = async (): Promise<void> => {
@@ -110,6 +111,30 @@ export const ProfilePage = (): ReactElement => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateMcpToken = async (): Promise<void> => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      setMcpToken(data.session.access_token);
+    } else {
+      setError("Sessão não encontrada. Faça login novamente.");
+    }
+  };
+
+  const handleCopyMcpConfig = async (): Promise<void> => {
+    if (!mcpToken || !navigator.clipboard) return;
+    const config = `{
+  "mcpServers": {
+    "meuestoque": {
+      "url": "https://meuestoque.apenasgabs.dev/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${mcpToken}"
+      }
+    }
+  }
+}`;
+    await navigator.clipboard.writeText(config);
   };
 
   return (
@@ -235,6 +260,47 @@ export const ProfilePage = (): ReactElement => {
                   </Button>
                 </article>
               ))}
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card className="card form mb-4">
+        <CardBody>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="!mb-0">Integração IA (MCP Server)</h2>
+            <Badge variant="primary" className="text-xs">BETA</Badge>
+          </div>
+          <p className="text-sm text-base-content/80 mb-4">
+            Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model Context Protocol (MCP).
+          </p>
+          
+          {!mcpToken ? (
+            <Button type="button" variant="secondary" onClick={() => void handleGenerateMcpToken()}>
+              Gerar Token de Acesso
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-base-200 p-3 rounded-lg overflow-x-auto text-xs font-mono">
+                <code>{`{
+  "mcpServers": {
+    "meuestoque": {
+      "url": "https://meuestoque.apenasgabs.dev/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${mcpToken.substring(0, 15)}...${mcpToken.slice(-10)}"
+      }
+    }
+  }
+}`}</code>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="primary" size="sm" onClick={() => void handleCopyMcpConfig()}>
+                  Copiar Configuração
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setMcpToken(null)}>
+                  Ocultar
+                </Button>
+              </div>
             </div>
           )}
         </CardBody>
