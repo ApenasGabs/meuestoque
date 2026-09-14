@@ -160,7 +160,6 @@ export const TendaPriceDrawer = ({
 
       isQuotingRef.current = false;
     },
-    [items],
     [items, loadPriceTrendForItem],
   );
 
@@ -200,7 +199,6 @@ export const TendaPriceDrawer = ({
         setLoadingQuotes((prev) => ({ ...prev, [item.id]: false }));
       }
     },
-    [branchInfo],
     [branchInfo, loadPriceTrendForItem],
   );
 
@@ -408,9 +406,7 @@ export const TendaPriceDrawer = ({
                           {priceTrends[item.id].direction === "up" && (
                             <span>↑ {priceTrends[item.id].percentageChange}%</span>
                           )}
-                          {priceTrends[item.id].direction === "stable" && (
-                            <span>= Estável</span>
-                          )}
+                          {priceTrends[item.id].direction === "stable" && <span>= Estável</span>}
                         </div>
                       )}
                     </div>
