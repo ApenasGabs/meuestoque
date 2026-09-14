@@ -63,3 +63,9 @@ O projeto React (Frontend Web) interage com o Supabase através da camada `src/l
 
 - As operações tentam usar as RPCs do Supabase quando disponíveis (como `rpc_finalize_shopping_list`).
 - Na ausência da RPC, ou para operações simples, a API RESTful do Supabase (`supabase.from(...)`) é usada para inserir ou atualizar linhas diretamente.
+
+## Model Context Protocol (MCP)
+
+A aplicação inclui um servidor MCP implementado via Vercel Serverless Function (`api/mcp.ts`).
+Ele expõe operações atômicas da lista de compras e do estoque para agentes de IA através do protocolo MCP.
+A autenticação é feita com o JWT do usuário logado (passado no Header `Authorization: Bearer <TOKEN>`), e toda a proteção de dados (multi-tenant por `group_id`) é delegada automaticamente ao Row Level Security (RLS) do Supabase via a função `authenticateRequest()` em `src/mcp/auth.ts`.
