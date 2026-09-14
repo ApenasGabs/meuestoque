@@ -5,6 +5,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.20.0](https://github.com/ApenasGabs/meuestoque/compare/v1.19.0...v1.20.0) (2026-09-14)
+
+### ✨ Features
+
+* ✨ implementa dicionário global de marcas e histórico de preços ([247efe9](https://github.com/ApenasGabs/meuestoque/commit/247efe91bb04db683afd656e35c4b862fbb8922b))
+* enhance product dictionary synchronization and expand derivative words for improved semantic matching ([371a56a](https://github.com/ApenasGabs/meuestoque/commit/371a56a7ea827a48d316d550f0622cd463f57723))
+
+### 🐛 Bug Fixes
+
+* 🐛 remove arrays de dependencias duplicados no useCallback do TendaPriceDrawer ([466b74d](https://github.com/ApenasGabs/meuestoque/commit/466b74d20676d84df5fbf646a7e81c0c7c80c68c))
+
+### 🧪 Tests
+
+* 🧪 adiciona testes de bootstrap de sessao e palavras derivadas do tenda ([e0848bd](https://github.com/ApenasGabs/meuestoque/commit/e0848bd7fd20d6ac2712aa80e27bf64d88818bd9))
+
 ## [1.19.0](https://github.com/ApenasGabs/meuestoque/compare/v1.18.0...v1.19.0) (2026-09-13)
 
 ### ✨ Features
