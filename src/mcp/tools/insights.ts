@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
-export const registerInsightTools = (server: any) => {
-  server.registerTool(
+export const registerInsightTools = (server: unknown) => {
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_consumption_history",
     {
       title: "Get Consumption History",
@@ -12,12 +12,12 @@ export const registerInsightTools = (server: any) => {
       produto: z.string().optional(),
       dias: z.number().int().default(30),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
       const threshold = new Date();
-      threshold.setDate(threshold.getDate() - args.dias);
+      threshold.setDate(threshold.getDate() - (args as { dias: number }).dias);
       const thresholdISO = threshold.toISOString();
 
       let query = supabase
@@ -29,8 +29,8 @@ export const registerInsightTools = (server: any) => {
         .order("criado_em", { ascending: false })
         .limit(100);
 
-      if (args.produto) {
-        query = query.ilike("stock_items.nome", `%${args.produto}%`);
+      if ((args as { produto?: string }).produto) {
+        query = query.ilike("stock_items.nome", `%${(args as { produto?: string }).produto}%`);
       }
 
       const { data, error } = await query;
@@ -38,8 +38,8 @@ export const registerInsightTools = (server: any) => {
 
       const formatted = data.map((d) => ({
         data: d.criado_em,
-        nome: (d.stock_items as any).nome,
-        unidade: (d.stock_items as any).unidade,
+        nome: (d.stock_items as unknown as Record<string, unknown>).nome,
+        unidade: (d.stock_items as unknown as Record<string, unknown>).unidade,
         quantidade: d.quantidade,
       }));
 
@@ -47,7 +47,7 @@ export const registerInsightTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_spending_summary",
     {
       title: "Get Spending Summary",
@@ -57,7 +57,7 @@ export const registerInsightTools = (server: any) => {
       de: z.string(),
       ate: z.string(),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
@@ -65,18 +65,18 @@ export const registerInsightTools = (server: any) => {
         .from("stock_lots")
         .select("custo_total, stock_items!inner(categoria, group_id)")
         .eq("stock_items.group_id", groupId)
-        .gte("data_compra", args.de)
-        .lte("data_compra", args.ate);
+        .gte("data_compra", (args as { de: string }).de)
+        .lte("data_compra", (args as { ate: string }).ate);
 
       if (error) throw new Error(error.message);
 
-      const summary = (data || []).reduce((acc: any, row: any) => {
-        const cat = row.stock_items?.categoria || "Outros";
-        if (!acc[cat]) {
-          acc[cat] = { total_gasto: 0, num_compras: 0 };
+      const summary = (data || []).reduce((acc: unknown, row: unknown) => {
+        const cat = ((row as Record<string, unknown>).stock_items as Record<string, string>)?.categoria || "Outros";
+        if (!(acc as Record<string, unknown>)[cat]) {
+          (acc as Record<string, unknown>)[cat] = { total_gasto: 0, num_compras: 0 };
         }
-        acc[cat].total_gasto += row.custo_total || 0;
-        acc[cat].num_compras += 1;
+        ((acc as Record<string, Record<string, number>>)[cat] as Record<string, number>).total_gasto += ((row as Record<string, number>).custo_total || 0);
+        ((acc as Record<string, Record<string, number>>)[cat] as Record<string, number>).num_compras += 1;
         return acc;
       }, {});
 
@@ -84,7 +84,7 @@ export const registerInsightTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_price_trend",
     {
       title: "Get Price Trend",
@@ -94,16 +94,16 @@ export const registerInsightTools = (server: any) => {
       produto: z.string().min(1),
       dias: z.number().int().default(30),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
 
       const threshold = new Date();
-      threshold.setDate(threshold.getDate() - args.dias);
+      threshold.setDate(threshold.getDate() - (args as { dias: number }).dias);
 
       const { data, error } = await supabase
         .from("store_price_history")
         .select("data_cotacao, preco, loja_nome, filial_id")
-        .ilike("produto_nome", `%${args.produto}%`)
+        .ilike("produto_nome", `%${(args as { produto?: string }).produto}%`)
         .gte("data_cotacao", threshold.toISOString())
         .order("data_cotacao", { ascending: false })
         .limit(30);

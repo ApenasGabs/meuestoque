@@ -692,6 +692,7 @@ export const ListPageNew = (): ReactElement => {
         setShoppingItems((prev) =>
           prev.map((item) =>
             item.id === itemId ? { ...item, nome: newName, preco: price } : item,
+            item.id === itemId ? { ...item, nome: newName } : item,
           ),
         );
         void (async () => {
@@ -701,6 +702,7 @@ export const ListPageNew = (): ReactElement => {
             if (listId) {
               await refreshItems(listId);
             }
+            fireUpdateItemUnitPrice(itemId, price);
             setNotice(`Marca trocada para "${newName}" e preço atualizado!`);
           } catch (err) {
             if (listId) {
@@ -711,20 +713,24 @@ export const ListPageNew = (): ReactElement => {
         })();
       } else {
         fireUpdateItemPrice(itemId, price);
+        fireUpdateItemUnitPrice(itemId, price);
         setNotice("Preço atualizado com a cotação do Tenda!");
       }
     },
     [fireUpdateItemPrice, listId, refreshItems],
+    [fireUpdateItemUnitPrice, listId, refreshItems],
   );
 
   const handleApplyAllTendaPrices = useCallback(
     (updates: { itemId: string; price: number }[]): void => {
       for (const update of updates) {
         fireUpdateItemPrice(update.itemId, update.price);
+        fireUpdateItemUnitPrice(update.itemId, update.price);
       }
       setNotice(`${updates.length} preço(s) atualizado(s) com a cotação do Tenda!`);
     },
     [fireUpdateItemPrice],
+    [fireUpdateItemUnitPrice],
   );
 
   if (!groupId) {

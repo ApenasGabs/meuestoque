@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
-export const registerStockTools = (server: any) => {
-  server.registerTool(
+export const registerStockTools = (server: unknown) => {
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_stock_items",
     {
       title: "Get Stock Items",
@@ -12,7 +12,7 @@ export const registerStockTools = (server: any) => {
       filtro: z.enum(["todos", "baixo", "vencendo", "zerado"]).default("todos"),
       dias_vencimento: z.number().int().default(7),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
@@ -23,13 +23,13 @@ export const registerStockTools = (server: any) => {
         )
         .eq("group_id", groupId);
 
-      if (args.filtro === "baixo") {
+      if ((args as { filtro: string }).filtro === "baixo") {
         query = query.lte("quantidade", "quantidade_minima");
-      } else if (args.filtro === "zerado") {
+      } else if ((args as { filtro: string }).filtro === "zerado") {
         query = query.lte("quantidade", 0);
-      } else if (args.filtro === "vencendo") {
+      } else if ((args as { filtro: string }).filtro === "vencendo") {
         const threshold = new Date();
-        threshold.setDate(threshold.getDate() + args.dias_vencimento);
+        threshold.setDate(threshold.getDate() + (args as { dias_vencimento: number }).dias_vencimento);
         query = query
           .eq("validade_nao_aplica", false)
           .lte("data_validade_alerta", threshold.toISOString().slice(0, 10));
@@ -42,7 +42,7 @@ export const registerStockTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "consume_stock_item",
     {
       title: "Consume Stock Item",
@@ -52,12 +52,12 @@ export const registerStockTools = (server: any) => {
       item_id: z.string().uuid(),
       quantidade: z.number().positive(),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, userId } = context;
 
-      const { data, error } = await supabase.rpc("consume_stock_fifo", {
-        p_item_id: args.item_id,
-        p_quantidade: args.quantidade,
+      const { error } = await supabase.rpc("consume_stock_fifo", {
+        p_item_id: (args as { item_id: string }).item_id,
+        p_quantidade: (args as { quantidade: string | number }).quantidade,
         p_user_id: userId,
       });
 
@@ -66,19 +66,19 @@ export const registerStockTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_expiring_items",
     {
       title: "Get Expiring Items",
       description: "Lista itens que vencem nos próximos N dias",
     },
     z.object({ dias: z.number().int().min(1).max(90).default(7) }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
       const threshold = new Date();
-      threshold.setDate(threshold.getDate() + args.dias);
+      threshold.setDate(threshold.getDate() + (args as { dias: number }).dias);
 
       const { data, error } = await supabase
         .from("stock_items")
@@ -93,14 +93,14 @@ export const registerStockTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_low_stock_items",
     {
       title: "Get Low Stock Items",
       description: "Lista itens abaixo da quantidade mínima configurada",
     },
     z.object({}),
-    async (_args: any, context: AuthenticatedContext) => {
+    async (_args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 

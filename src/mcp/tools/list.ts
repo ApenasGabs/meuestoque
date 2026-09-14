@@ -1,15 +1,15 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
-export const registerListTools = (server: any) => {
-  server.registerTool(
+export const registerListTools = (server: unknown) => {
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "get_shopping_list",
     {
       title: "Get Shopping List",
       description: "Retorna todos os itens da lista de compras ativa do grupo",
     },
     z.object({}),
-    async (_args: any, context: AuthenticatedContext) => {
+    async (_args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
@@ -37,7 +37,7 @@ export const registerListTools = (server: any) => {
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "add_item_to_list",
     {
       title: "Add Item to List",
@@ -49,7 +49,7 @@ export const registerListTools = (server: any) => {
       categoria: z.string().default("Outros"),
       preco: z.number().optional(),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase, groupId, userId } = context;
       if (!groupId) throw new Error("Usuário não possui grupo ativo");
 
@@ -66,20 +66,20 @@ export const registerListTools = (server: any) => {
       // Simplified addition for MCP
       const { error } = await supabase.from("items").insert({
         list_id: activeList.id,
-        nome: args.nome,
-        quantidade: args.quantidade,
-        categoria: args.categoria,
-        preco: args.preco ?? null,
+        nome: (args as { nome: string }).nome,
+        quantidade: (args as { quantidade: string | number }).quantidade,
+        categoria: (args as { categoria: string }).categoria,
+        preco: (args as { preco?: number }).preco ?? null,
         comprado: false,
         criado_por: userId,
       });
 
       if (error) throw new Error(`Erro ao inserir: ${error.message}`);
-      return { content: [{ type: "text", text: `Item ${args.nome} adicionado com sucesso.` }] };
+      return { content: [{ type: "text", text: `Item ${(args as { nome: string }).nome} adicionado com sucesso.` }] };
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "remove_item_from_list",
     {
       title: "Remove Item from List",
@@ -88,13 +88,13 @@ export const registerListTools = (server: any) => {
     z.object({ item_id: z.string().uuid() }),
     async (args: { item_id: string }, context: AuthenticatedContext) => {
       const { supabase } = context;
-      const { error } = await supabase.from("items").delete().eq("id", args.item_id);
+      const { error } = await supabase.from("items").delete().eq("id", (args as { item_id: string }).item_id);
       if (error) throw new Error(`Erro ao remover: ${error.message}`);
       return { content: [{ type: "text", text: "Item removido com sucesso." }] };
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "mark_item_as_bought",
     {
       title: "Mark Item as Bought",
@@ -105,25 +105,25 @@ export const registerListTools = (server: any) => {
       comprado: z.boolean().default(true),
       preco: z.number().optional(),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
-      const updateData: any = { comprado: args.comprado };
-      if (args.preco !== undefined) {
-        updateData.preco = args.preco;
-        updateData.preco_total = args.preco;
+      const updateData: Record<string, unknown> = { comprado: (args as { comprado: boolean }).comprado };
+      if ((args as { preco?: number }).preco !== undefined) {
+        (updateData as Record<string, unknown>).preco = (args as { preco?: number }).preco;
+        (updateData as Record<string, unknown>).preco_total = (args as { preco?: number }).preco;
       }
 
-      const { error } = await supabase.from("items").update(updateData).eq("id", args.item_id);
+      const { error } = await supabase.from("items").update(updateData as never).eq("id", (args as { item_id: string }).item_id);
       if (error) throw new Error(`Erro ao marcar item: ${error.message}`);
       return {
         content: [
-          { type: "text", text: `Item marcado como ${args.comprado ? "comprado" : "pendente"}.` },
+          { type: "text", text: `Item marcado como ${(args as { comprado: boolean }).comprado ? "comprado" : "pendente"}.` },
         ],
       };
     },
   );
 
-  server.registerTool(
+  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
     "finalize_shopping_list",
     {
       title: "Finalize Shopping List",
@@ -133,11 +133,11 @@ export const registerListTools = (server: any) => {
       list_id: z.string().uuid(),
       data_compra: z.string().optional(),
     }),
-    async (args: any, context: AuthenticatedContext) => {
+    async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
       const { data, error } = await supabase.rpc("rpc_finalize_shopping_list", {
-        p_list_id: args.list_id,
-        p_purchase_date: args.data_compra ?? new Date().toISOString().slice(0, 10),
+        p_list_id: (args as { list_id: string }).list_id,
+        p_purchase_date: (args as { data_compra?: string }).data_compra ?? new Date().toISOString().slice(0, 10),
       });
 
       if (error) throw new Error(`Erro ao finalizar lista: ${error.message}`);
