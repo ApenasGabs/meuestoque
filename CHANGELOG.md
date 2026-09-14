@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.22.0](https://github.com/ApenasGabs/meuestoque/compare/v1.21.0...v1.22.0) (2026-09-14)
+
+### ✨ Features
+
+* 🚀 adiciona bulk_add_items_to_list e corrige schemas Zod do MCP ([a1ab130](https://github.com/ApenasGabs/meuestoque/commit/a1ab1308f78290b9a16233527ccb91a72e148a86))
+
+### 🐛 Bug Fixes
+
+* 🐛 usa export default handler para Vercel Serverless Function ([5861fae](https://github.com/ApenasGabs/meuestoque/commit/5861fae237cbd11990c4d2d6a8292952047e1563))
+
 ## [1.21.0](https://github.com/ApenasGabs/meuestoque/compare/v1.20.0...v1.21.0) (2026-09-14)
 
 ### ✨ Features
