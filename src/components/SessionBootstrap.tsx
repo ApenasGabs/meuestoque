@@ -74,6 +74,8 @@ export function SessionBootstrap(): ReactElement {
       setUser(session.user.id, session.user.user_metadata?.nome ?? session.user.email ?? "");
       setSnapshotUserId(session.user.id);
 
+      void syncBrandDictionaryFromSupabase();
+
       const persistedSnapshot = getPersistedGroupSnapshotForUser(session.user.id);
 
       if (

@@ -43,6 +43,38 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🏷️ (13/09/2026) Bugfix: Preparação Dicionário de Produtos (Fase 3)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["SessionBootstrap"] -->|"onAuthStateChange (SIGNED_IN)"| B["syncBrandDictionaryFromSupabase"]
+    C["isProductSemanticallyRelevant"] -->|"Filtro expandido (Bolo, Torta, etc.)"| D["Cotação mais precisa"]
+```
+
+#### Arquivos Modificados / Criados
+
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/components/SessionBootstrap.tsx` | Movida a chamada `syncBrandDictionaryFromSupabase` para dentro do listener de autenticação, prevenindo falha silenciosa de RLS. |
+| `src/services/tendaService.ts` | Adicionadas palavras derivativas (`bolo`, `torta`, `palha`, `pure`, `flocos`, `pudim`, `iogurte`, `vitamina`, `conserva`) ao `DERIVATIVE_WORDS` para evitar falsos positivos na comparação semântica. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Sincronização do dicionário com o Supabase só deve ocorrer *após* a resolução do estado de autenticação, para respeitar políticas de RLS `TO authenticated`.
+REGRA 2: Produtos derivativos compostos (ex: "Bolo de Cenoura") não devem ser considerados como alternativas válidas para ingredientes base (ex: "Cenoura").
+```
+
+#### Comportamento
+- O dicionário de marcas agora carrega de forma confiável após o login, em vez de falhar silenciosamente no mount inicial da aplicação.
+- A cotação de ingredientes puros (como "Cenoura 200g") não retorna mais produtos processados não relacionados (como "Bolo Cenoura Bauducco").
+
+#### Checklist de Aceite
+- [x] Sincronização rodando no momento correto da sessão.
+- [x] Testes passando e build concluído.
+- [x] O terreno agora está totalmente livre e validado para a continuação da Fase 3.
+
+
 ### 🏷️ (13/09/2026) Feature: Dicionário Dinâmico de Marcas & Comparação de Preços Tenda (Fase 2)
 
 #### Arquitetura

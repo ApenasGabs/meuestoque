@@ -273,6 +273,15 @@ const DERIVATIVE_WORDS = new Set([
   "lasanha",
   "alho",
   "goiaba",
+  "bolo",
+  "torta",
+  "palha",
+  "pure",
+  "flocos",
+  "pudim",
+  "iogurte",
+  "vitamina",
+  "conserva",
 ]);
 
 const SUBTYPE_KEYWORDS = [
