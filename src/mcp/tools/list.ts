@@ -8,7 +8,7 @@ export const registerListTools = (server: unknown) => {
       title: "Get Shopping List",
       description: "Retorna todos os itens da lista de compras ativa do grupo",
     },
-    z.object({}),
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
@@ -51,7 +51,7 @@ export const registerListTools = (server: unknown) => {
       title: "Add Item to List",
       description: "Adiciona um item na lista de compras ativa",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       nome: z.string().min(1),
       quantidade: z.string().default("1"),
       categoria: z.string().default("Outros"),
@@ -101,7 +101,7 @@ export const registerListTools = (server: unknown) => {
       title: "Remove Item from List",
       description: "Remove um item da lista de compras pelo ID",
     },
-    z.object({ item_id: z.string().uuid() }),
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), item_id: z.string().uuid() }),
     async (args: { item_id: string }, context: AuthenticatedContext) => {
       const { supabase } = context;
       const { error } = await supabase.from("items").delete().eq("id", (args as { item_id: string }).item_id);
@@ -116,7 +116,7 @@ export const registerListTools = (server: unknown) => {
       title: "Mark Item as Bought",
       description: "Marca ou desmarca um item como comprado e opcionalmente registra o preco",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       item_id: z.string().uuid(),
       comprado: z.boolean().default(true),
       preco: z.number().optional(),
@@ -145,7 +145,7 @@ export const registerListTools = (server: unknown) => {
       title: "Finalize Shopping List",
       description: "Finaliza a lista ativa e move itens comprados para o estoque",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       list_id: z.string().uuid(),
       data_compra: z.string().optional(),
     }),

@@ -800,3 +800,20 @@ SOLUÇÃO: O usuário declara os campos pack_label e pack_size na hora da compra
 - [x] Parser interpretando formato string corretamente (`NxYunit`).
 - [x] Front-end renderizando os campos e callback sem erros React de estado (JSX otimista).
 - [x] Scripts de build e lint executados sem erros.
+
+### 📝 (14/09/2026) Adição de Ferramenta Bulk no MCP e Fix de Schemas
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/*.ts` | Adição do campo opcional `group_id` nos schemas do Zod |
+| `src/mcp/tools/list.ts` | Criação da tool `bulk_add_items_to_list` |
+
+#### Lógica de Decisão
+- Antes, a IA ficava em loop pois o SDK validava estritamente o schema Zod e rejeitava o `group_id`.
+- Além disso, adicionar 40 itens um a um da lista de exemplo gerava um timeout/loop visual para o LLM. A nova tool `bulk_add_items_to_list` permite inserir o array completo em uma única call RPC.
+
+#### Checklist de Aceite
+- [x] Lint passando
+- [x] Testes passando
+- [x] Build sem erros
