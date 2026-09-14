@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.22.3](https://github.com/ApenasGabs/meuestoque/compare/v1.22.2...v1.22.3) (2026-09-14)
+
+### 🐛 Bug Fixes
+
+* 🐛 resolve extra.http.authInfo context no handler das tools do MCP ([f2479dd](https://github.com/ApenasGabs/meuestoque/commit/f2479ddfe5ee41063f22aac700dfa8bc735e70e2))
+
 ## [1.22.2](https://github.com/ApenasGabs/meuestoque/compare/v1.22.1...v1.22.2) (2026-09-14)
 
 ### 🐛 Bug Fixes
