@@ -1,3 +1,7 @@
+export const config = {
+  runtime: "edge",
+};
+
 import { createMcpHandler } from "mcp-handler";
 import { authenticateRequest } from "../src/mcp/auth";
 import { registerListTools } from "../src/mcp/tools/list";
