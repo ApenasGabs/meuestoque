@@ -5,6 +5,23 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.21.0](https://github.com/ApenasGabs/meuestoque/compare/v1.20.0...v1.21.0) (2026-09-14)
+
+### ✨ Features
+
+* ✨ adiciona servidor MCP serverless e token de integração IA no perfil ([38811ca](https://github.com/ApenasGabs/meuestoque/commit/38811cad82ed431e69d0f4422b8d61b4cb24a291))
+* ✨ adiciona url dinâmica (meuestoque vs nossoestoque) para config MCP ([4ee73cd](https://github.com/ApenasGabs/meuestoque/commit/4ee73cd65a265013f8504103106a05b8ee3391f6))
+
+### 🐛 Bug Fixes
+
+* 🐛 corrige cálculo do total da lista ao aplicar cotação do Tenda ([2dea2b3](https://github.com/ApenasGabs/meuestoque/commit/2dea2b3baee183b16efd922cf3d9c389344b0484))
+* 🐛 remove lockfiles conflituosos e adiciona peer dependency do MCP ([4f0225b](https://github.com/ApenasGabs/meuestoque/commit/4f0225b8fcfde40d4659807a80d06babbf0703fe))
+
+### 🔧 Chores
+
+* 🔧  correcoes baseado no code review ([f0a0dd1](https://github.com/ApenasGabs/meuestoque/commit/f0a0dd1b2fa528e5a7f6eb1279bbc3cab2f199b6))
+* 🔧 adiciona .npmrc com legacy-peer-deps para ignorar conflito do tailwind v4 ([5d4d5bb](https://github.com/ApenasGabs/meuestoque/commit/5d4d5bb072892b405d23d65ae520da12195d7f09))
+
 ## [1.20.0](https://github.com/ApenasGabs/meuestoque/compare/v1.19.0...v1.20.0) (2026-09-14)
 
 ### ✨ Features
