@@ -2,13 +2,13 @@ import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
 export const registerListTools = (server: unknown) => {
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_shopping_list",
     {
       title: "Get Shopping List",
       description: "Retorna todos os itens da lista de compras ativa do grupo",
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -47,18 +47,18 @@ export const registerListTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "add_item_to_list",
     {
       title: "Add Item to List",
       description: "Adiciona um item na lista de compras ativa",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       nome: z.string().min(1),
       quantidade: z.string().default("1"),
       categoria: z.string().default("Outros"),
       preco: z.number().optional(),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -99,13 +99,13 @@ export const registerListTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "remove_item_from_list",
     {
       title: "Remove Item from List",
       description: "Remove um item da lista de compras pelo ID",
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), item_id: z.string().uuid() }),
     },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), item_id: z.string().uuid() }),
     async (args: { item_id: string }, context: AuthenticatedContext) => {
       const { supabase } = context;
       const { error } = await supabase.from("items").delete().eq("id", (args as { item_id: string }).item_id);
@@ -114,17 +114,17 @@ export const registerListTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "mark_item_as_bought",
     {
       title: "Mark Item as Bought",
       description: "Marca ou desmarca um item como comprado e opcionalmente registra o preco",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       item_id: z.string().uuid(),
       comprado: z.boolean().default(true),
       preco: z.number().optional(),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -145,16 +145,16 @@ export const registerListTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "finalize_shopping_list",
     {
       title: "Finalize Shopping List",
       description: "Finaliza a lista ativa e move itens comprados para o estoque",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       list_id: z.string().uuid(),
       data_compra: z.string().optional(),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");

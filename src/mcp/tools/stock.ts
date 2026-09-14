@@ -2,16 +2,16 @@ import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
 export const registerStockTools = (server: unknown) => {
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_stock_items",
     {
       title: "Get Stock Items",
       description: "Lista itens do estoque baseados num filtro (todos, baixo, vencendo, zerado)",
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+        filtro: z.enum(["todos", "baixo", "vencendo", "zerado"]).default("todos"),
+        dias_vencimento: z.number().int().default(7),
+      }),
     },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
-      filtro: z.enum(["todos", "baixo", "vencendo", "zerado"]).default("todos"),
-      dias_vencimento: z.number().int().default(7),
-    }),
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -52,16 +52,16 @@ export const registerStockTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "consume_stock_item",
     {
       title: "Consume Stock Item",
       description: "Registra o consumo de um item do estoque",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       item_id: z.string().uuid(),
       quantidade: z.number().positive(),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -78,13 +78,13 @@ export const registerStockTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_expiring_items",
     {
       title: "Get Expiring Items",
       description: "Lista itens que vencem nos próximos N dias",
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), dias: z.number().int().min(1).max(90).default(7) }),
     },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), dias: z.number().int().min(1).max(90).default(7) }),
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -115,13 +115,13 @@ export const registerStockTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_low_stock_items",
     {
       title: "Get Low Stock Items",
       description: "Lista itens abaixo da quantidade mínima configurada",
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");

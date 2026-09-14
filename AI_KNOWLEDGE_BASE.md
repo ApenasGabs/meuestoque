@@ -817,3 +817,30 @@ SOLUÇÃO: O usuário declara os campos pack_label e pack_size na hora da compra
 - [x] Lint passando
 - [x] Testes passando
 - [x] Build sem erros
+
+### 📝 (14/09/2026) Correção de Assinatura das Ferramentas no MCP Server
+
+#### Arquitetura
+```mermaid
+graph TD
+    Client[Cliente MCP] -->|JSON-RPC tools/call| Edge[Vercel Edge Handler]
+    Edge --> Server[McpServer.registerTool]
+    Server --> Handler[Tool Callback com extra.authInfo]
+    Handler --> Supabase[Supabase Client Autenticado]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/list.ts` | Correção da assinatura de `registerTool` (inputSchema dentro de config) |
+| `src/mcp/tools/stock.ts` | Correção da assinatura de `registerTool` (inputSchema dentro de config) |
+| `src/mcp/tools/insights.ts` | Correção da assinatura de `registerTool` (inputSchema dentro de config) |
+
+#### Lógica de Decisão
+- `@modelcontextprotocol/server` espera 3 argumentos: `(name, config, callback)`, onde `inputSchema` fica obrigatoriamente dentro de `config`.
+- Antes, `schema` era passado como 3º argumento e o handler como 4º. Isso fazia o endpoint retornar `inputSchema: {}` no `tools/list` e lançar `n is not a function` na invocação da ferramenta.
+
+#### Checklist de Aceite
+- [x] Lint passando
+- [x] Testes passando (156 testes)
+- [x] Build sem erros

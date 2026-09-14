@@ -2,16 +2,16 @@ import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
 
 export const registerInsightTools = (server: unknown) => {
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_consumption_history",
     {
       title: "Get Consumption History",
       description: "Histórico de consumo de um produto (ou todos) nos últimos N dias",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       produto: z.string().optional(),
       dias: z.number().int().default(30),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -57,16 +57,16 @@ export const registerInsightTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_spending_summary",
     {
       title: "Get Spending Summary",
       description: "Resumo de gastos em um período",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       de: z.string(),
       ate: z.string(),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
@@ -104,16 +104,16 @@ export const registerInsightTools = (server: unknown) => {
     },
   );
 
-  (server as { registerTool: (name: string, desc: unknown, schema: unknown, handler: unknown) => void }).registerTool(
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
     "get_price_trend",
     {
       title: "Get Price Trend",
       description: "Tendência de preço de um produto nas cotações Tenda",
-    },
-    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       produto: z.string().min(1),
       dias: z.number().int().default(30),
     }),
+    },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extra.authInfo;
       if (!context) throw new Error("Contexto de autenticação não encontrado");
