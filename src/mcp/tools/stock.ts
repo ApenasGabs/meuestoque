@@ -8,7 +8,7 @@ export const registerStockTools = (server: unknown) => {
       title: "Get Stock Items",
       description: "Lista itens do estoque baseados num filtro (todos, baixo, vencendo, zerado)",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       filtro: z.enum(["todos", "baixo", "vencendo", "zerado"]).default("todos"),
       dias_vencimento: z.number().int().default(7),
     }),
@@ -56,7 +56,7 @@ export const registerStockTools = (server: unknown) => {
       title: "Consume Stock Item",
       description: "Registra o consumo de um item do estoque",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       item_id: z.string().uuid(),
       quantidade: z.number().positive(),
     }),
@@ -80,7 +80,7 @@ export const registerStockTools = (server: unknown) => {
       title: "Get Expiring Items",
       description: "Lista itens que vencem nos próximos N dias",
     },
-    z.object({ dias: z.number().int().min(1).max(90).default(7) }),
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), dias: z.number().int().min(1).max(90).default(7) }),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
@@ -115,7 +115,7 @@ export const registerStockTools = (server: unknown) => {
       title: "Get Low Stock Items",
       description: "Lista itens abaixo da quantidade mínima configurada",
     },
-    z.object({}),
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     async (args: Record<string, unknown>, context: AuthenticatedContext) => {
       const { supabase } = context;
       const groups = (context as { groups: { id: string }[] }).groups;

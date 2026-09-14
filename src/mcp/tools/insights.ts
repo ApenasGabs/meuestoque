@@ -8,7 +8,7 @@ export const registerInsightTools = (server: unknown) => {
       title: "Get Consumption History",
       description: "Histórico de consumo de um produto (ou todos) nos últimos N dias",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       produto: z.string().optional(),
       dias: z.number().int().default(30),
     }),
@@ -61,7 +61,7 @@ export const registerInsightTools = (server: unknown) => {
       title: "Get Spending Summary",
       description: "Resumo de gastos em um período",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       de: z.string(),
       ate: z.string(),
     }),
@@ -106,7 +106,7 @@ export const registerInsightTools = (server: unknown) => {
       title: "Get Price Trend",
       description: "Tendência de preço de um produto nas cotações Tenda",
     },
-    z.object({
+    z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
       produto: z.string().min(1),
       dias: z.number().int().default(30),
     }),
