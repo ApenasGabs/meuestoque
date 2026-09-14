@@ -5,6 +5,13 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.22.1](https://github.com/ApenasGabs/meuestoque/compare/v1.22.0...v1.22.1) (2026-09-14)
+
+### 🐛 Bug Fixes
+
+* 🐛 define runtime edge no endpoint MCP para compatibilidade Web Request ([a33d447](https://github.com/ApenasGabs/meuestoque/commit/a33d4478d08ed50ee9df7618257e4063a90fceab))
+* 🐛 resolve bug crítico de injeção de autenticação via req.auth no endpoint MCP ([cd32f1b](https://github.com/ApenasGabs/meuestoque/commit/cd32f1be64665d75828de8b2e67efbf7cb442bd3))
+
 ## [1.22.0](https://github.com/ApenasGabs/meuestoque/compare/v1.21.0...v1.22.0) (2026-09-14)
 
 ### ✨ Features
