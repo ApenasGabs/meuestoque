@@ -42,6 +42,38 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+### 📝 (14/09/2026) Correção: Build da Vercel (Dependências)
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `package.json` | Adicionado `@modelcontextprotocol/server` como dependência para satisfazer a exigência (peer dependency) do `mcp-handler`. |
+| `yarn.lock`, `pnpm-lock.yaml` | Deletados para forçar a Vercel a usar o `npm` (referência do `package-lock.json`). |
+
+#### Lógica de Decisão
+```text
+REGRA: Projetos Vercel se confundem quando há múltiplos lockfiles (yarn.lock + package-lock.json). A Vercel escolhe Yarn por padrão, o que gera inconsistências no build de workspaces ou dependências faltantes. O correto é manter apenas package-lock.json.
+```
+### 📝 (14/09/2026) Correção: Cálculo de Total no Tenda Atacado
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/pages/ListPageNew.tsx` | Correção na aplicação de preço e troca de marca via Tenda |
+
+#### Lógica de Decisão
+```text
+REGRA: Cotações do Tenda retornam preço UNITÁRIO. Ao aplicar o preço para itens com quantidade > 1, o sistema deve multiplicar pela quantidade do item na lista.
+```
+
+#### Comportamento
+- O sistema antes atualizava o `preco_total` com o valor unitário da cotação
+- Agora, a função `handleApplyTendaPrice` aciona `fireUpdateItemUnitPrice` (em vez de `fireUpdateItemPrice`), que realiza a multiplicação da quantidade inserida pelo valor unitário recebido.
+
+#### Checklist de Aceite
+- [x] Lint passando
+- [x] Testes passando
+- [x] Build sem erros
 ### 🤖 (14/09/2026) Feature: Servidor MCP Serverless (Integração de IA)
 
 #### Arquitetura

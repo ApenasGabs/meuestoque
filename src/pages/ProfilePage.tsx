@@ -24,7 +24,6 @@ import { useAuthStore } from "../stores/authStore";
 import { useGroupStore } from "../stores/groupStore";
 import { useStockStore } from "../stores/stockStore";
 
-
 export const ProfilePage = (): ReactElement => {
   const navigate = useNavigate();
   const userName = useAuthStore((state) => state.userName);
@@ -44,6 +43,9 @@ export const ProfilePage = (): ReactElement => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mcpToken, setMcpToken] = useState<string | null>(null);
+  const isShared = members.length > 1;
+  const appTitle = isShared ? "NossoEstoque" : "MeuEstoque";
+  const appName = appTitle.toLowerCase();
 
   useEffect(() => {
     const loadProfileData = async (): Promise<void> => {
@@ -126,8 +128,8 @@ export const ProfilePage = (): ReactElement => {
     if (!mcpToken || !navigator.clipboard) return;
     const config = `{
   "mcpServers": {
-    "meuestoque": {
-      "url": "https://meuestoque.apenasgabs.dev/api/mcp",
+    "${appName}": {
+      "url": "https://${appName}.apenasgabs.dev/api/mcp",
       "headers": {
         "Authorization": "Bearer ${mcpToken}"
       }
@@ -135,6 +137,25 @@ export const ProfilePage = (): ReactElement => {
   }
 }`;
     await navigator.clipboard.writeText(config);
+  };
+
+  const handleCopyAiPrompt = async (): Promise<void> => {
+    if (!mcpToken || !navigator.clipboard) return;
+    const prompt = `IA, por favor configure a integração MCP com o ${appTitle}. Adicione o seguinte servidor à sua configuração de ferramentas MCP (ex: claude_desktop_config.json ou settings do Cursor):
+
+{
+  "mcpServers": {
+    "${appName}": {
+      "url": "https://${appName}.apenasgabs.dev/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${mcpToken}"
+      }
+    }
+  }
+}
+
+Assim que configurar, me avise para testarmos a conexão!`;
+    await navigator.clipboard.writeText(prompt);
   };
 
   return (
@@ -269,12 +290,15 @@ export const ProfilePage = (): ReactElement => {
         <CardBody>
           <div className="flex items-center justify-between mb-4">
             <h2 className="!mb-0">Integração IA (MCP Server)</h2>
-            <Badge variant="primary" className="text-xs">BETA</Badge>
+            <Badge variant="primary" className="text-xs">
+              BETA
+            </Badge>
           </div>
           <p className="text-sm text-base-content/80 mb-4">
-            Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model Context Protocol (MCP).
+            Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model
+            Context Protocol (MCP).
           </p>
-          
+
           {!mcpToken ? (
             <Button type="button" variant="secondary" onClick={() => void handleGenerateMcpToken()}>
               Gerar Token de Acesso
@@ -284,8 +308,8 @@ export const ProfilePage = (): ReactElement => {
               <div className="bg-base-200 p-3 rounded-lg overflow-x-auto text-xs font-mono">
                 <code>{`{
   "mcpServers": {
-    "meuestoque": {
-      "url": "https://meuestoque.apenasgabs.dev/api/mcp",
+    "${appName}": {
+      "url": "https://${appName}.apenasgabs.dev/api/mcp",
       "headers": {
         "Authorization": "Bearer ${mcpToken.substring(0, 15)}...${mcpToken.slice(-10)}"
       }
@@ -293,9 +317,22 @@ export const ProfilePage = (): ReactElement => {
   }
 }`}</code>
               </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="primary" size="sm" onClick={() => void handleCopyMcpConfig()}>
-                  Copiar Configuração
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => void handleCopyMcpConfig()}
+                >
+                  Copiar JSON
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleCopyAiPrompt()}
+                >
+                  Copiar Prompt p/ IA
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setMcpToken(null)}>
                   Ocultar
@@ -310,36 +347,49 @@ export const ProfilePage = (): ReactElement => {
         <CardBody>
           <div className="flex items-center justify-between mb-4">
             <h2 className="!mb-0">Sobre o App</h2>
-            <Badge variant="accent" className="font-mono text-xs">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.7.0'}</Badge>
+            <Badge variant="accent" className="font-mono text-xs">
+              v{typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.7.0"}
+            </Badge>
           </div>
-          
+
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-base-content/80">Últimas Atualizações</h3>
             <div className="stack-list max-h-64 overflow-y-auto pr-2">
-              {(typeof __APP_CHANGELOG__ !== 'undefined' ? __APP_CHANGELOG__ : []).map((entry) => (
-                <article key={entry.version} className="border border-base-200 p-3 rounded-lg bg-base-100/50">
+              {(typeof __APP_CHANGELOG__ !== "undefined" ? __APP_CHANGELOG__ : []).map((entry) => (
+                <article
+                  key={entry.version}
+                  className="border border-base-200 p-3 rounded-lg bg-base-100/50"
+                >
                   <div className="flex justify-between items-center mb-2">
                     <strong className="text-primary font-mono text-sm">v{entry.version}</strong>
                     <span className="text-xs text-base-content/60">{entry.date}</span>
                   </div>
-                  
+
                   {entry.features && entry.features.length > 0 && (
                     <div className="mb-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-success mb-1 block">✨ Novidades</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-success mb-1 block">
+                        ✨ Novidades
+                      </span>
                       <ul className="list-disc list-inside text-sm text-base-content/80 space-y-1">
                         {entry.features.map((feature: string, idx: number) => (
-                          <li key={idx} className="leading-tight">{feature}</li>
+                          <li key={idx} className="leading-tight">
+                            {feature}
+                          </li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  
+
                   {entry.fixes && entry.fixes.length > 0 && (
                     <div>
-                      <span className="text-xs font-semibold uppercase tracking-wider text-warning mb-1 block">🐛 Correções</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-warning mb-1 block">
+                        🐛 Correções
+                      </span>
                       <ul className="list-disc list-inside text-sm text-base-content/80 space-y-1">
                         {entry.fixes.map((fix: string, idx: number) => (
-                          <li key={idx} className="leading-tight">{fix}</li>
+                          <li key={idx} className="leading-tight">
+                            {fix}
+                          </li>
                         ))}
                       </ul>
                     </div>
