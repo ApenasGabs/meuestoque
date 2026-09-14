@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.22.2](https://github.com/ApenasGabs/meuestoque/compare/v1.22.1...v1.22.2) (2026-09-14)
+
+### 🐛 Bug Fixes
+
+* 🐛 corrige assinatura do registerTool embutindo inputSchema no config ([e469fa1](https://github.com/ApenasGabs/meuestoque/commit/e469fa1f00fa4a5a0ff0bf8c41beea0a4bb4f22b))
+
 ## [1.22.1](https://github.com/ApenasGabs/meuestoque/compare/v1.22.0...v1.22.1) (2026-09-14)
 
 ### 🐛 Bug Fixes
