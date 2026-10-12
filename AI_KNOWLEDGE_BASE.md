@@ -42,6 +42,47 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+### 📝 (12/10/2026) Feature: Edição do Nome de Itens na Lista de Compras
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["ShoppingListItem (UI Inline Edit)"] -->|"onUpdateName(itemId, newName)"| B["ShoppingListView"]
+    B -->|"onUpdateItemName"| C["ListPageNew (handleUpdateItemName)"]
+    C -->|"Update Otimista (setShoppingItems)"| D["Estado Local"]
+    C -->|"updateListItemName"| E["webData.ts"]
+    E -->|"UPDATE items (nome, marca, produto_base)"| F["Supabase DB"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/features/inventory/components/shoppingListItem/ShoppingListItem.tsx` | Adicionado modo de edição inline para o nome do item com botão de lápis, input de texto com autoFocus, atalhos de teclado (Enter salva, Esc cancela), botões de confirmação/cancelamento e callback `onUpdateName`. |
+| `src/features/inventory/components/shoppingListItem/ShoppingListItem.test.tsx` | **Criado**: 8 testes unitários cobrindo abertura da edição (por botão ou clique no nome), persistência (botão e Enter), cancelamento (botão e Esc), prevenção de updates sem alteração. |
+| `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Adicionada prop `onUpdateItemName` na interface e repassada ao `ShoppingListItem`. |
+| `src/pages/ListPageNew.tsx` | Implementado `handleUpdateItemName` com update otimista no estado da lista e chamada a `updateListItemName` persistindo no Supabase com toast de feedback. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Ao clicar no nome ou no botão de lápis do item (fora do modo bulk), ativa-se o input de edição com o valor atual preenchido.
+REGRA 2: Salvar aplica trim() no texto; se o nome for válido e diferente do original, dispara updateListItemName(itemId, novoNome).
+REGRA 3: O updateListItemName re-extrai automaticamente marca e produto_base para manter a integridade do catálogo e cotações Tenda.
+REGRA 4: Em caso de falha de rede, o estado local da lista é revertido para o valor original via refreshItems().
+```
+
+#### Comportamento
+- O usuário agora pode editar o nome de qualquer item já existente na lista de compras diretamente no card.
+- A edição pode ser acionada clicando no ícone de lápis ou diretamente sobre o nome do item.
+- Salva ao clicar no botão "✓", ao teclar Enter ou ao perder o foco (blur).
+- Cancela sem alterar ao clicar em "✕" ou ao teclar Escape.
+- Exibe notificação de confirmação (Toast) informando o novo nome do item.
+
+#### Checklist de Aceite
+- [x] Lint passando (`npm run lint` com zero erros)
+- [x] Typecheck passando (`npm run typecheck` com zero erros)
+- [x] Testes unitários passando (`ShoppingListItem.test.tsx` 8/8)
+- [x] Build de produção sem erros (`npm run build`)
+
 ### 📝 (14/09/2026) Correção: Build da Vercel (Dependências)
 
 #### Arquivos Modificados / Criados
@@ -843,4 +884,49 @@ graph TD
 #### Checklist de Aceite
 - [x] Lint passando
 - [x] Testes passando (156 testes)
+- [x] Build sem erros
+
+### 📝 (12/10/2026) Autenticação Persistente do MCP via API Keys (issue #36)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[Cliente MCP] -->|Bearer mest_pat_| B[api/mcp.ts]
+    B --> C[src/mcp/auth.ts]
+    C -->|rpc exchange_mcp_api_key| D[(Postgres + Vault)]
+    D -->|JWT HS256 5min| C
+    C -->|cliente com JWT curto| E[Tools com RLS]
+    F[ProfilePage / McpKeysSection] -->|create/revoke RPC| D
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20261012_01_mcp_api_keys.sql` | Tabela `mcp_api_keys`, RLS somente SELECT, RPCs de criar/revogar/trocar, HS256 em plpgsql |
+| `src/mcp/auth.ts` | Aceita `mest_pat_`; troca por JWT curto; erros genéricos (`McpAuthError`); JWT de sessão deprecado |
+| `src/mcp/context.ts` | `extractContext` compartilhado e `extractWriteContext` (escopo `write`) |
+| `src/mcp/tools/*.ts` | Usam helpers compartilhados; tools de escrita exigem `write`; corrigidos `remove_item_from_list` (assinatura) e `consume_stock_item` (lançava erro sempre) |
+| `api/mcp.ts` | Sem CORS `*`, sem `any`, 401 genérico, erro interno não é mais mascarado como 401 |
+| `src/lib/mcpKeys.ts` | Serviço de chaves (list/create/revoke/revokeAll, status, config JSON) |
+| `src/components/McpKeysSection/McpKeysSection.tsx` | UI de gerenciamento; segredo exibido uma vez em modal |
+| `src/pages/ProfilePage.tsx` | Remove exposição do access_token da sessão; usa `McpKeysSection` |
+| `docs/features/feature-mcp-persistent-tokens.md` | Especificação e setup obrigatório do Vault |
+
+#### Lógica de Decisão
+```text
+REGRA: Token começa com mest_pat_ -> valida regex -> RPC exchange -> JWT 5 min -> RLS normal
+REGRA: Qualquer falha de credencial -> 401 "Unauthorized" sem motivo
+REGRA: Escrita via MCP exige escopo write
+REGRA: Chave expira em 1..365 dias; máximo 10 ativas por usuário
+REGRA: Nenhum service_role nem secret de assinatura no Vercel (secret fica no Vault: mcp_jwt_secret)
+```
+
+#### Comportamento
+- Usuário cria chaves nomeadas no Perfil (validade e somente leitura opcionais) e copia chave, JSON ou prompt.
+- Revogação tem efeito no request seguinte (sem cache).
+- Requer setup único: `vault.create_secret('<HS256 secret aceito pelo projeto>', 'mcp_jwt_secret')`.
+
+#### Checklist de Aceite
+- [x] Lint passando
+- [x] Testes novos passando (11 Vitest + 17 checagens SQL em PGlite); 66 falhas pré-existentes em 4 arquivos (ex: ThemeSelector) não relacionadas
 - [x] Build sem erros

@@ -402,6 +402,38 @@ export const ListPageNew = (): ReactElement => {
     [listId, parseListQuantity, refreshItems],
   );
 
+  const handleUpdateItemName = useCallback(
+    async (itemId: string, newName: string): Promise<void> => {
+      if (!listId) return;
+
+      const trimmed = newName.trim();
+      if (!trimmed) return;
+
+      const currentItem = shoppingItemsRef.current.find((i) => i.id === itemId);
+      if (!currentItem || currentItem.nome === trimmed) return;
+
+      setShoppingItems((prev) =>
+        prev.map((item) => (item.id === itemId ? { ...item, nome: trimmed } : item)),
+      );
+      setError(null);
+
+      try {
+        await updateListItemName(itemId, trimmed);
+        setNotice(`Item renomeado para "${trimmed}".`);
+      } catch (updateError) {
+        if (listId) {
+          await refreshItems(listId);
+        }
+        setError(
+          updateError instanceof Error
+            ? updateError.message
+            : "Falha ao atualizar nome do item",
+        );
+      }
+    },
+    [listId, refreshItems],
+  );
+
   const handleGenerateSmartList = useCallback(async (): Promise<void> => {
     if (!listId) return;
 
@@ -760,6 +792,7 @@ export const ListPageNew = (): ReactElement => {
           onUpdateItemUnitPrice={fireUpdateItemUnitPrice}
           onUpdateItemQuantity={fireUpdateItemQuantity}
           onUpdateItemUnit={fireUpdateItemUnit}
+          onUpdateItemName={handleUpdateItemName}
           onUpdateValidityDate={fireUpdateValidityDate}
           onUpdatePackSize={fireUpdatePackSize}
           onBulkRemove={async (itemIds: string[]) => {
