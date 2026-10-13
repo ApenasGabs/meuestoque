@@ -21,7 +21,7 @@ const mockProduct: InventoryProduct = {
 };
 
 describe("ShoppingListItem - Edicao de Nome", () => {
-  it("exibe o nome do produto e o botao de edicao", () => {
+  it("nao exibe botao de editar quando onUpdateName nao e fornecido", () => {
     render(
       <ShoppingListItem
         item={mockItem}
@@ -32,7 +32,22 @@ describe("ShoppingListItem - Edicao de Nome", () => {
     );
 
     expect(screen.getByText("Arroz Branco 5kg")).toBeInTheDocument();
-    expect(screen.getByTestId("edit-item-name-arroz-branco-5kg")).toBeInTheDocument();
+    expect(screen.queryByTestId(`edit-item-name-${mockItem.id}`)).not.toBeInTheDocument();
+  });
+
+  it("exibe o nome do produto e o botao de edicao estavel quando onUpdateName e fornecido", () => {
+    render(
+      <ShoppingListItem
+        item={mockItem}
+        product={mockProduct}
+        onToggle={vi.fn()}
+        onRemove={vi.fn()}
+        onUpdateName={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId(`shopping-item-name-${mockItem.id}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`edit-item-name-${mockItem.id}`)).toBeInTheDocument();
   });
 
   it("abre o input de edicao ao clicar no botao de editar", () => {
@@ -42,10 +57,11 @@ describe("ShoppingListItem - Edicao de Nome", () => {
         product={mockProduct}
         onToggle={vi.fn()}
         onRemove={vi.fn()}
+        onUpdateName={vi.fn()}
       />,
     );
 
-    const editBtn = screen.getByTestId("edit-item-name-arroz-branco-5kg");
+    const editBtn = screen.getByTestId(`edit-item-name-${mockItem.id}`);
     fireEvent.click(editBtn);
 
     const input = screen.getByTestId("shopping-item-name-input") as HTMLInputElement;
@@ -53,22 +69,6 @@ describe("ShoppingListItem - Edicao de Nome", () => {
     expect(input.value).toBe("Arroz Branco 5kg");
     expect(screen.getByTestId("save-item-name-button")).toBeInTheDocument();
     expect(screen.getByTestId("cancel-item-name-button")).toBeInTheDocument();
-  });
-
-  it("abre o input de edicao ao clicar diretamente no nome do produto", () => {
-    render(
-      <ShoppingListItem
-        item={mockItem}
-        product={mockProduct}
-        onToggle={vi.fn()}
-        onRemove={vi.fn()}
-      />,
-    );
-
-    const nameSpan = screen.getByTestId("shopping-item-name-arroz-branco-5kg");
-    fireEvent.click(nameSpan);
-
-    expect(screen.getByTestId("shopping-item-name-input")).toBeInTheDocument();
   });
 
   it("salva o novo nome ao clicar no botao de confirmar", () => {
@@ -83,7 +83,7 @@ describe("ShoppingListItem - Edicao de Nome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("edit-item-name-arroz-branco-5kg"));
+    fireEvent.click(screen.getByTestId(`edit-item-name-${mockItem.id}`));
 
     const input = screen.getByTestId("shopping-item-name-input");
     fireEvent.change(input, { target: { value: "Arroz Integral Camil 5kg" } });
@@ -105,7 +105,7 @@ describe("ShoppingListItem - Edicao de Nome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("edit-item-name-arroz-branco-5kg"));
+    fireEvent.click(screen.getByTestId(`edit-item-name-${mockItem.id}`));
 
     const input = screen.getByTestId("shopping-item-name-input");
     fireEvent.change(input, { target: { value: "Arroz Parboilizado" } });
@@ -127,7 +127,7 @@ describe("ShoppingListItem - Edicao de Nome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("edit-item-name-arroz-branco-5kg"));
+    fireEvent.click(screen.getByTestId(`edit-item-name-${mockItem.id}`));
 
     const input = screen.getByTestId("shopping-item-name-input");
     fireEvent.change(input, { target: { value: "Nome Cancelado" } });
@@ -150,7 +150,7 @@ describe("ShoppingListItem - Edicao de Nome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("edit-item-name-arroz-branco-5kg"));
+    fireEvent.click(screen.getByTestId(`edit-item-name-${mockItem.id}`));
 
     const input = screen.getByTestId("shopping-item-name-input");
     fireEvent.change(input, { target: { value: "Outro Nome" } });
@@ -172,7 +172,7 @@ describe("ShoppingListItem - Edicao de Nome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("edit-item-name-arroz-branco-5kg"));
+    fireEvent.click(screen.getByTestId(`edit-item-name-${mockItem.id}`));
     fireEvent.mouseDown(screen.getByTestId("save-item-name-button"));
 
     expect(handleUpdateName).not.toHaveBeenCalled();

@@ -70,25 +70,22 @@ export const ShoppingListItem = memo(({
 
   // ── Name edit state ──
   const [isEditingName, setIsEditingName] = useState(false);
-  const [prevName, setPrevName] = useState(product.name);
-  const [nameDraft, setNameDraft] = useState(product.name);
-  if (product.name !== prevName) {
-    setPrevName(product.name);
+  const [nameDraft, setNameDraft] = useState("");
+
+  const handleStartEditName = (): void => {
     setNameDraft(product.name);
-  }
+    setIsEditingName(true);
+  };
 
   const handleNameSave = (): void => {
     const trimmed = nameDraft.trim();
     if (trimmed && trimmed !== product.name) {
       onUpdateName?.(item.id, trimmed);
-    } else {
-      setNameDraft(product.name);
     }
     setIsEditingName(false);
   };
 
   const handleNameCancel = (): void => {
-    setNameDraft(product.name);
     setIsEditingName(false);
   };
 
@@ -342,29 +339,22 @@ export const ShoppingListItem = memo(({
               ) : (
                 <>
                   <span
-                    onClick={(e) => {
-                      if (!listBulk) {
-                        e.stopPropagation();
-                        setIsEditingName(true);
-                      }
-                    }}
-                    className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none cursor-pointer hover:underline decoration-dashed underline-offset-2 ${item.checked ? "line-through text-base-content/50" : ""}`}
-                    title="Clique para editar o nome"
-                    data-testid={`shopping-item-name-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
+                    className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
+                    data-testid={`shopping-item-name-${item.id}`}
                   >
                     {product.name}
                   </span>
-                  {!listBulk && (
+                  {Boolean(onUpdateName) && !listBulk && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsEditingName(true);
+                        handleStartEditName();
                       }}
                       className="btn btn-ghost btn-xs p-0.5 min-h-0 h-5 w-5 opacity-40 hover:opacity-100 shrink-0"
                       title="Editar nome"
                       aria-label={`Editar nome de ${product.name}`}
-                      data-testid={`edit-item-name-${product.name.toLowerCase().replace(/\s+/g, "-")}`}
+                      data-testid={`edit-item-name-${item.id}`}
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

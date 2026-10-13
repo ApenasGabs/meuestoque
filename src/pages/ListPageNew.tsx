@@ -421,6 +421,9 @@ export const ListPageNew = (): ReactElement => {
         await updateListItemName(itemId, trimmed);
         setNotice(`Item renomeado para "${trimmed}".`);
       } catch (updateError) {
+        setShoppingItems((prev) =>
+          prev.map((item) => (item.id === itemId ? { ...item, nome: currentItem.nome } : item)),
+        );
         if (listId) {
           await refreshItems(listId);
         }
