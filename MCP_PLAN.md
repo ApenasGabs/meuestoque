@@ -547,3 +547,10 @@ Adicionar secao descrevendo o MCP server como nova camada de acesso ao backend.
 > **Verificar assinatura exata de `consume_stock_fifo` antes de implementar.**
 > A RPC foi criada em `supabase/migrations/20260524_01_atomic_consume_stock_fifo.sql`.
 > Ler o arquivo da migration para confirmar os nomes exatos dos parametros.
+
+
+---
+
+## Atualização (12/10/2026): Autenticação persistente (issue #36)
+
+O header `Authorization` agora aceita também chaves `mest_pat_...` criadas no Perfil. `auth.ts` troca a chave por um JWT de 5 minutos via RPC `exchange_mcp_api_key` (assinado no Postgres com segredo do Vault) e cria o cliente Supabase com esse JWT, preservando o RLS. O JWT de sessão continua aceito, mas está deprecado. Detalhes e setup: `docs/features/feature-mcp-persistent-tokens.md`.

@@ -1,17 +1,7 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
+import { extractContext, extractWriteContext } from "../context";
 
-const extractContext = (extra: unknown): AuthenticatedContext => {
-  const e = extra as Record<string, unknown> | undefined;
-  const http = e?.http as Record<string, unknown> | undefined;
-  const ctx = (http?.authInfo ?? e?.authInfo ?? e?.auth ?? e?.context) as AuthenticatedContext | undefined;
-  if (!ctx) {
-    const keys = e ? Object.keys(e).join(",") : "null";
-    const httpKeys = http ? Object.keys(http).join(",") : "none";
-    throw new Error(`Contexto de autenticação não encontrado. Extra: [${keys}], Http: [${httpKeys}]`);
-  }
-  return ctx;
-};
 
 
 export const registerListTools = (server: unknown) => {
@@ -72,7 +62,7 @@ export const registerListTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extractContext(extra);
+      const context = extractWriteContext(extra);
       const { supabase, userId } = context;
       const groups = (context as { groups: { id: string }[] }).groups;
       let groupId = (args as { group_id?: string }).group_id;
@@ -117,8 +107,8 @@ export const registerListTools = (server: unknown) => {
       description: "Remove um item da lista de compras pelo ID",
       inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"), item_id: z.string().uuid() }),
     },
-    async (args: { item_id: string }, context: AuthenticatedContext) => {
-      const { supabase } = context;
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const { supabase } = extractWriteContext(extra);
       const { error } = await supabase.from("items").delete().eq("id", (args as { item_id: string }).item_id);
       if (error) throw new Error(`Erro ao remover: ${error.message}`);
       return { content: [{ type: "text", text: "Item removido com sucesso." }] };
@@ -137,7 +127,7 @@ export const registerListTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extractContext(extra);
+      const context = extractWriteContext(extra);
       const { supabase } = context;
       const updateData: Record<string, unknown> = { comprado: (args as { comprado: boolean }).comprado };
       if ((args as { preco?: number }).preco !== undefined) {
@@ -166,7 +156,7 @@ export const registerListTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extractContext(extra);
+      const context = extractWriteContext(extra);
       const { supabase } = context;
       const { data, error } = await supabase.rpc("rpc_finalize_shopping_list", {
         p_list_id: (args as { list_id: string }).list_id,
