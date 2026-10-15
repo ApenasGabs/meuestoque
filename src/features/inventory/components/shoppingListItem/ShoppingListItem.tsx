@@ -20,6 +20,7 @@ interface ShoppingListItemProps {
   onUpdateUnit?: (id: string, unit: Unit) => void;
   onUpdateValidityDate?: (id: string, date: string | null, naoAplica?: boolean) => void;
   onUpdatePackSize?: (id: string, packLabel: string | null, packSize: number | null, packUnit: string | null) => void;
+  onUpdateName?: (id: string, name: string) => void;
 }
 
 /**
@@ -42,6 +43,7 @@ interface ShoppingListItemProps {
  * @param props.onUpdateQuantity - Callback to update item quantity
  * @param props.onUpdatePackSize - Callback to update pack size info
  * @param props.onUpdateValidityDate - Callback to update item validity
+ * @param props.onUpdateName - Callback to update item name
  */
 export const ShoppingListItem = memo(({
   item,
@@ -54,6 +56,7 @@ export const ShoppingListItem = memo(({
   onUpdateUnit,
   onUpdateValidityDate,
   onUpdatePackSize,
+  onUpdateName,
 }: ShoppingListItemProps): ReactElement => {
   // ── Bulk mode plumbing for the shopping list (Spec Epic 1) ──
   const { isBulkMode, scope, isSelected, toggleItemSelection, enterBulkMode } = useBulkStore();
@@ -64,6 +67,37 @@ export const ShoppingListItem = memo(({
 
   // ── Mobile expand state ──
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // ── Name edit state ──
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+
+  const handleStartEditName = (): void => {
+    setNameDraft(product.name);
+    setIsEditingName(true);
+  };
+
+  const handleNameSave = (): void => {
+    const trimmed = nameDraft.trim();
+    if (trimmed && trimmed !== product.name) {
+      onUpdateName?.(item.id, trimmed);
+    }
+    setIsEditingName(false);
+  };
+
+  const handleNameCancel = (): void => {
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleNameSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      handleNameCancel();
+    }
+  };
 
   // ── Price mode: 'total' = user enters full price; 'unit' = user enters R$/unit ──
   const [priceMode, setPriceMode] = useState<"total" | "unit">(
@@ -260,15 +294,79 @@ export const ShoppingListItem = memo(({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span
-                className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
-              >
-                {product.name}
-              </span>
-              {item.checked && (
-                <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
-                  No carrinho
-                </Badge>
+              {isEditingName ? (
+                <div
+                  className="flex items-center gap-1 w-full max-w-xs"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={handleNameKeyDown}
+                    onBlur={handleNameSave}
+                    className="input input-bordered input-xs h-7 text-sm font-medium w-full"
+                    data-testid="shopping-item-name-input"
+                    aria-label="Editar nome do produto"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleNameSave();
+                    }}
+                    className="btn btn-ghost btn-xs text-success p-1 min-h-0 h-6 w-6 shrink-0"
+                    title="Salvar"
+                    aria-label="Salvar nome"
+                    data-testid="save-item-name-button"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleNameCancel();
+                    }}
+                    className="btn btn-ghost btn-xs text-error p-1 min-h-0 h-6 w-6 shrink-0"
+                    title="Cancelar"
+                    aria-label="Cancelar edicao"
+                    data-testid="cancel-item-name-button"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span
+                    className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
+                    data-testid={`shopping-item-name-${item.id}`}
+                  >
+                    {product.name}
+                  </span>
+                  {Boolean(onUpdateName) && !listBulk && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEditName();
+                      }}
+                      className="btn btn-ghost btn-xs p-0.5 min-h-0 h-5 w-5 opacity-40 hover:opacity-100 shrink-0"
+                      title="Editar nome"
+                      aria-label={`Editar nome de ${product.name}`}
+                      data-testid={`edit-item-name-${item.id}`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  )}
+                  {item.checked && (
+                    <Badge variant="success" size="sm" className="shrink-0 text-[10px] h-5">
+                      No carrinho
+                    </Badge>
+                  )}
+                </>
               )}
             </div>
             {/* Mobile: info compacta quando colapsado */}
