@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.23.0](https://github.com/ApenasGabs/meuestoque/compare/v1.22.3...v1.23.0) (2026-10-15)
+
+### ✨ Features
+
+* ✨ permite editar nome do item na lista de compras ([#37](https://github.com/ApenasGabs/meuestoque/issues/37)) ([07b8384](https://github.com/ApenasGabs/meuestoque/commit/07b838432b5d9d265ca96037a5e6c52a15c6d80a))
+
 ## [1.22.3](https://github.com/ApenasGabs/meuestoque/compare/v1.22.2...v1.22.3) (2026-09-14)
 
 ### 🐛 Bug Fixes
