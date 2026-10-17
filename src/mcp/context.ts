@@ -3,7 +3,11 @@ import type { AuthenticatedContext } from "./auth";
 /**
  * Recupera o contexto autenticado injetado pelo handler MCP em `extra`.
  *
- * @throws {Error} Se o contexto nao estiver presente
+ * @param {unknown} extra - Objeto extra fornecido pelo runtime do handler MCP
+ * @returns {AuthenticatedContext} Contexto autenticado contendo Supabase client, userId, grupos e escopos
+ * @throws {Error} Se o contexto de autenticacao nao for encontrado no objeto extra
+ * @example
+ * const { supabase, userId } = extractContext(extra);
  */
 export const extractContext = (extra: unknown): AuthenticatedContext => {
   const e = extra as Record<string, unknown> | undefined;
@@ -16,9 +20,13 @@ export const extractContext = (extra: unknown): AuthenticatedContext => {
 };
 
 /**
- * Igual a `extractContext`, mas exige o escopo `write`.
+ * Recupera o contexto autenticado e valida rigorosamente a presenca do escopo `write`.
  *
- * @throws {Error} Se a credencial for somente leitura
+ * @param {unknown} extra - Objeto extra fornecido pelo runtime do handler MCP
+ * @returns {AuthenticatedContext} Contexto autenticado com permissao de escrita garantida
+ * @throws {Error} Se o contexto nao for encontrado ou se a credencial for somente leitura
+ * @example
+ * const { supabase } = extractWriteContext(extra);
  */
 export const extractWriteContext = (extra: unknown): AuthenticatedContext => {
   const ctx = extractContext(extra);
