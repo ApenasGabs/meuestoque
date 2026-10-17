@@ -87,3 +87,26 @@ Toda RPC nova deve:
 3. Validar `is_group_member()` para dado multi-tenant recebido.
 4. Definir `SET search_path = public`.
 5. Vir em uma migration versionada.
+
+
+## MCP API Keys (`20261012_01_mcp_api_keys.sql`)
+
+Todas `SECURITY DEFINER` com `SET search_path = ''` (mais restrito que a convenção geral; nomes totalmente qualificados). Ver `docs/features/feature-mcp-persistent-tokens.md`.
+
+### `create_mcp_api_key(p_name text, p_days int = 90, p_scopes text[] = '{read,write}')`
+
+- **Grant:** `authenticated`.
+- **Retorno:** `table(id uuid, api_key text, key_prefix text, expires_at timestamptz)`. `api_key` só é retornada aqui.
+- **Validações:** `auth.uid()` não-nulo; `p_days` entre 1 e 365; nome de 1 a 60 caracteres; no máximo 10 chaves ativas.
+- **Erros:** `not authenticated`, `p_days must be between 1 and 365`, `invalid name`, `active key limit reached`.
+
+### `revoke_mcp_api_key(p_id uuid) -> boolean` / `revoke_all_mcp_api_keys() -> integer`
+
+- **Grant:** `authenticated`. Só afeta linhas com `user_id = auth.uid()`. Efeito imediato no MCP.
+
+### `exchange_mcp_api_key(p_key text)`
+
+- **Grant:** `anon`, `authenticated` (chamada por `src/mcp/auth.ts` com a anon key).
+- **Retorno:** `table(access_token text, user_id uuid, scopes text[])` com JWT HS256 de 5 min (`role=authenticated`, `aud=authenticated`, `sub`, `mcp_key_id`, `mcp_scopes`), ou **nenhuma linha** em qualquer falha (formato, inexistente, revogada, expirada, secret ausente).
+- **Efeitos:** atualiza `last_used_at` no máximo a cada 5 min.
+- **Dependência:** segredo `mcp_jwt_secret` no Supabase Vault.

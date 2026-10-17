@@ -42,6 +42,70 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+### 🔑 (13/10/2026) Feature: Autenticação Persistente MCP via Personal Access Tokens (Issue #36)
+
+#### Arquitetura
+```mermaid
+sequenceDiagram
+    participant C as Cliente MCP (Claude / Cursor)
+    participant V as api/mcp.ts (Vercel Edge Handler)
+    participant A as auth.ts (Middleware Auth)
+    participant PG as Postgres (Supabase RPC)
+    participant T as Tools MCP (List / Stock / Insights)
+
+    C->>V: POST /api/mcp (Bearer mest_pat_xxx)
+    V->>A: authenticateRequest(authHeader)
+    A->>PG: rpc exchange_mcp_api_key(p_key)
+    PG->>PG: sha256 -> verifica ativa -> gera JWT curto (5m, HS256)
+    PG-->>A: { access_token, user_id, scopes }
+    A->>V: Injeta AuthenticatedContext (RLS via JWT curto)
+    V->>T: Executa Tool (valida scopes read/write via extractContext)
+    T-->>C: Retorna resposta da tool
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20261012_01_mcp_api_keys.sql` | **Criado**: Migration criando tabela `mcp_api_keys`, RLS, índices e RPCs seguras `create_mcp_api_key`, `revoke_mcp_api_key`, `revoke_all_mcp_api_keys` e `exchange_mcp_api_key`. |
+| `src/lib/mcpKeys.ts` | **Criado**: Serviço client-side para listar, criar e revogar chaves MCP, utilitários de status e construtor de config JSON. |
+| `src/lib/mcpKeys.test.ts` | **Criado**: Testes unitários para regras de status, serialização de config e tratamento de erros do serviço de chaves. |
+| `src/components/McpKeysSection/McpKeysSection.tsx` | **Criado**: Componente de UI no Perfil para criação de chaves (nome, validade, escopo somente leitura), modal com segredo exibido uma única vez, ações de cópia e revogação. |
+| `src/components/McpKeysSection/McpKeysSection.test.tsx` | **Criado**: Testes unitários de renderização, criação, exibição modal e revogação do componente UI. |
+| `src/pages/ProfilePage.tsx` | Substituída a geração simples de token temporário pelo componente `McpKeysSection`. |
+| `src/mcp/auth.ts` | Middleware refatorado para suportar chaves persistentes `mest_pat_...` (com troca por JWT de 5m no Postgres) mantendo compatibilidade legada com sessões. |
+| `src/mcp/context.ts` | **Criado**: Utilitários `extractContext` e `extractWriteContext` para isolamento seguro do contexto MCP e validação de escopos `read` e `write`. |
+| `src/mcp/tools/list.ts` | Atualizado para usar `extractWriteContext` em operações de mutação (add, update, delete, finalize). |
+| `src/mcp/tools/stock.ts` | Atualizado para usar `extractWriteContext` na tool `consume_stock_fifo`. |
+| `src/mcp/tools/insights.ts` | Atualizado para usar `extractContext` compartilhado. |
+| `src/mcp/__tests__/mcp.test.ts` | Atualizado com testes completos cobrindo rejeição de chaves inválidas/malformadas, troca por JWT curto e controle de escopos. |
+| `api/mcp.ts` | Refatorado para tratamento centralizado de `McpAuthError` com retorno 401 limpo e tipagem estrita de contexto. |
+| `docs/features/feature-mcp-persistent-tokens.md` | **Criado**: Documentação detalhada da feature, garantias de segurança, diagramas e passos de setup. |
+| `docs/ai/04_RPC_CONTRACTS.md` | Documentados contratos das novas RPCs de autenticação MCP. |
+| `docs/ai/05_DATABASE_MAP.md` | Atualizado mapa do banco com a tabela `mcp_api_keys`. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Clientes MCP utilizam chaves com prefixo mest_pat_ e 43 caracteres base64url (256 bits de entropia).
+REGRA 2: A chave secreta completa nunca é salva em texto puro no banco de dados; apenas seu hash sha256 é persistido.
+REGRA 3: O servidor MCP troca a chave por um JWT assinado internamente no Postgres (validade de 5 minutos) usando o segredo mcp_jwt_secret do Vault, sem necessidade de chaves de serviço expostas no Vercel Edge.
+REGRA 4: Todas as ferramentas MCP executam sob o contexto RLS do usuário associado à chave, aplicando isolamento multi-tenant estrito.
+REGRA 5: Chaves com escopo somente leitura (read) têm acesso negado imediatamente ao tentar acionar ferramentas de modificação (extractWriteContext).
+```
+
+#### Comportamento
+- Usuários podem gerar múltiplos Personal Access Tokens (PATs) no painel de Perfil, especificando nome, prazo de validade (30, 90 ou 365 dias) e permissão de leitura/escrita.
+- A chave é exibida uma única vez em modal dedicado, com botões para cópia da chave, da configuração JSON para clientes MCP e de prompt pré-formatado para agentes de IA.
+- A lista de chaves exibe o prefixo identificador, data de criação, último uso e badges dinâmicos de status (Ativa, Expira em breve, Expirada, Revogada).
+- O usuário pode revogar chaves individualmente ou em lote ("Revogar todas").
+- Requisições MCP com chave revogada ou expirada são rejeitadas imediatamente com HTTP 401.
+
+#### Checklist de Aceite
+- [x] Migration criada com tabela, índices, RLS e RPCs seguras com `SECURITY DEFINER`.
+- [x] Zero erros de ESLint (`npm run lint`).
+- [x] Zero erros de TypeScript (`npm run typecheck`).
+- [x] 100% de aprovação nos testes unitários (`npm test` cobrindo mcp, mcpKeys e McpKeysSection).
+- [x] Build de produção concluído com sucesso (`npm run build`).
+
 ### 📝 (12/10/2026) Feature: Edição do Nome de Itens na Lista de Compras
 
 #### Arquitetura
