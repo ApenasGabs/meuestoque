@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.24.0](https://github.com/ApenasGabs/meuestoque/compare/v1.23.0...v1.24.0) (2026-10-18)
+
+### ✨ Features
+
+* ✨ implementa autenticação persistente para o servidor MCP via Personal Access Tokens ([#38](https://github.com/ApenasGabs/meuestoque/issues/38)) ([7fd646a](https://github.com/ApenasGabs/meuestoque/commit/7fd646ab2cd0207ba4d848b4f9f20e41cf17d54c)), closes [#36](https://github.com/ApenasGabs/meuestoque/issues/36) [#39](https://github.com/ApenasGabs/meuestoque/issues/39) [#36](https://github.com/ApenasGabs/meuestoque/issues/36)
+
 ## [1.23.0](https://github.com/ApenasGabs/meuestoque/compare/v1.22.3...v1.23.0) (2026-10-15)
 
 ### ✨ Features
