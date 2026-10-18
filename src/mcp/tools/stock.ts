@@ -48,7 +48,10 @@ export const registerStockTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
@@ -113,7 +116,10 @@ export const registerStockTools = (server: unknown) => {
         .lte("data_validade_alerta", threshold.toISOString().slice(0, 10))
         .order("data_validade_alerta", { ascending: true });
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );
@@ -145,7 +151,10 @@ export const registerStockTools = (server: unknown) => {
         .eq("group_id", groupId)
         .gt("quantidade_minima", 0);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const filtered = (data || []).filter((item) => item.quantidade <= item.quantidade_minima);
       filtered.sort(

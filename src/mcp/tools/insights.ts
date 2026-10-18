@@ -46,7 +46,10 @@ export const registerInsightTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const formatted = (data || []).map((d) => ({
         data: d.criado_em,
@@ -89,7 +92,10 @@ export const registerInsightTools = (server: unknown) => {
         .gte("data_compra", (args as { de: string }).de)
         .lte("data_compra", (args as { ate: string }).ate);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const summary = (data || []).reduce((acc: unknown, row: unknown) => {
         const cat = ((row as Record<string, unknown>).stock_items as Record<string, string>)?.categoria || "Outros";
@@ -130,7 +136,10 @@ export const registerInsightTools = (server: unknown) => {
         .order("data_cotacao", { ascending: false })
         .limit(30);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );

@@ -95,4 +95,70 @@ describe("MCP Tools (Stock)", () => {
     registerStockTools(mockServer as unknown);
     expect(mockServer.registerTool).toHaveBeenCalled();
   });
+
+  it("executes get_stock_items successfully when query succeeds", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const fakeSupabase = {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: [{ id: "item-1", nome: "Arroz", quantidade: 5 }],
+          error: null,
+        }),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["get_stock_items"]({ group_id: "g1", filtro: "todos" }, extra);
+    expect(result).toBeDefined();
+    expect(result.content[0].text).toContain("Arroz");
+  });
+
+  it("throws database error in get_stock_items when query fails", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const fakeSupabase = {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: "connection timeout" },
+        }),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    await expect(
+      tools["get_stock_items"]({ group_id: "g1", filtro: "todos" }, extra)
+    ).rejects.toThrow("Erro interno de banco de dados");
+  });
 });
