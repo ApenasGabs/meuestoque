@@ -23,3 +23,18 @@
 - Arquitetura: [`01_ARCHITECTURE_AND_DATA.md`](./01_ARCHITECTURE_AND_DATA.md).
 - RPCs: [`04_RPC_CONTRACTS.md`](./04_RPC_CONTRACTS.md).
 - Feature: [`feature-bulk-expiration.md`](./feature-bulk-expiration.md).
+
+
+## `mcp_api_keys` (issue #36)
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid FK `auth.users` | cascade |
+| `name` | text | 1 a 60 chars |
+| `key_prefix` | text | 15 primeiros chars, exibição |
+| `key_hash` | text unique | sha256 hex; sem SELECT para `authenticated` |
+| `scopes` | text[] | subset de `{read,write}` |
+| `created_at` / `last_used_at` / `expires_at` / `revoked_at` | timestamptz | `expires_at` obrigatório, no máximo 366 dias |
+
+RLS: apenas `SELECT` do próprio usuário. Escritas somente via RPCs (`04_RPC_CONTRACTS.md`).

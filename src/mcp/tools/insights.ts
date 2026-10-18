@@ -1,17 +1,7 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
+import { extractContext } from "../context";
 
-const extractContext = (extra: unknown): AuthenticatedContext => {
-  const e = extra as Record<string, unknown> | undefined;
-  const http = e?.http as Record<string, unknown> | undefined;
-  const ctx = (http?.authInfo ?? e?.authInfo ?? e?.auth ?? e?.context) as AuthenticatedContext | undefined;
-  if (!ctx) {
-    const keys = e ? Object.keys(e).join(",") : "null";
-    const httpKeys = http ? Object.keys(http).join(",") : "none";
-    throw new Error(`Contexto de autenticação não encontrado. Extra: [${keys}], Http: [${httpKeys}]`);
-  }
-  return ctx;
-};
 
 
 export const registerInsightTools = (server: unknown) => {
@@ -56,7 +46,10 @@ export const registerInsightTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const formatted = (data || []).map((d) => ({
         data: d.criado_em,
@@ -99,7 +92,10 @@ export const registerInsightTools = (server: unknown) => {
         .gte("data_compra", (args as { de: string }).de)
         .lte("data_compra", (args as { ate: string }).ate);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const summary = (data || []).reduce((acc: unknown, row: unknown) => {
         const cat = ((row as Record<string, unknown>).stock_items as Record<string, string>)?.categoria || "Outros";
@@ -140,7 +136,10 @@ export const registerInsightTools = (server: unknown) => {
         .order("data_cotacao", { ascending: false })
         .limit(30);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );

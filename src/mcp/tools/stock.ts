@@ -1,17 +1,7 @@
 import { z } from "zod";
 import type { AuthenticatedContext } from "../auth";
+import { extractContext, extractWriteContext } from "../context";
 
-const extractContext = (extra: unknown): AuthenticatedContext => {
-  const e = extra as Record<string, unknown> | undefined;
-  const http = e?.http as Record<string, unknown> | undefined;
-  const ctx = (http?.authInfo ?? e?.authInfo ?? e?.auth ?? e?.context) as AuthenticatedContext | undefined;
-  if (!ctx) {
-    const keys = e ? Object.keys(e).join(",") : "null";
-    const httpKeys = http ? Object.keys(http).join(",") : "none";
-    throw new Error(`Contexto de autenticação não encontrado. Extra: [${keys}], Http: [${httpKeys}]`);
-  }
-  return ctx;
-};
 
 
 export const registerStockTools = (server: unknown) => {
@@ -58,7 +48,10 @@ export const registerStockTools = (server: unknown) => {
       }
 
       const { data, error } = await query;
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
@@ -75,7 +68,7 @@ export const registerStockTools = (server: unknown) => {
     }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
-      const context = extractContext(extra);
+      const context = extractWriteContext(extra);
       const { supabase, userId } = context;
 
       const { error } = await supabase.rpc("consume_stock_fifo", {
@@ -84,7 +77,10 @@ export const registerStockTools = (server: unknown) => {
         p_user_id: userId,
       });
 
-      if (error) console.error(error); throw new Error("Erro interno ao consumir estoque");
+      if (error) {
+        console.error("[MCP] consume_stock_fifo:", error.code);
+        throw new Error("Erro interno ao consumir estoque");
+      }
       return { content: [{ type: "text", text: `Consumo registrado com sucesso.` }] };
     },
   );
@@ -120,7 +116,10 @@ export const registerStockTools = (server: unknown) => {
         .lte("data_validade_alerta", threshold.toISOString().slice(0, 10))
         .order("data_validade_alerta", { ascending: true });
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
   );
@@ -152,7 +151,10 @@ export const registerStockTools = (server: unknown) => {
         .eq("group_id", groupId)
         .gt("quantidade_minima", 0);
 
-      if (error) console.error(error); throw new Error("Erro interno de banco de dados");
+      if (error) {
+        console.error(error);
+        throw new Error("Erro interno de banco de dados");
+      }
 
       const filtered = (data || []).filter((item) => item.quantidade <= item.quantidade_minima);
       filtered.sort(

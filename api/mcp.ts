@@ -3,7 +3,7 @@ export const config = {
 };
 
 import { createMcpHandler } from "mcp-handler";
-import { authenticateRequest } from "../src/mcp/auth";
+import { authenticateRequest, McpAuthError, type AuthenticatedContext } from "../src/mcp/auth";
 import { registerListTools } from "../src/mcp/tools/list";
 import { registerStockTools } from "../src/mcp/tools/stock";
 import { registerInsightTools } from "../src/mcp/tools/insights";
@@ -20,22 +20,30 @@ const mcp = createMcpHandler(
   }
 );
 
-export default async function handler(req: Request): Promise<Response> {
+const jsonResponse = (status: number, body: Record<string, string>): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", "WWW-Authenticate": "Bearer" },
+  });
+
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response(null, { status: 204 });
   }
 
-  const authHeader = req.headers.get("Authorization");
+  let context: AuthenticatedContext;
   try {
-    const context = await authenticateRequest(authHeader);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (req as any).auth = context;
-    return await mcp(req);
+    context = await authenticateRequest(req.headers.get("Authorization"));
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unauthorized";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 401,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-    });
+    if (err instanceof McpAuthError) {
+      return jsonResponse(401, { error: "Unauthorized" });
+    }
+    console.error("[MCP] Falha na autenticacao:", err instanceof Error ? err.message : "unknown");
+    return jsonResponse(500, { error: "Internal error" });
   }
-}
+
+  (req as Request & { auth: AuthenticatedContext }).auth = context;
+  return mcp(req);
+};
+
+export default handler;

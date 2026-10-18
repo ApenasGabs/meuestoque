@@ -6,6 +6,7 @@ import { Badge } from "../components/Badge/Badge";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
 import { Fieldset } from "../components/Fieldset/Fieldset";
+import { McpKeysSection } from "../components/McpKeysSection/McpKeysSection";
 import ThemeSelector from "../components/ThemeSelector/ThemeSelector";
 import {
   FONT_SIZE_LABELS,
@@ -42,7 +43,6 @@ export const ProfilePage = (): ReactElement => {
   const [members, setMembers] = useState<MemberRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mcpToken, setMcpToken] = useState<string | null>(null);
   const isShared = members.length > 1;
   const appTitle = isShared ? "NossoEstoque" : "MeuEstoque";
   const appName = appTitle.toLowerCase();
@@ -113,49 +113,6 @@ export const ProfilePage = (): ReactElement => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGenerateMcpToken = async (): Promise<void> => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token) {
-      setMcpToken(data.session.access_token);
-    } else {
-      setError("Sessão não encontrada. Faça login novamente.");
-    }
-  };
-
-  const handleCopyMcpConfig = async (): Promise<void> => {
-    if (!mcpToken || !navigator.clipboard) return;
-    const config = `{
-  "mcpServers": {
-    "${appName}": {
-      "url": "https://${appName}.apenasgabs.dev/api/mcp",
-      "headers": {
-        "Authorization": "Bearer ${mcpToken}"
-      }
-    }
-  }
-}`;
-    await navigator.clipboard.writeText(config);
-  };
-
-  const handleCopyAiPrompt = async (): Promise<void> => {
-    if (!mcpToken || !navigator.clipboard) return;
-    const prompt = `IA, por favor configure a integração MCP com o ${appTitle}. Adicione o seguinte servidor à sua configuração de ferramentas MCP (ex: claude_desktop_config.json ou settings do Cursor):
-
-{
-  "mcpServers": {
-    "${appName}": {
-      "url": "https://${appName}.apenasgabs.dev/api/mcp",
-      "headers": {
-        "Authorization": "Bearer ${mcpToken}"
-      }
-    }
-  }
-}
-
-Assim que configurar, me avise para testarmos a conexão!`;
-    await navigator.clipboard.writeText(prompt);
   };
 
   return (
@@ -297,54 +254,7 @@ Assim que configurar, me avise para testarmos a conexão!`;
           <p className="text-sm text-base-content/80 mb-4">
             Conecte seu assistente de IA (Claude Desktop, Cursor, etc) ao seu estoque usando o Model Context Protocol (MCP).
           </p>
-          <div className="alert alert-warning text-sm p-3 mb-4 flex gap-2 rounded-lg">
-            <span className="text-lg">⚠️</span>
-            <span>
-              <strong>Atenção:</strong> Por segurança, o token gerado reflete a sua sessão atual e pode expirar. Se a conexão da IA falhar no futuro, volte aqui e gere um novo token!
-            </span>
-          </div>
-
-          {!mcpToken ? (
-            <Button type="button" variant="secondary" onClick={() => void handleGenerateMcpToken()}>
-              Gerar Token de Acesso
-            </Button>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-base-200 p-3 rounded-lg overflow-x-auto text-xs font-mono">
-                <code>{`{
-  "mcpServers": {
-    "${appName}": {
-      "url": "https://${appName}.apenasgabs.dev/api/mcp",
-      "headers": {
-        "Authorization": "Bearer ${mcpToken.substring(0, 15)}...${mcpToken.slice(-10)}"
-      }
-    }
-  }
-}`}</code>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => void handleCopyMcpConfig()}
-                >
-                  Copiar JSON
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleCopyAiPrompt()}
-                >
-                  Copiar Prompt p/ IA
-                </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setMcpToken(null)}>
-                  Ocultar
-                </Button>
-              </div>
-            </div>
-          )}
+          <McpKeysSection appName={appName} appTitle={appTitle} />
         </CardBody>
       </Card>
 
