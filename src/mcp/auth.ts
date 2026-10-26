@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? "";
 
-export const MCP_KEY_PATTERN = /^mest_pat_[A-Za-z0-9_-]{43}$/;
+export const MCP_KEY_PATTERN = /^mest_(pat|oa)_[A-Za-z0-9_-]{43}$/;
 
 export type McpScope = "read" | "write";
 
@@ -85,7 +85,7 @@ export const authenticateRequest = async (
   }
 
   const token = authHeader.slice(7).trim();
-  const isApiKey = token.startsWith("mest_pat_");
+  const isApiKey = token.startsWith("mest_pat_") || token.startsWith("mest_oa_");
   const { supabase, userId, scopes } = isApiKey
     ? await authenticateApiKey(token)
     : await authenticateSession(token);

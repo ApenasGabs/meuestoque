@@ -42,6 +42,74 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+### 🌐 (25/10/2026) Feature: Suporte a OAuth 2.1 para Claude Web e Conectores Remotos MCP (Issue #40)
+
+#### Arquitetura
+```mermaid
+sequenceDiagram
+    participant CW as Claude.ai Web
+    participant V as Vercel Edge (api/.well-known, api/oauth/token, api/mcp)
+    participant U as Navegador do Usuário (/oauth/authorize)
+    participant PG as Postgres (mcp_oauth_codes, mcp_api_keys, RPCs)
+
+    CW->>V: GET /api/mcp (sem auth)
+    V-->>CW: 401 Unauthorized + WWW-Authenticate (resource_metadata)
+    CW->>V: GET /.well-known/oauth-protected-resource (RFC 9728)
+    V-->>CW: Metadata com authorization_servers
+    CW->>V: GET /.well-known/oauth-authorization-server (RFC 8414)
+    V-->>CW: Metadata com authorization_endpoint e token_endpoint
+    CW->>U: Redireciona para /oauth/authorize?response_type=code&code_challenge=...&S256
+    U->>PG: rpc create_mcp_oauth_code (autenticado via Supabase Auth)
+    PG-->>U: code (mest_code_...)
+    U-->>CW: Redireciona com code e state
+    CW->>V: POST /api/oauth/token (grant_type=authorization_code, code, code_verifier)
+    V->>PG: rpc exchange_mcp_oauth_code (valida PKCE S256 e single-use)
+    PG-->>V: Emite token persistente mest_oa_... registrado em mcp_api_keys (365 dias)
+    V-->>CW: { access_token: "mest_oa_...", token_type: "Bearer", expires_in: 31536000 }
+    CW->>V: POST /api/mcp (Bearer mest_oa_...)
+    V->>PG: rpc exchange_mcp_api_key (troca mest_oa_ por JWT curto de 5 min com secret do Vault)
+    PG-->>V: Executa tools MCP sob RLS do usuário
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `supabase/migrations/20261025_01_mcp_oauth.sql` | **Criado**: Migration criando tabela `mcp_oauth_codes`, RPCs `create_mcp_oauth_code` e `exchange_mcp_oauth_code` com validação matemática PKCE SHA-256 e emissão de token `mest_oa_` em `mcp_api_keys`, além de atualizar `exchange_mcp_api_key` para aceitar `mest_oa_`. |
+| `api/well-known/oauth-protected-resource.ts` | **Criado**: Endpoint Edge servindo metadata RFC 9728 com descoberta dinâmica do origin e headers CORS. |
+| `api/well-known/oauth-authorization-server.ts` | **Criado**: Endpoint Edge servindo metadata RFC 8414 com declaração de rotas OAuth 2.1, PKCE S256 e endpoints de token. |
+| `api/oauth/token.ts` | **Criado**: Endpoint Edge para troca segura de authorization code e `code_verifier` por `access_token` persistente. |
+| `api/mcp.ts` | Atualizado para responder `401 Unauthorized` com header `WWW-Authenticate: Bearer resource_metadata="..."` para auto-descoberta. |
+| `vercel.json` | Atualizado com rewrites para `/.well-known/oauth-protected-resource` e `/.well-known/oauth-authorization-server`. |
+| `src/lib/mcpOAuth.ts` | **Criado**: Serviço client-side para validação de parâmetros OAuth 2.1 (PKCE S256, redirect_uri, response_type), montagem de URL de callback e invocação da RPC. |
+| `src/lib/mcpOAuth.test.ts` | **Criado**: Testes unitários para regras de validação de parâmetros e chamada RPC. |
+| `src/pages/OAuthAuthorizePage.tsx` | **Criado**: Tela de consentimento amigável com daisyUI para aprovação de escopos (read/write) e conexão com Claude.ai. |
+| `src/pages/OAuthAuthorizePage.test.tsx` | **Criado**: Testes unitários cobrindo fluxos de loading, não-autenticado, parâmetros inválidos, cancelamento e autorização. |
+| `src/ComprasWebShell.tsx` | Registrada nova rota `/oauth/authorize`. |
+| `src/mcp/auth.ts` | Atualizado `MCP_KEY_PATTERN` para aceitar tokens com prefixo `mest_oa_`. |
+| `src/mcp/__tests__/mcp.test.ts` | Adicionado teste garantindo validação e troca de token `mest_oa_`. |
+| `package.json` | Script `"test"` atualizado para `"NODE_ENV=test vitest run"`. |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Clientes remotos e Claude.ai Web descobrem os endpoints via RFC 9728 e RFC 8414 através do header WWW-Authenticate em /api/mcp.
+REGRA 2: A autorização exige obrigatoriamente PKCE S256 (code_challenge entre 40 e 128 chars); conexões sem PKCE ou com método plain são rejeitadas.
+REGRA 3: O authorization code expira em 10 minutos, é armazenado exclusivamente como hash sha256 e possui uso estritamente único.
+REGRA 4: A troca do código por token cria um token persistente mest_oa_ registrado na tabela mcp_api_keys (visível e revogável a qualquer momento pelo usuário no Perfil).
+REGRA 5: As requisições de tools MCP com mest_oa_ são trocadas internamente no Postgres por JWTs de 5 minutos assinados pelo Vault, preservando RLS integral e multi-tenant sem qualquer custo adicional.
+```
+
+#### Comportamento
+- Usuários podem conectar o MeuEstoque diretamente pela interface web do Claude.ai (Conectores Remotos).
+- O Claude.ai detecta automaticamente o servidor de autenticação via RFC 9728 / RFC 8414.
+- O usuário é levado para a tela de consentimento `/oauth/authorize`, onde pode ver o nome do cliente, o usuário logado e os escopos solicitados.
+- Ao clicar em "Autorizar acesso", a RPC valida e gera o código, redirecionando o navegador para o Claude com o código e state.
+- O Claude troca o código por um access_token persistente (`mest_oa_...`), que aparece na tela de Perfil do usuário sob "Tokens de Integração (MCP)" com a tag "Claude.ai (OAuth)" e pode ser revogado a qualquer momento.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Testes passando (22 arquivos, 201 testes unitários verdes)
+- [x] Build sem erros (`tsc -b && vite build`)
+
 ### 🔑 (13/10/2026) Feature: Autenticação Persistente MCP via Personal Access Tokens (Issue #36)
 
 #### Arquitetura
