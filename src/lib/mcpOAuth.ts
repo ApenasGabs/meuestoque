@@ -16,11 +16,48 @@ export interface OAuthValidationResult {
   errorDescription?: string;
 }
 
-const REDIRECT_URI_REGEX =
-  /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?(\/.*)?$)/;
+/**
+ * Valida estritamente se uma URL de redirecionamento e valida e segura.
+ * Deve ser parseavel via new URL(), possuir host valido e usar HTTPS
+ * ou HTTP estritamente em localhost / 127.0.0.1.
+ *
+ * @param uri - String da URL de redirecionamento
+ * @returns boolean indicando se a URI e aceita
+ */
+export const isValidRedirectUri = (uri: string | null): boolean => {
+  if (!uri || typeof uri !== "string") {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(uri);
+    if (parsed.protocol === "https:") {
+      return (
+        parsed.hostname.length > 0 &&
+        !parsed.hostname.includes(" ") &&
+        parsed.hostname.includes(".")
+      );
+    }
+
+    if (parsed.protocol === "http:") {
+      return (
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname.endsWith(".localhost")
+      );
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 /**
- * Valida os parâmetros recebidos na rota /oauth/authorize conforme OAuth 2.1 e PKCE S256.
+ * Valida os parametros recebidos na rota /oauth/authorize conforme OAuth 2.1 e PKCE S256.
+ *
+ * @param params - Objeto com os parametros da querystring
+ * @returns Resultado contendo valid e eventuais codigos de erro
  */
 export const validateAuthorizeParams = (
   params: OAuthAuthorizeParams,
@@ -29,7 +66,7 @@ export const validateAuthorizeParams = (
     return {
       valid: false,
       error: "unsupported_response_type",
-      errorDescription: "Apenas o parâmetro response_type='code' é suportado.",
+      errorDescription: "Apenas o parametro response_type='code' e suportado.",
     };
   }
 
@@ -37,16 +74,16 @@ export const validateAuthorizeParams = (
     return {
       valid: false,
       error: "invalid_request",
-      errorDescription: "O parâmetro client_id é obrigatório.",
+      errorDescription: "O parametro client_id e obrigatorio.",
     };
   }
 
-  if (!params.redirectUri || !REDIRECT_URI_REGEX.test(params.redirectUri)) {
+  if (!isValidRedirectUri(params.redirectUri)) {
     return {
       valid: false,
       error: "invalid_request",
       errorDescription:
-        "redirect_uri inválido. Deve ser uma URL HTTPS ou localhost para desenvolvimento.",
+        "redirect_uri invalido. Deve ser uma URL HTTPS valida com dominio ou localhost para desenvolvimento.",
     };
   }
 
@@ -55,7 +92,7 @@ export const validateAuthorizeParams = (
       valid: false,
       error: "invalid_request",
       errorDescription:
-        "code_challenge é obrigatório para PKCE e deve ter entre 40 e 128 caracteres.",
+        "code_challenge e obrigatorio para PKCE e deve ter entre 40 e 128 caracteres.",
     };
   }
 
@@ -64,7 +101,7 @@ export const validateAuthorizeParams = (
       valid: false,
       error: "invalid_request",
       errorDescription:
-        "code_challenge_method deve ser 'S256'. Métodos não criptográficos (plain) não são aceitos.",
+        "code_challenge_method deve ser 'S256'. Metodos nao criptograficos (plain) nao sao aceitos.",
     };
   }
 
@@ -72,7 +109,11 @@ export const validateAuthorizeParams = (
 };
 
 /**
- * Invoca a RPC create_mcp_oauth_code no Supabase para gerar o código de autorização seguro.
+ * Invoca a RPC create_mcp_oauth_code no Supabase para gerar o codigo de autorizacao seguro.
+ *
+ * @param options - Objeto contendo clientId, codeChallenge, redirectUri e scopes
+ * @returns Authorization code emitido
+ * @throws {Error} Se a RPC falhar ou retornar erro
  */
 export const requestOAuthCode = async (options: {
   clientId: string;
@@ -88,15 +129,19 @@ export const requestOAuthCode = async (options: {
   });
 
   if (error || !data) {
-    console.error("[OAuth] Erro ao emitir código:", error?.message);
-    throw new Error(error?.message ?? "Falha ao gerar código de autorização");
+    console.error("[OAuth] Erro ao emitir codigo:", error?.message);
+    throw new Error(error?.message ?? "Falha ao gerar codigo de autorizacao");
   }
 
   return data as string;
 };
 
 /**
- * Constrói a URL de redirecionamento anexando os parâmetros passados.
+ * Constroi a URL de redirecionamento anexando os parametros passados.
+ *
+ * @param baseRedirectUri - URL base de redirecionamento
+ * @param params - Objeto chave/valor dos parametros a anexar
+ * @returns URL final com querystrings combinadas
  */
 export const buildRedirectUrl = (
   baseRedirectUri: string,

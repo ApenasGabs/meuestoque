@@ -2,7 +2,9 @@ export const config = {
   runtime: "edge",
 };
 
-export default function handler(req: Request): Response {
+import { getRequestOrigin } from "../../src/mcp/origin";
+
+const handler = (req: Request): Response => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -14,10 +16,7 @@ export default function handler(req: Request): Response {
     });
   }
 
-  const url = new URL(req.url);
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || url.host;
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const origin = `${proto}://${host}`;
+  const origin = getRequestOrigin(req);
 
   const metadata = {
     resource: `${origin}/api/mcp`,
@@ -35,4 +34,6 @@ export default function handler(req: Request): Response {
       "Cache-Control": "public, max-age=3600",
     },
   });
-}
+};
+
+export default handler;

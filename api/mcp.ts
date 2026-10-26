@@ -7,6 +7,7 @@ import { authenticateRequest, McpAuthError, type AuthenticatedContext } from "..
 import { registerListTools } from "../src/mcp/tools/list";
 import { registerStockTools } from "../src/mcp/tools/stock";
 import { registerInsightTools } from "../src/mcp/tools/insights";
+import { getRequestOrigin } from "../src/mcp/origin";
 
 const mcp = createMcpHandler(
   (server) => {
@@ -30,12 +31,7 @@ const jsonResponse = (
     "Access-Control-Allow-Origin": "*",
   };
   if (status === 401) {
-    let origin = "https://meuestoque.apenasgabs.dev";
-    if (req) {
-      const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-      const proto = req.headers.get("x-forwarded-proto") || "https";
-      if (host) origin = `${proto}://${host}`;
-    }
+    const origin = req ? getRequestOrigin(req) : "https://meuestoque.apenasgabs.dev";
     headers["WWW-Authenticate"] = `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`;
   }
   return new Response(JSON.stringify(body), {

@@ -4,7 +4,7 @@
 -- OAuth 2.1 with PKCE (S256), RFC 8414 and RFC 9728 metadata.
 --
 -- 1. Authorization codes are short-lived (10 min) and stored as sha256 hashes.
--- 2. Code exchange enforces PKCE S256 and single-use guarantee.
+-- 2. Code exchange enforces PKCE S256, client_id binding, and single-use guarantee.
 -- 3. Emits persistent OAuth token (mest_oa_...) recorded in mcp_api_keys for 365 days,
 --    which can be revoked by the user at any time in the Profile page.
 -- 4. Updates exchange_mcp_api_key to accept both mest_pat_ and mest_oa_.
@@ -18,7 +18,7 @@ create table if not exists public.mcp_oauth_codes (
   code_hash text not null unique,
   code_challenge text not null check (char_length(code_challenge) between 40 and 128),
   redirect_uri text not null check (
-    redirect_uri ~ '^https://' or
+    redirect_uri ~ '^https://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+(:[0-9]+)?(/.*)?$' or
     redirect_uri ~ '^http://(localhost|127\.0\.0\.1)(:[0-9]+)?(/.*)?$'
   ),
   scopes text[] not null default array['read', 'write']
@@ -62,7 +62,7 @@ begin
     raise exception 'invalid code_challenge' using errcode = '22023';
   end if;
   if p_redirect_uri is null or (
-    p_redirect_uri !~ '^https://' and
+    p_redirect_uri !~ '^https://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+(:[0-9]+)?(/.*)?$' and
     p_redirect_uri !~ '^http://(localhost|127\.0\.0\.1)(:[0-9]+)?(/.*)?$'
   ) then
     raise exception 'invalid redirect_uri' using errcode = '22023';
@@ -133,6 +133,11 @@ begin
 
   -- Validate redirect_uri matches exactly
   if v_row.redirect_uri <> p_redirect_uri then
+    return;
+  end if;
+
+  -- Validate client_id binding if provided
+  if p_client_id is not null and btrim(p_client_id) <> '' and v_row.client_id <> btrim(p_client_id) then
     return;
   end if;
 

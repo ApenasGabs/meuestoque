@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { LockOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
 import { Alert } from "../components/Alert/Alert";
 import { Button } from "../components/Button/Button";
 import { Card, CardBody } from "../components/Card/Card";
@@ -117,14 +118,18 @@ export const OAuthAuthorizePage = (): ReactElement => {
 
   const handleDeny = (): void => {
     if (!params.redirectUri) return;
-    const redirectParams: Record<string, string> = {
-      error: "access_denied",
-      error_description: "O usuário recusou a solicitação de autorização",
-    };
-    if (params.state) {
-      redirectParams.state = params.state;
+    try {
+      const redirectParams: Record<string, string> = {
+        error: "access_denied",
+        error_description: "O usuário recusou a solicitação de autorização",
+      };
+      if (params.state) {
+        redirectParams.state = params.state;
+      }
+      setRedirectTarget(buildRedirectUrl(params.redirectUri, redirectParams));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao processar cancelamento");
     }
-    setRedirectTarget(buildRedirectUrl(params.redirectUri, redirectParams));
   };
 
   return (
@@ -133,7 +138,7 @@ export const OAuthAuthorizePage = (): ReactElement => {
         <CardBody className="space-y-5">
           <div className="text-center space-y-1">
             <div className="flex justify-center mb-2">
-              <span className="text-4xl">🔐</span>
+              <LockOutlined className="text-4xl text-primary" data-testid="oauth-lock-icon" />
             </div>
             <h1 className="text-2xl font-bold" data-testid="oauth-client-name">
               Conectar com {clientName}
@@ -164,7 +169,7 @@ export const OAuthAuthorizePage = (): ReactElement => {
             </h2>
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2 bg-base-200/50 p-2 rounded">
-                <span className="text-lg">👁️</span>
+                <EyeOutlined className="text-lg text-info mt-0.5" />
                 <div>
                   <strong>Leitura de estoque e compras</strong>
                   <p className="text-xs text-base-content/70">
@@ -174,7 +179,7 @@ export const OAuthAuthorizePage = (): ReactElement => {
               </li>
               {scopesList.includes("write") && (
                 <li className="flex items-start gap-2 bg-base-200/50 p-2 rounded">
-                  <span className="text-lg">✏️</span>
+                  <EditOutlined className="text-lg text-secondary mt-0.5" />
                   <div>
                     <strong>Gerenciamento de estoque e compras</strong>
                     <p className="text-xs text-base-content/70">

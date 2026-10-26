@@ -58,12 +58,30 @@ describe("mcpOAuth Service", () => {
       expect(result.error).toBe("invalid_request");
     });
 
-    it("aceita redirect_uri localhost para desenvolvimento", () => {
-      const result = validateAuthorizeParams({
+    it("rejeita redirect_uri malformado (https:// ou sem host)", () => {
+      expect(
+        validateAuthorizeParams({ ...validParams, redirectUri: "https://" }).valid,
+      ).toBe(false);
+      expect(
+        validateAuthorizeParams({ ...validParams, redirectUri: "https:///foo" }).valid,
+      ).toBe(false);
+      expect(
+        validateAuthorizeParams({ ...validParams, redirectUri: "not-a-url" }).valid,
+      ).toBe(false);
+    });
+
+    it("aceita redirect_uri localhost e 127.0.0.1 para desenvolvimento", () => {
+      const resLocalhost = validateAuthorizeParams({
         ...validParams,
         redirectUri: "http://localhost:3000/callback",
       });
-      expect(result.valid).toBe(true);
+      expect(resLocalhost.valid).toBe(true);
+
+      const resIp = validateAuthorizeParams({
+        ...validParams,
+        redirectUri: "http://127.0.0.1:8080/callback",
+      });
+      expect(resIp.valid).toBe(true);
     });
 
     it("rejeita code_challenge ausente ou muito curto", () => {

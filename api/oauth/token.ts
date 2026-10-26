@@ -31,7 +31,7 @@ interface ExchangeResult {
   scope: string;
 }
 
-export default async function handler(req: Request): Promise<Response> {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -137,4 +137,6 @@ export default async function handler(req: Request): Promise<Response> {
     console.error("[OAuth Token] Exception:", err instanceof Error ? err.message : "unknown");
     return jsonResponse(500, { error: "server_error", error_description: "Internal server error" });
   }
-}
+};
+
+export default handler;

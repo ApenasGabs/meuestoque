@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Button } from "./components/Button/Button";
 import { Footer } from "./components/Footer/Footer";
 import { Navbar } from "./components/Navbar/Navbar";
@@ -19,9 +19,12 @@ import { supabase } from "./lib/supabase";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
 import { ProfilePage } from "./pages/ProfilePage";
-import { OAuthAuthorizePage } from "./pages/OAuthAuthorizePage";
 import { SettingOutlined } from "@ant-design/icons";
 import type { ReactElement } from "react";
+
+const OAuthAuthorizePage = lazy(() =>
+  import("./pages/OAuthAuthorizePage").then((m) => ({ default: m.OAuthAuthorizePage }))
+);
 
 interface NavigationItem {
   label: string | ReactElement;
@@ -177,7 +180,20 @@ export const ComprasWebShell = () => {
               </RequireAuth>
             }
           />
-          <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
+          <Route
+            path="/oauth/authorize"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex justify-center items-center min-h-[60vh]">
+                    <span className="loading loading-spinner loading-lg text-primary" />
+                  </div>
+                }
+              >
+                <OAuthAuthorizePage />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
