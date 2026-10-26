@@ -19,6 +19,7 @@ import { supabase } from "./lib/supabase";
 import { useSessionStore } from "./stores/sessionStore";
 import { useStockStore } from "./stores/stockStore";
 import { ProfilePage } from "./pages/ProfilePage";
+import { OAuthAuthorizePage } from "./pages/OAuthAuthorizePage";
 import { SettingOutlined } from "@ant-design/icons";
 import type { ReactElement } from "react";
 
@@ -176,6 +177,7 @@ export const ComprasWebShell = () => {
               </RequireAuth>
             }
           />
+          <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

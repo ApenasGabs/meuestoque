@@ -75,6 +75,18 @@ describe("MCP Auth", () => {
     };
     expect(lastCallOptions.global.headers.Authorization).toBe("Bearer short.jwt.token");
   });
+
+  it("exchanges valid OAuth token (mest_oa_) correctly", async () => {
+    const OAUTH_KEY = `mest_oa_${"b".repeat(43)}`;
+    rpcMock.mockResolvedValue({
+      data: [{ access_token: "short.jwt.oauth", user_id: "u3", scopes: ["read", "write"] }],
+      error: null,
+    });
+    const ctx = await authenticateRequest(`Bearer ${OAUTH_KEY}`);
+    expect(ctx.userId).toBe("u3");
+    expect(ctx.authMethod).toBe("api_key");
+    expect(rpcMock).toHaveBeenCalledWith("exchange_mcp_api_key", { p_key: OAUTH_KEY });
+  });
 });
 
 describe("MCP scopes", () => {
