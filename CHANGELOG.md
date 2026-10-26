@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.25.0](https://github.com/ApenasGabs/meuestoque/compare/v1.24.0...v1.25.0) (2026-10-26)
+
+### ✨ Features
+
+* ✨ implementar suporte a OAuth 2.1 para Claude Web e conectores remotos MCP (Refs [#40](https://github.com/ApenasGabs/meuestoque/issues/40)) ([5ebf52d](https://github.com/ApenasGabs/meuestoque/commit/5ebf52d30d4f5fd3d0a424620aba967e3b106edc))
+
+### ♻️ Refactoring
+
+* ♻️ atender apontamentos de segurança, arrow functions e lazy loading do code review (Refs [#40](https://github.com/ApenasGabs/meuestoque/issues/40)) ([b9a339b](https://github.com/ApenasGabs/meuestoque/commit/b9a339b7cf3f7692d0b97bd321d8caf3e4f8efdd))
+
 ## [1.24.0](https://github.com/ApenasGabs/meuestoque/compare/v1.23.0...v1.24.0) (2026-10-18)
 
 ### ✨ Features
