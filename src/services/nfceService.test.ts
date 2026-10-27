@@ -53,4 +53,15 @@ describe("nfceService", () => {
       "Nota rejeitada pela SEFAZ",
     );
   });
+
+  it("deve lançar erro amigável de timeout quando ocorrer AbortError", async () => {
+    const abortErr = new Error("Aborted");
+    abortErr.name = "AbortError";
+
+    globalThis.fetch = vi.fn().mockRejectedValue(abortErr);
+
+    await expect(fetchNfceData("https://sefaz.sp.gov.br/?p=123")).rejects.toThrow(
+      "Tempo limite excedido ao consultar a nota fiscal",
+    );
+  });
 });

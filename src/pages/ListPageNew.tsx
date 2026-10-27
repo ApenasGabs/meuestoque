@@ -13,6 +13,7 @@ import { ShoppingListView } from "../features/inventory/components/shoppingListV
 import type { InventoryProduct, InventoryShoppingListItem } from "../features/inventory/types";
 import {
   addListItem,
+  applyReceiptMatchToListItem,
   deleteListItem,
   deleteListItemsBulk,
   ensureActiveListForGroup,
@@ -43,7 +44,8 @@ import {
   type NfceFinalizePayload,
 } from "../components/NfceReviewDrawer/NfceReviewDrawer";
 import { fetchNfceData } from "../services/nfceService";
-import type { NfceParsedDocument } from "../domain/nfceParser";
+import { formatIsoDateToPtBr, type NfceParsedDocument } from "../domain/nfceParser";
+import { recordNfcePriceHistory } from "../services/priceHistoryService";
 import {
   matchReceiptWithShoppingList,
   type MatchReceiptResult,
@@ -69,6 +71,7 @@ export const ListPageNew = (): ReactElement => {
   const userId = useAuthStore((state) => state.userId);
 
   const stockItems = useStockStore((state) => state.items);
+  const fetchStockItems = useStockStore((state) => state.fetchItems);
 
   const [shoppingItems, setShoppingItems] = useState<ItemRecord[]>([]);
   const shoppingItemsRef = useRef(shoppingItems);
@@ -93,6 +96,10 @@ export const ListPageNew = (): ReactElement => {
   const [nfceParsedDoc, setNfceParsedDoc] = useState<NfceParsedDocument | null>(null);
   const [nfceMatchResult, setNfceMatchResult] = useState<MatchReceiptResult | null>(null);
   const [nfceProcessing, setNfceProcessing] = useState<boolean>(false);
+  const [nfceAppliedReceipt, setNfceAppliedReceipt] = useState<{
+    marketName: string;
+    purchaseDate: string;
+  } | null>(null);
   const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
@@ -682,18 +689,23 @@ export const ListPageNew = (): ReactElement => {
     setError(null);
 
     try {
-      const nextListId = await finishShoppingList(listId, groupId);
+      const nextListId = await finishShoppingList(
+        listId,
+        groupId,
+        nfceAppliedReceipt?.purchaseDate,
+      );
       if (nextListId) {
         setListId(nextListId);
       }
-      await refreshItems(nextListId);
-      setNotice("Compra finalizada. Itens pendentes reaproveitados na nova lista.");
+      setNfceAppliedReceipt(null);
+      await Promise.all([refreshItems(nextListId), fetchStockItems(groupId)]);
+      setNotice("Compra finalizada e registrada no histórico e no estoque.");
     } catch (finishError) {
       setError(finishError instanceof Error ? finishError.message : "Falha ao finalizar compra");
     } finally {
       setSaving(false);
     }
-  }, [groupId, listId, refreshItems, setListId]);
+  }, [fetchStockItems, groupId, listId, nfceAppliedReceipt, refreshItems, setListId]);
 
   const handleBarcodeScan = useCallback(
     async (ean: string) => {
@@ -806,52 +818,76 @@ export const ListPageNew = (): ReactElement => {
       setError(null);
 
       try {
-        // 1. Atualiza itens casados (preço, quantidade e marca como comprado)
-        for (const item of payload.matchedItemsToUpdate) {
-          await updateListItemUnitPrice(item.listItemId, item.unitPrice, item.quantity);
-          await updateListItemQuantity(item.listItemId, `${item.quantity} ${item.unit}`);
-          if (item.validityDate !== undefined) {
-            await updateListItemValidityDate(
-              item.listItemId,
-              item.validityDate,
-              item.naoAplicaValidade,
-            );
-          }
-          await toggleListItemPurchased(item.listItemId, true);
-        }
+        await Promise.all(
+          payload.matchedItemsToUpdate.map((item) =>
+            applyReceiptMatchToListItem({
+              itemId: item.listItemId,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+              validityDate: item.validityDate,
+              naoAplicaValidade: item.naoAplicaValidade,
+            }),
+          ),
+        );
 
-        // 2. Adiciona novos itens que constavam na nota fiscal
-        for (const newItem of payload.newItemsToAdd) {
-          await addListItem({
-            listId,
-            nome: newItem.name,
-            quantidade: `${newItem.quantity} ${newItem.unit}`,
-            categoria: "Outros",
-            price: newItem.totalPrice,
-            precoUnitario: newItem.unitPrice,
-            precoTotal: newItem.totalPrice,
-            comprado: true,
-          });
-        }
+        await Promise.all(
+          payload.newItemsToAdd.map((newItem) =>
+            addListItem({
+              listId,
+              nome: newItem.name,
+              quantidade: `${newItem.quantity} ${newItem.unit}`,
+              categoria: "Outros",
+              price: newItem.totalPrice,
+              precoUnitario: newItem.unitPrice,
+              precoTotal: newItem.totalPrice,
+              comprado: true,
+              createdBy: userId,
+            }),
+          ),
+        );
 
-        // 3. Finaliza a lista chamando a RPC transacional com a data de emissão da nota
-        const nextListId = await finishShoppingList(listId, groupId, payload.purchaseDate);
-        if (nextListId) {
-          setListId(nextListId);
-        }
-        await refreshItems(nextListId);
+        const priceEntries = [
+          ...payload.matchedItemsToUpdate.map((item) => ({
+            productName: item.receiptName,
+            baseProductHint: item.listItemName,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            unit: item.unit,
+          })),
+          ...payload.newItemsToAdd.map((newItem) => ({
+            productName: newItem.name,
+            unitPrice: newItem.unitPrice,
+            quantity: newItem.quantity,
+            unit: newItem.unit,
+          })),
+        ];
 
+        await recordNfcePriceHistory(
+          priceEntries,
+          payload.marketName,
+          payload.purchaseDate,
+        );
+
+        await refreshItems(listId);
+
+        setNfceAppliedReceipt({
+          marketName: payload.marketName,
+          purchaseDate: payload.purchaseDate,
+        });
         setNfceReviewOpen(false);
         setNotice(
-          `Compra finalizada com sucesso via Nota Fiscal (${payload.marketName})!`,
+          `Nota fiscal de ${payload.marketName} aplicada na lista! Revise os itens e clique em "Finalizar compra".`,
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao finalizar compra com a nota");
+        await refreshItems(listId);
+        setError(err instanceof Error ? err.message : "Erro ao aplicar nota fiscal na lista");
       } finally {
         setNfceProcessing(false);
       }
     },
-    [groupId, listId, refreshItems, setListId],
+    [groupId, listId, refreshItems, userId],
   );
 
   if (!groupId) {
@@ -872,6 +908,37 @@ export const ListPageNew = (): ReactElement => {
       </Toast>
 
       {error && <Alert type="error">{error}</Alert>}
+
+      {nfceAppliedReceipt && (
+        <div
+          data-testid="nfce-applied-banner"
+          className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-8"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-success/40 bg-success/10 p-4">
+            <div>
+              <p className="text-sm font-bold text-base-content">
+                Nota fiscal aplicada na lista: {nfceAppliedReceipt.marketName} (
+                {formatIsoDateToPtBr(nfceAppliedReceipt.purchaseDate)})
+              </p>
+              <p className="text-xs text-base-content/70 mt-0.5">
+                Os preços e quantidades foram preenchidos e os itens marcados como comprados. Revise ou ajuste validades e finalize a compra.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={saving || shoppingItems.length === 0}
+                onClick={() => void handleFinalizeShopping()}
+                data-testid="nfce-banner-finalize-button"
+              >
+                {saving ? "Finalizando..." : "Finalizar compra agora"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pb-20">
         <ShoppingListView

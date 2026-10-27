@@ -13,13 +13,16 @@ export interface NfceParsedDocument {
   emitente: string;
   cnpj: string | null;
   endereco: string | null;
-  dataEmissao: string | null; // Formato ISO YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss
+  dataEmissao: string | null;
   total: number;
   itens: NfceItem[];
 }
 
 /**
  * Converte valor numérico em formato brasileiro ("1.234,56" ou "0,558") para number.
+ *
+ * @param raw - String contendo o valor numérico no padrão brasileiro
+ * @returns Número de ponto flutuante correspondente ou 0 quando inválido
  */
 export const parseBrazilianNumber = (raw: string | null | undefined): number => {
   if (!raw) return 0;
@@ -34,6 +37,9 @@ export const parseBrazilianNumber = (raw: string | null | undefined): number => 
 
 /**
  * Converte data de emissão em formato brasileiro ("25/10/2026 16:40:23" ou "25/10/2026") para ISO "YYYY-MM-DD".
+ *
+ * @param raw - String com data/hora em formato DD/MM/AAAA
+ * @returns Data no formato ISO ("YYYY-MM-DD" ou "YYYY-MM-DDTHH:mm:ss") ou null quando inválida
  */
 export const parseBrazilianDate = (raw: string | null | undefined): string | null => {
   if (!raw) return null;
@@ -49,45 +55,59 @@ export const parseBrazilianDate = (raw: string | null | undefined): string | nul
 };
 
 /**
+ * Formata uma string ISO ("YYYY-MM-DD" ou "YYYY-MM-DDTHH:mm:ss") para "DD/MM/AAAA"
+ * sem instanciar Date em UTC (evitando regressão de 1 dia em fusos como UTC-3).
+ *
+ * @param isoDate - String de data no padrão ISO
+ * @returns Data formatada como "DD/MM/AAAA" ou string vazia se inválida
+ */
+export const formatIsoDateToPtBr = (isoDate: string | null | undefined): string => {
+  if (!isoDate) return "";
+  const match = isoDate.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return isoDate;
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+};
+
+/**
  * Normaliza e codifica a URL da SEFAZ para evitar bloqueios de firewall WAF (ex: pipes '|').
+ *
+ * @param rawUrl - URL do QR Code ou chave de acesso de 44 dígitos
+ * @returns URL normalizada com pipes codificados como %7C
  */
 export const normalizeNfceUrl = (rawUrl: string): string => {
   const trimmed = rawUrl.trim();
   if (!trimmed) return "";
 
-  // Se o usuário digitou apenas a chave de 44 dígitos
   if (/^\d{44}$/.test(trimmed)) {
     return `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=${trimmed}%7C2%7C1%7C1%7C`;
   }
 
-  // Se já for uma URL, codifica caracteres especiais no query string, principalmente '|'
   try {
     const parsed = new URL(trimmed);
     const pParam = parsed.searchParams.get("p");
     if (pParam && pParam.includes("|")) {
-      // Reconstitui com %7C no lugar de |
       const encodedP = pParam.split("|").join("%7C");
       parsed.searchParams.set("p", encodedP);
       return parsed.toString().replace(/%257C/gi, "%7C");
     }
     return parsed.toString();
   } catch {
-    // Caso não seja URL válida pelo construtor URL, substitui pipes diretamente
     return trimmed.replace(/\|/g, "%7C");
   }
 };
 
 /**
  * Extrai a chave de acesso de 44 dígitos a partir de uma URL ou string.
+ *
+ * @param raw - Texto ou URL contendo a chave de 44 dígitos
+ * @returns Chave de 44 dígitos encontrada ou null
  */
 export const extractChaveAcesso = (raw: string): string | null => {
   const match = raw.match(/\b(\d{44})\b/);
   return match ? match[1] : null;
 };
 
-/**
- * Extrai texto limpo removendo tags HTML e decodificando entidades básicas.
- */
 const stripHtml = (html: string): string => {
   return html
     .replace(/<[^>]*>/g, " ")
@@ -103,9 +123,12 @@ const stripHtml = (html: string): string => {
 /**
  * Parser resiliente do HTML da NFC-e de São Paulo (SEFAZ-SP / padrão nacional).
  * Funciona tanto no Vercel Edge Runtime quanto no Node.js e browser.
+ *
+ * @param html - Conteúdo HTML retornado pela página de consulta pública da SEFAZ
+ * @param fallbackUrl - URL opcional de onde extrair a chave de acesso caso ausente no HTML
+ * @returns Documento estruturado contendo cabeçalho, totais e lista de itens da nota
  */
 export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDocument => {
-  // 1. Chave de acesso
   let chaveAcesso: string | null = null;
   const chaveMatch = html.match(/(?:Chave de Acesso|chaveAcesso)[^0-9]*([0-9\s]{44,60})/i);
   if (chaveMatch) {
@@ -118,7 +141,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
     chaveAcesso = extractChaveAcesso(fallbackUrl);
   }
 
-  // 2. Emitente e CNPJ
   let emitente = "";
   const topoMatch = html.match(/class=["']txtTopo["'][^>]*>([^<]+)<\/div>/i);
   if (topoMatch) {
@@ -134,21 +156,18 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
     cnpj = cnpjMatch[1].trim();
   }
 
-  // 3. Endereço
   let endereco: string | null = null;
   const enderecoMatch = html.match(/class=["']text["'][^>]*>([^<]+,\s*[^<]+,\s*[A-Z]{2})<\/div>/i);
   if (enderecoMatch) {
     endereco = stripHtml(enderecoMatch[1]);
   }
 
-  // 4. Data de Emissão
   let dataEmissao: string | null = null;
   const emissaoMatch = html.match(/Emiss[aã]o:\s*<\/strong>\s*([^<]+)/i);
   if (emissaoMatch) {
     dataEmissao = parseBrazilianDate(emissaoMatch[1]);
   }
 
-  // 5. Valor Total da Nota
   let total = 0;
   const totalPagarMatch = html.match(
     /Valor a pagar R\$:\s*<\/label>\s*<span class=["'][^"']*totalNumb[^"']*["']>([^<]+)<\/span>/i,
@@ -162,10 +181,8 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
     }
   }
 
-  // 6. Itens da Nota Fiscal
   const itens: NfceItem[] = [];
 
-  // Padrão SEFAZ: <tr id="Item + 1"> ... </tr>
   const rowRegex = /<tr\s+id=["']Item\s*\+\s*(\d+)["'][^>]*>([\s\S]*?)<\/tr>/gi;
   let match: RegExpExecArray | null;
 
@@ -173,11 +190,9 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
     const itemIndex = match[1];
     const rowHtml = match[2];
 
-    // Descrição
     const descMatch = rowHtml.match(/class=["']txtTit["'][^>]*>([\s\S]*?)<\/span>/i);
     const descricao = descMatch ? stripHtml(descMatch[1]) : `Item ${itemIndex}`;
 
-    // Código do produto (ex: "(Código: 101 )")
     const codMatch = rowHtml.match(/class=["']RCod["'][^>]*>([\s\S]*?)<\/span>/i);
     let codigo = itemIndex;
     if (codMatch) {
@@ -186,7 +201,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
       if (numMatch) codigo = numMatch[1];
     }
 
-    // Quantidade (ex: "<strong>Qtde.:</strong>2" ou "<strong>Qtde.:</strong>0,558")
     const qtdMatch = rowHtml.match(/class=["']Rqtd["'][^>]*>([\s\S]*?)<\/span>/i);
     let quantidade = 1;
     if (qtdMatch) {
@@ -197,7 +211,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
       }
     }
 
-    // Unidade (ex: "<strong>UN: </strong>KG" ou "UN: UN")
     const unMatch = rowHtml.match(/class=["']RUN["'][^>]*>([\s\S]*?)<\/span>/i);
     let unidade = "UN";
     if (unMatch) {
@@ -206,7 +219,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
       if (cleanUn) unidade = cleanUn;
     }
 
-    // Valor unitário (ex: "<strong>Vl. Unit.:</strong> 19,99")
     const vlUnitMatch = rowHtml.match(/class=["']RvlUnit["'][^>]*>([\s\S]*?)<\/span>/i);
     let valorUnitario = 0;
     if (vlUnitMatch) {
@@ -217,7 +229,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
       }
     }
 
-    // Valor total do item (ex: "<span class="valor">11,15</span>")
     const vlTotMatch = rowHtml.match(/class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i);
     let valorTotal = 0;
     if (vlTotMatch) {
@@ -239,7 +250,6 @@ export const parseNfceHtml = (html: string, fallbackUrl?: string): NfceParsedDoc
     });
   }
 
-  // Fallback caso a tabela não use id="Item + X", mas classe .tabelaDetalhe ou linhas tr
   if (itens.length === 0) {
     const genericRowRegex = /<tr[^>]*class=["'][^"']*detalhe[^"']*["'][^>]*>([\s\S]*?)<\/tr>/gi;
     let genMatch: RegExpExecArray | null;

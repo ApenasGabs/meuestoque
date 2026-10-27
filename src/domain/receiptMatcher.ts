@@ -13,7 +13,6 @@ export interface MatchedReceiptItem {
   proposedUnitPrice: number;
   proposedQuantity: number;
   proposedUnit: Unit;
-  // Preservação estrita das regras de validade já cadastradas na lista
   preserveValidityDate: string | null;
   preserveNaoAplica: boolean;
 }
@@ -38,9 +37,6 @@ export interface MatchReceiptResult {
   unmatchedList: UnmatchedListItem[];
 }
 
-/**
- * Tabela de expansão de abreviações comuns em notas fiscais brasileiras.
- */
 const ABBREVIATIONS: Record<string, string> = {
   bov: "bovino",
   bovina: "bovino",
@@ -78,9 +74,6 @@ const ABBREVIATIONS: Record<string, string> = {
   uht: "leite",
 };
 
-/**
- * Palavras irrelevantes que não agregam valor à comparação de produtos.
- */
 const NOISE_WORDS = new Set([
   "de",
   "da",
@@ -106,6 +99,9 @@ const NOISE_WORDS = new Set([
 
 /**
  * Remove acentos, pontuações e converte para minúsculas.
+ *
+ * @param text - Texto bruto de entrada
+ * @returns Texto normalizado sem acentos e em letras minúsculas
  */
 export const normalizeText = (text: string): string => {
   return text
@@ -119,6 +115,9 @@ export const normalizeText = (text: string): string => {
 
 /**
  * Converte o texto em tokens expandindo abreviações e filtrando ruídos.
+ *
+ * @param text - Descrição do item ou nome do produto
+ * @returns Lista de tokens normalizados e expandidos
  */
 export const tokenizeText = (text: string): string[] => {
   const normalized = normalizeText(text);
@@ -138,7 +137,10 @@ export const tokenizeText = (text: string): string[] => {
 
 /**
  * Calcula a similaridade entre duas listas de tokens.
- * Retorna score de 0.0 a 1.0.
+ *
+ * @param tokensA - Tokens do item A (ex: item da lista)
+ * @param tokensB - Tokens do item B (ex: item da nota fiscal)
+ * @returns Pontuação de similaridade entre 0.0 e 1.0
  */
 export const calculateTokenSimilarity = (tokensA: string[], tokensB: string[]): number => {
   if (tokensA.length === 0 || tokensB.length === 0) return 0;
@@ -151,7 +153,6 @@ export const calculateTokenSimilarity = (tokensA: string[], tokensB: string[]): 
     if (setB.has(tokenA)) {
       commonCount++;
     } else {
-      // Verifica correspondência parcial (ex: "linguica" vs "linguicas")
       for (const tokenB of setB) {
         if (
           (tokenA.length >= 4 && tokenB.startsWith(tokenA)) ||
@@ -164,7 +165,6 @@ export const calculateTokenSimilarity = (tokensA: string[], tokensB: string[]): 
     }
   }
 
-  // Se todos os tokens da lista (geralmente menor) estão na nota, bônus alto
   const coverageA = commonCount / setA.size;
   const coverageB = commonCount / setB.size;
 
@@ -173,6 +173,9 @@ export const calculateTokenSimilarity = (tokensA: string[], tokensB: string[]): 
 
 /**
  * Mapeia a unidade da nota fiscal para a unidade suportada pelo sistema.
+ *
+ * @param notaUnidade - Unidade textual extraída da NFC-e (ex: "KG", "UN")
+ * @returns Unidade canônica do sistema (Unit)
  */
 export const mapNotaUnitToSystemUnit = (notaUnidade: string): Unit => {
   const clean = notaUnidade.trim().toUpperCase();
@@ -193,6 +196,11 @@ interface CandidatePair {
 
 /**
  * Realiza o match entre os itens da NFC-e e a lista de compras atual.
+ *
+ * @param notaItens - Lista de itens extraídos da nota fiscal
+ * @param listaItens - Itens ativos da lista de compras do usuário
+ * @param produtos - Catálogo de produtos carregado no estado
+ * @returns Resultado agrupado em itens casados, novos na nota e ausentes na nota
  */
 export const matchReceiptWithShoppingList = (
   notaItens: NfceItem[],
@@ -204,7 +212,6 @@ export const matchReceiptWithShoppingList = (
     productMap.set(p.id, p);
   }
 
-  // Pré-tokeniza os itens da lista
   const listItemsMeta = listaItens.map((item) => {
     const product = productMap.get(item.productId);
     const productName = product ? product.name : "";
@@ -212,7 +219,6 @@ export const matchReceiptWithShoppingList = (
     return { item, product, productName, tokens };
   });
 
-  // Pré-tokeniza os itens da nota
   const notaItemsMeta = notaItens.map((notaItem) => ({
     notaItem,
     tokens: tokenizeText(notaItem.descricao),
@@ -232,7 +238,6 @@ export const matchReceiptWithShoppingList = (
     }
   }
 
-  // Ordena por score decrescente para atribuição gulosa 1-para-1
   candidates.sort((a, b) => b.score - a.score);
 
   const matchedNotaIndexes = new Set<number>();
@@ -272,20 +277,18 @@ export const matchReceiptWithShoppingList = (
       proposedUnitPrice: nMeta.notaItem.valorUnitario,
       proposedQuantity: nMeta.notaItem.quantidade,
       proposedUnit,
-      // Preservação absoluta das validades já existentes no item da lista
       preserveValidityDate: lMeta.item.validityDate ?? null,
       preserveNaoAplica: Boolean(lMeta.item.naoAplicaValidade),
     });
   }
 
-  // Itens da nota que não casaram com nenhum item da lista
   const unmatchedNota: UnmatchedNotaItem[] = [];
   for (let nIdx = 0; nIdx < notaItemsMeta.length; nIdx++) {
     if (!matchedNotaIndexes.has(nIdx)) {
       const nItem = notaItemsMeta[nIdx].notaItem;
       unmatchedNota.push({
         notaItem: nItem,
-        selected: true, // Conforme decisão: itens na nota mas fora da lista entram selecionados
+        selected: true,
         proposedPrice: nItem.valorTotal,
         proposedUnitPrice: nItem.valorUnitario,
         proposedQuantity: nItem.quantidade,
@@ -294,7 +297,6 @@ export const matchReceiptWithShoppingList = (
     }
   }
 
-  // Itens da lista que não estavam na nota
   const unmatchedList: UnmatchedListItem[] = [];
   for (let lIdx = 0; lIdx < listItemsMeta.length; lIdx++) {
     if (!matchedListIndexes.has(lIdx)) {

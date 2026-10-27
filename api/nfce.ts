@@ -2,13 +2,15 @@ export const config = {
   runtime: "edge",
 };
 
-import { parseNfceHtml, normalizeNfceUrl } from "../src/domain/nfceParser";
+import { parseNfceHtml, normalizeNfceUrl, extractChaveAcesso } from "../src/domain/nfceParser";
 
-const ALLOWED_HOSTS = [
+const ALLOWED_HOSTS = new Set([
   "www.nfce.fazenda.sp.gov.br",
   "nfce.fazenda.sp.gov.br",
   "satsp.fazenda.sp.gov.br",
-];
+]);
+
+const UPSTREAM_TIMEOUT_MS = 8000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +18,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+/**
+ * Proxy serverless da Vercel (Edge) para consulta pública de NFC-e na SEFAZ-SP.
+ * Valida a URL de entrada contra uma allowlist estrita de hosts, aplica timeout
+ * e retorna os dados estruturados da nota fiscal.
+ *
+ * @param req - Requisição HTTP recebida pela Edge Function
+ * @returns Resposta JSON contendo os dados extraídos da NFC-e ou mensagem de erro
+ */
 export default async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -44,7 +54,7 @@ export default async (req: Request): Promise<Response> => {
     }
   }
 
-  if (!rawUrl || typeof rawUrl !== "string") {
+  if (!rawUrl || typeof rawUrl !== "string" || !rawUrl.trim()) {
     return new Response(
       JSON.stringify({ error: "Parâmetro 'url' ou 'chave' da nota fiscal é obrigatório." }),
       {
@@ -56,26 +66,52 @@ export default async (req: Request): Promise<Response> => {
 
   const targetUrl = normalizeNfceUrl(rawUrl);
 
+  let parsedTarget: URL;
   try {
-    const parsedTarget = new URL(targetUrl);
-    const hostAllowed = ALLOWED_HOSTS.some(
-      (host) => parsedTarget.hostname === host || parsedTarget.hostname.endsWith(".fazenda.sp.gov.br"),
+    parsedTarget = new URL(targetUrl);
+  } catch {
+    return new Response(
+      JSON.stringify({
+        error: "URL ou chave de acesso da nota fiscal em formato inválido.",
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
+  }
 
-    if (!hostAllowed) {
-      return new Response(
-        JSON.stringify({
-          error: "Domínio não autorizado. Apenas consultas da SEFAZ-SP são permitidas.",
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+  if (parsedTarget.protocol !== "https:" || !ALLOWED_HOSTS.has(parsedTarget.hostname)) {
+    return new Response(
+      JSON.stringify({
+        error: "Domínio não autorizado. Apenas consultas oficiais da SEFAZ-SP são permitidas.",
+      }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
 
+  if (!extractChaveAcesso(targetUrl)) {
+    return new Response(
+      JSON.stringify({
+        error: "A URL ou chave informada não contém uma chave de acesso NFC-e válida de 44 dígitos.",
+      }),
+      {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
+  try {
     const upstreamRes = await fetch(targetUrl, {
       method: "GET",
+      signal: controller.signal,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36",
@@ -139,13 +175,28 @@ export default async (req: Request): Promise<Response> => {
       },
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erro desconhecido ao consultar NFC-e";
+    if (err instanceof Error && err.name === "AbortError") {
+      return new Response(
+        JSON.stringify({
+          error: "Tempo limite excedido ao consultar a SEFAZ-SP. Tente novamente em instantes.",
+        }),
+        {
+          status: 504,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({
+        error: "Falha inesperada ao comunicar com a SEFAZ-SP.",
+      }),
       {
-        status: 500,
+        status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 };

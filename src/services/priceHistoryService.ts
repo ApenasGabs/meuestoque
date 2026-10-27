@@ -1,5 +1,14 @@
 import { supabase } from "../lib/supabase";
+import { extractProductParts } from "./brandDictionaryService";
 import type { TendaBranchInfo, TendaItemQuote, TendaProduct } from "./tendaService";
+
+export interface NfcePriceHistoryEntry {
+  productName: string;
+  baseProductHint?: string;
+  unitPrice: number;
+  quantity: number;
+  unit: string;
+}
 
 export interface StorePriceRecord {
   id?: string;
@@ -101,6 +110,72 @@ export const recordStorePriceHistory = async (
     }
   } catch (err: unknown) {
     console.warn("[priceHistoryService] Erro inesperado ao gravar historico:", err);
+  }
+};
+
+/**
+ * Persiste no histórico de preços por loja os itens importados de uma Nota Fiscal (NFC-e).
+ *
+ * @param entries - Itens da nota fiscal com preços unitários e quantidades
+ * @param marketName - Nome do estabelecimento emissor da nota
+ * @param purchaseDate - Data da compra no formato YYYY-MM-DD (opcional)
+ */
+export const recordNfcePriceHistory = async (
+  entries: NfcePriceHistoryEntry[],
+  marketName: string,
+  purchaseDate?: string,
+): Promise<void> => {
+  if (!entries || entries.length === 0) {
+    return;
+  }
+
+  const effectiveDate = purchaseDate
+    ? purchaseDate.slice(0, 10)
+    : new Date().toISOString().split("T")[0];
+  const storeSlug = (marketName || "nfce").trim().toLowerCase().slice(0, 80) || "nfce";
+
+  const deduplicatedMap = new Map<string, StorePriceRecord>();
+
+  for (const entry of entries) {
+    if (!entry.productName || entry.unitPrice <= 0) continue;
+
+    const parts = extractProductParts(entry.productName);
+    const hintParts = entry.baseProductHint ? extractProductParts(entry.baseProductHint) : null;
+    const baseProduct = (hintParts?.baseProduct || parts.baseProduct || entry.productName).trim();
+
+    const recordKey = `${storeSlug}::0::${entry.productName.trim()}::${effectiveDate}`;
+    deduplicatedMap.set(recordKey, {
+      loja: storeSlug,
+      filial_id: 0,
+      filial_nome: marketName || "Nota Fiscal (NFC-e)",
+      produto_base: baseProduct,
+      marca: parts.brand || hintParts?.brand || null,
+      produto_nome: entry.productName.trim(),
+      preco: entry.unitPrice,
+      tamanho_valor: entry.quantity > 0 ? entry.quantity : null,
+      tamanho_unidade: entry.unit || null,
+      data_cotacao: effectiveDate,
+    });
+  }
+
+  const recordsToInsert = Array.from(deduplicatedMap.values());
+  if (recordsToInsert.length === 0) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("store_price_history")
+      .upsert(recordsToInsert, {
+        onConflict: "loja,filial_id,produto_nome,data_cotacao",
+        ignoreDuplicates: false,
+      });
+
+    if (error) {
+      console.warn("[priceHistoryService] Falha ao persistir historico de NFC-e:", error.message);
+    }
+  } catch (err: unknown) {
+    console.warn("[priceHistoryService] Erro inesperado ao gravar historico de NFC-e:", err);
   }
 };
 

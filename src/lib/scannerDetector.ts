@@ -40,6 +40,8 @@ export const createBarcodeScanner = async (): Promise<ScannerInstance> => {
 /**
  * Instancia o leitor de QR Code para leitura de NFC-e.
  * Prioriza a API nativa do navegador se disponível, caso contrário utiliza o fallback html5-qrcode.
+ *
+ * @returns Promessa contendo a instância de ScannerInstance configurada para QR Code
  */
 export const createQrCodeScanner = async (): Promise<ScannerInstance> => {
   if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {

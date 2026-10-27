@@ -3,7 +3,7 @@ import { Drawer } from "../Drawer/Drawer";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
 import { Checkbox } from "../Checkbox/Checkbox";
-import type { NfceParsedDocument } from "../../domain/nfceParser";
+import { formatIsoDateToPtBr, type NfceParsedDocument } from "../../domain/nfceParser";
 import type {
   MatchReceiptResult,
   MatchedReceiptItem,
@@ -16,6 +16,8 @@ export interface NfceFinalizePayload {
   marketName: string;
   matchedItemsToUpdate: {
     listItemId: string;
+    listItemName: string;
+    receiptName: string;
     unitPrice: number;
     totalPrice: number;
     quantity: number;
@@ -41,6 +43,18 @@ interface NfceReviewDrawerProps {
   loading?: boolean;
 }
 
+/**
+ * Gaveta (Drawer / Bottom Sheet) de conferência dos itens extraídos da NFC-e
+ * antes de atualizar e finalizar a lista de compras.
+ *
+ * @param props.open - Indica se a gaveta está visível
+ * @param props.onClose - Callback disparado ao fechar a gaveta
+ * @param props.parsedDoc - Dados estruturados extraídos da nota fiscal
+ * @param props.matchResult - Resultado da correspondência entre nota e lista de compras
+ * @param props.onConfirmFinalize - Callback assíncrono para aplicar as mudanças e finalizar a lista
+ * @param props.loading - Indica se o processo de finalização está em execução
+ * @returns Elemento React da gaveta de revisão ou null
+ */
 export const NfceReviewDrawer = ({
   open,
   onClose,
@@ -69,7 +83,6 @@ export const NfceReviewDrawer = ({
   const isMatchSelected = (listItemId: string): boolean => !deselectedMatches[listItemId];
   const isNewItemSelected = (notaItemId: string): boolean => !deselectedNewItems[notaItemId];
 
-  // Cálculo de totais
   const { totalSelected, selectedCount } = useMemo(() => {
     if (!matchResult) return { totalSelected: 0, selectedCount: 0 };
 
@@ -100,6 +113,8 @@ export const NfceReviewDrawer = ({
       .filter((m) => isMatchSelected(m.listItem.id))
       .map((m) => ({
         listItemId: m.listItem.id,
+        listItemName: m.product.name,
+        receiptName: m.notaItem.descricao,
         unitPrice: m.proposedUnitPrice,
         totalPrice: m.proposedPrice,
         quantity: m.proposedQuantity,
@@ -132,17 +147,20 @@ export const NfceReviewDrawer = ({
 
   if (!open || !parsedDoc || !matchResult) return null;
 
+  const formattedEmissionDate = parsedDoc.dataEmissao
+    ? formatIsoDateToPtBr(parsedDoc.dataEmissao)
+    : "Data de hoje";
+
   return (
     <Drawer
       open={open}
       onClose={onClose}
       title="Revisão da Nota Fiscal"
-      subtitle={`${parsedDoc.emitente} • ${parsedDoc.dataEmissao ? new Date(parsedDoc.dataEmissao).toLocaleDateString("pt-BR") : "Data de hoje"}`}
+      subtitle={`${parsedDoc.emitente} • ${formattedEmissionDate}`}
       width="w-full sm:w-[540px] md:w-[620px]"
       testId="nfce-review-drawer"
     >
       <div className="flex flex-col gap-6 pb-24">
-        {/* Banner do Cupom */}
         <div className="bg-base-200/80 rounded-2xl p-4 border border-base-300 flex justify-between items-center">
           <div>
             <div className="text-xs text-base-content/60 uppercase font-semibold">Valor da Nota</div>
@@ -158,7 +176,6 @@ export const NfceReviewDrawer = ({
           </div>
         </div>
 
-        {/* 1. Casados com a Lista */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -181,9 +198,8 @@ export const NfceReviewDrawer = ({
               {matchResult.matches.map((m: MatchedReceiptItem) => {
                 const isChecked = isMatchSelected(m.listItem.id);
                 return (
-                  <div
+                  <label
                     key={m.listItem.id}
-                    onClick={() => toggleMatch(m.listItem.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isChecked
                         ? "bg-base-100 border-success/40 shadow-xs"
@@ -206,7 +222,7 @@ export const NfceReviewDrawer = ({
                         <div className="flex items-center gap-2 mt-1">
                           {m.preserveValidityDate ? (
                             <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-medium">
-                              Validade: {new Date(m.preserveValidityDate).toLocaleDateString("pt-BR")}
+                              Validade: {formatIsoDateToPtBr(m.preserveValidityDate)}
                             </span>
                           ) : m.preserveNaoAplica ? (
                             <span className="text-[10px] bg-base-300 text-base-content/70 px-1.5 py-0.5 rounded-sm font-medium">
@@ -231,14 +247,13 @@ export const NfceReviewDrawer = ({
                         {m.proposedUnitPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/un
                       </div>
                     </div>
-                  </div>
+                  </label>
                 );
               })}
             </div>
           )}
         </div>
 
-        {/* 2. Novos da Nota (Fora da Lista) */}
         {matchResult.unmatchedNota.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -250,16 +265,15 @@ export const NfceReviewDrawer = ({
                   </Badge>
                 </span>
               </div>
-              <span className="text-xs text-base-content/50">Serão adicionados ao estoque</span>
+              <span className="text-xs text-base-content/50">Serão adicionados na lista</span>
             </div>
 
             <div className="flex flex-col gap-2">
               {matchResult.unmatchedNota.map((u: UnmatchedNotaItem) => {
                 const isChecked = isNewItemSelected(u.notaItem.id);
                 return (
-                  <div
+                  <label
                     key={u.notaItem.id}
-                    onClick={() => toggleNewItem(u.notaItem.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isChecked
                         ? "bg-base-100 border-info/40 shadow-xs"
@@ -286,14 +300,13 @@ export const NfceReviewDrawer = ({
                         {u.proposedPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </div>
                     </div>
-                  </div>
+                  </label>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* 3. Itens da Lista Ausentes na Nota */}
         {matchResult.unmatchedList.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -318,7 +331,6 @@ export const NfceReviewDrawer = ({
         )}
       </div>
 
-      {/* Rodapé Fixo */}
       <div className="p-4 border-t border-base-300 bg-base-100/90 backdrop-blur-md fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between gap-4">
         <div>
           <div className="text-[11px] text-base-content/60 uppercase font-semibold">
@@ -340,7 +352,7 @@ export const NfceReviewDrawer = ({
             data-testid="nfce-confirm-finalize-button"
             className="shadow-md"
           >
-            {loading ? "Finalizando..." : "Confirmar e Finalizar"}
+            {loading ? "Aplicando na lista..." : "Aplicar na Lista"}
           </Button>
         </div>
       </div>

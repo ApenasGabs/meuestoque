@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseBrazilianNumber,
   parseBrazilianDate,
+  formatIsoDateToPtBr,
   normalizeNfceUrl,
   extractChaveAcesso,
   parseNfceHtml,
@@ -40,6 +41,14 @@ describe("nfceParser", () => {
       expect(parseBrazilianDate("")).toBeNull();
       expect(parseBrazilianDate("data invalida")).toBeNull();
       expect(parseBrazilianDate(null)).toBeNull();
+    });
+  });
+
+  describe("formatIsoDateToPtBr", () => {
+    it("deve formatar data YYYY-MM-DD para DD/MM/AAAA sem shift de fuso horário", () => {
+      expect(formatIsoDateToPtBr("2026-11-15")).toBe("15/11/2026");
+      expect(formatIsoDateToPtBr("2026-10-25T16:40:23")).toBe("25/10/2026");
+      expect(formatIsoDateToPtBr(null)).toBe("");
     });
   });
 

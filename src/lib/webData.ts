@@ -363,6 +363,64 @@ export async function updateListItemQuantity(itemId: string, quantity: string): 
   if (error) throw new Error(error.message);
 }
 
+export interface ApplyReceiptMatchInput {
+  itemId: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  validityDate?: string | null;
+  naoAplicaValidade?: boolean;
+}
+
+/**
+ * Aplica os dados de um item da nota fiscal (NFC-e) a um item existente na lista de compras
+ * em uma única atualização atômica, preservando a validade já preenchida.
+ *
+ * @param input - Dados conciliados do item da nota fiscal e ID do item na lista
+ */
+export const applyReceiptMatchToListItem = async (
+  input: ApplyReceiptMatchInput,
+): Promise<void> => {
+  const quantityLabel = `${input.quantity} ${input.unit}`;
+  const parsed = parseListQuantityLabel(quantityLabel);
+  const updatePayload: {
+    quantidade: string;
+    quantidade_raw: string;
+    quantidade_num: number;
+    unidade: Unit;
+    preco_unitario: number;
+    preco_total: number;
+    preco: number;
+    comprado: boolean;
+    data_validade?: string | null;
+    nao_aplica_validade?: boolean;
+  } = {
+    quantidade: quantityLabel,
+    quantidade_raw: quantityLabel,
+    quantidade_num: parsed.quantidade,
+    unidade: parsed.unidade,
+    preco_unitario: input.unitPrice,
+    preco_total: input.totalPrice,
+    preco: input.totalPrice,
+    comprado: true,
+  };
+
+  if (input.validityDate !== undefined) {
+    updatePayload.data_validade = input.validityDate;
+  }
+  if (input.naoAplicaValidade !== undefined) {
+    updatePayload.nao_aplica_validade = input.naoAplicaValidade;
+  }
+
+  const { error } = await supabase
+    .from("items")
+    .update(updatePayload)
+    .eq("id", input.itemId);
+
+  if (error) throw new Error(error.message);
+};
+
 export async function deleteListItem(itemId: string): Promise<void> {
   const { error } = await supabase.from("items").delete().eq("id", itemId);
 
@@ -808,8 +866,8 @@ export async function loadShoppingHistory(groupId: string): Promise<ShoppingList
 
   const records = (data ?? []) as ShoppingListRecord[];
   return records.sort((first, second) => {
-    const firstDate = first.closed_purchase_date ?? first.finalizada_em ?? "";
-    const secondDate = second.closed_purchase_date ?? second.finalizada_em ?? "";
+    const firstDate = first.finalizada_em ?? first.closed_purchase_date ?? "";
+    const secondDate = second.finalizada_em ?? second.closed_purchase_date ?? "";
     return secondDate.localeCompare(firstDate);
   });
 }

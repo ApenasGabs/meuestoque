@@ -53,8 +53,8 @@ graph TD
     C --> D[nfceParser - Normalização de Itens e Total]
     D --> E[receiptMatcher - Match Inteligente com a Lista]
     E --> F[NfceReviewDrawer - Painel de Conferência]
-    F -->|Confirmar e Finalizar| G[Atualização dos Itens e RPC Finalize]
-    G --> H[Estoque Atualizado com Validades Preservadas]
+    F -->|Aplicar na Lista| G[Lista Ativa Preenchida + store_price_history]
+    G -->|Finalizar Compra| H[RPC Finalize + Histórico + Estoque Atualizado]
 ```
 
 #### Arquivos Modificados / Criados
@@ -67,27 +67,29 @@ graph TD
 | `src/domain/receiptMatcher.test.ts` | Testes unitários do motor de match |
 | `src/services/nfceService.ts` | Cliente frontend para consulta da API `/api/nfce` |
 | `src/services/nfceService.test.ts` | Testes unitários do serviço HTTP |
+| `src/services/priceHistoryService.ts` | Adicionado `recordNfcePriceHistory` para persistir os preços unitários da nota em `store_price_history` |
 | `src/lib/scannerDetector.ts` | Suporte a leitura de QR Code além de código de barras 1D |
 | `src/components/Scanner/NfceScannerModal.tsx` | Modal com mira de câmera para leitura de QR Code ou input de URL/chave |
 | `src/components/NfceReviewDrawer/NfceReviewDrawer.tsx` | Gaveta/Bottom Sheet de conferência de itens casados, novos e ausentes |
 | `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Botão "Escanear Nota" na barra de ações |
-| `src/pages/ListPageNew.tsx` | Integração do fluxo de leitura, conferência e finalização com a data da nota |
-| `src/lib/webData.ts` | Suporte a data de compra customizada em `finishShoppingList` e novos campos em `addListItem` |
+| `src/pages/ListPageNew.tsx` | Fluxo em 2 etapas: aplica a nota na lista ativa (com banner de revisão) e finaliza com a data de emissão da nota + refresh do `useStockStore` |
+| `src/lib/webData.ts` | `applyReceiptMatchToListItem`, suporte a data de compra em `finishShoppingList` e ordenação de `loadShoppingHistory` por `finalizada_em` |
 
 #### Lógica de Decisão
 ```text
 REGRA 1: Validade é sagrada. A nota fiscal não traz datas de validade, portanto o motor de match preserva rigorosamente a validade pré-cadastrada na lista de compras (data ou não se aplica).
-REGRA 2: Se o item está na nota mas não na lista, entra selecionado por padrão como novo item no estoque.
-REGRA 3: Se o item está na lista mas ausente na nota, permanece desmarcado e é reaproveitado na próxima lista.
-REGRA 4: A data efetiva da compra no estoque é sincronizada com a data de emissão do cupom fiscal.
+REGRA 2: Fluxo em 2 etapas (Confirmar na Gaveta -> Revisar na Lista -> Finalizar Compra). Ao clicar em "Aplicar na Lista", os itens casados têm preços/quantidades atualizados e são marcados como comprados, e os itens novos da nota são adicionados à lista ativa para que o usuário possa revisar nomes e validades antes de finalizar.
+REGRA 3: Os preços unitários da nota fiscal são persistidos imediatamente em `store_price_history`, e ao finalizar a compra via RPC, a lista fechada fica no topo do histórico (`loadShoppingHistory` ordenado por `finalizada_em DESC`) e os lotes em `stock_lots` alimentam o histórico de preços do estoque.
+REGRA 4: A data efetiva da compra no estoque e no histórico é sincronizada com a data de emissão do cupom fiscal.
 ```
 
 #### Comportamento
 - O usuário clica em "Escanear Nota" na lista de compras.
 - Aponta a câmera para o QR Code impresso no cupom fiscal da SEFAZ (ou cola a URL / chave de 44 dígitos).
 - O backend consulta a SEFAZ-SP, normaliza os dados e cruza com a lista de compras atual.
-- Abre o painel de conferência exibindo itens casados (com novo preço e quantidade, mantendo validades) e novos itens adicionados.
-- Ao clicar em "Confirmar e Finalizar", os itens são atualizados e a lista é finalizada transacionalmente via RPC.
+- Abre o painel lateral de conferência exibindo itens casados (com novo preço e quantidade, mantendo validades) e novos itens do carrinho.
+- Ao clicar em "Aplicar na Lista", a gaveta fecha, os itens aparecem preenchidos e marcados na lista ativa com um banner da nota aplicada, e os preços vão para `store_price_history`.
+- O usuário revisa a lista (podendo renomear ou ajustar validades) e clica em "Finalizar compra" para gravar no histórico de compras e no estoque.
 
 #### Checklist de Aceite
 - [x] Lint passando (0 erros)

@@ -14,6 +14,11 @@ export interface NfceScannerModalProps {
 /**
  * Modal para leitura do QR Code da Nota Fiscal de Consumidor Eletrônica (NFC-e).
  * Permite leitura pela câmera com controle de zoom e campo alternativo para colar a URL ou chave.
+ *
+ * @param props.open - Indica se o modal está aberto
+ * @param props.onClose - Callback disparado ao fechar o modal
+ * @param props.onScanUrl - Callback disparado ao capturar a URL ou chave da nota fiscal
+ * @returns Elemento React do modal de leitura de QR Code ou null
  */
 export const NfceScannerModal = ({
   open,
@@ -102,6 +107,7 @@ export const NfceScannerModal = ({
             value={manualInput}
             onChange={(e) => setManualInput(e.target.value)}
             placeholder="Cole o link da nota ou a chave de 44 dígitos..."
+            aria-label="URL do QR Code ou chave de acesso de 44 dígitos"
             className="flex-1"
             data-testid="nfce-scanner-manual-input"
             onKeyDown={(e) => {
@@ -148,7 +154,6 @@ export const NfceScannerModal = ({
         <div className="relative w-full aspect-square bg-base-300 rounded-xl overflow-hidden mt-2">
           <div id={containerId} className="w-full h-full origin-center" />
 
-          {/* Mira de leitura do QR Code */}
           <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
             <div className="w-56 h-56 border-2 border-primary/80 rounded-2xl relative animate-pulse">
               <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary" />
@@ -158,7 +163,6 @@ export const NfceScannerModal = ({
             </div>
           </div>
 
-          {/* Controles de zoom */}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4 z-20">
             <div className="bg-base-100/80 backdrop-blur rounded-full px-2 py-1 flex items-center gap-2 shadow-lg">
               <Button
@@ -189,12 +193,12 @@ export const NfceScannerModal = ({
         </div>
       )}
 
-      {/* Entrada manual para colar link ou chave */}
       <div className="mt-4 flex gap-2 items-center">
         <Input
           value={manualInput}
           onChange={(e) => setManualInput(e.target.value)}
           placeholder="Ou cole a URL da nota ou chave..."
+          aria-label="URL do QR Code ou chave de acesso de 44 dígitos"
           className="flex-1"
           data-testid="nfce-scanner-manual-input"
           onKeyDown={(e) => {
