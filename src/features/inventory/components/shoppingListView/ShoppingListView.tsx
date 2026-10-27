@@ -57,6 +57,7 @@ interface ShoppingListViewProps {
   onBulkRemove?: (itemIds: string[]) => Promise<void>;
   onOpenTendaQuotes?: () => void;
   onOpenImportModal?: () => void;
+  onOpenNfceScan?: () => void;
   onViewHistory?: () => void;
   onScannerOpen?: () => void;
   canUseScanner?: boolean;
@@ -110,6 +111,7 @@ export const ShoppingListView = ({
   onBulkRemove,
   onOpenTendaQuotes,
   onOpenImportModal,
+  onOpenNfceScan,
   onViewHistory,
   onScannerOpen,
   canUseScanner,
@@ -371,6 +373,17 @@ export const ShoppingListView = ({
                     className="text-xs sm:text-sm"
                   >
                     Importar
+                  </Button>
+                )}
+                {onOpenNfceScan && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onOpenNfceScan}
+                    data-testid="scan-receipt-button"
+                    className="text-xs sm:text-sm"
+                  >
+                    Escanear Nota
                   </Button>
                 )}
                 {onViewHistory && (

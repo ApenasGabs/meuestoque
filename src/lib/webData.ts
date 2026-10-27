@@ -255,6 +255,9 @@ export interface AddListItemInput {
   quantidade: string;
   categoria: string;
   price?: number | null;
+  precoUnitario?: number | null;
+  precoTotal?: number | null;
+  comprado?: boolean;
   createdBy?: string | null;
   /** Embalagem informada na compra (ex: "pacote") */
   packLabel?: string | null;
@@ -278,7 +281,9 @@ export async function addListItem(input: AddListItemInput): Promise<void> {
     unidade: parsed.unidade,
     categoria: input.categoria,
     preco: input.price ?? null,
-    comprado: false,
+    preco_unitario: input.precoUnitario ?? null,
+    preco_total: input.precoTotal ?? input.price ?? null,
+    comprado: input.comprado ?? false,
     criado_por: input.createdBy ?? null,
     pack_label: input.packLabel ?? null,
     pack_size: input.packSize ?? null,
@@ -488,11 +493,19 @@ const parseListQuantityLabel = (rawQuantity: string): { quantidade: number; unid
   };
 };
 
-export async function finishShoppingList(listId: string, groupId: string): Promise<string | null> {
+export async function finishShoppingList(
+  listId: string,
+  groupId: string,
+  purchaseDate?: string,
+): Promise<string | null> {
+  const effectivePurchaseDate = purchaseDate
+    ? purchaseDate.slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+
   try {
     const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_finalize_shopping_list", {
       p_list_id: listId,
-      p_purchase_date: new Date().toISOString().slice(0, 10),
+      p_purchase_date: effectivePurchaseDate,
     });
 
     if (rpcError) {
@@ -522,7 +535,7 @@ export async function finishShoppingList(listId: string, groupId: string): Promi
 
   if (itemsError) throw new Error(itemsError.message);
 
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const todayDate = effectivePurchaseDate;
   // Prefer preco_total (unit-price-based) over preco (manually entered total) for accuracy.
   const total = (items ?? []).reduce((sum, item) => sum + (item.preco_total ?? item.preco ?? 0), 0);
 

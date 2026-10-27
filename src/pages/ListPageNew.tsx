@@ -37,6 +37,17 @@ import { toUnit } from "../types/inventory.types";
 import { resolveProductByEan, saveEanMapping } from "../lib/barcodeService";
 import { BarcodeScannerModal } from "../components/Scanner/BarcodeScannerModal";
 import { TendaPriceDrawer } from "../components/TendaPriceDrawer/TendaPriceDrawer";
+import { NfceScannerModal } from "../components/Scanner/NfceScannerModal";
+import {
+  NfceReviewDrawer,
+  type NfceFinalizePayload,
+} from "../components/NfceReviewDrawer/NfceReviewDrawer";
+import { fetchNfceData } from "../services/nfceService";
+import type { NfceParsedDocument } from "../domain/nfceParser";
+import {
+  matchReceiptWithShoppingList,
+  type MatchReceiptResult,
+} from "../domain/receiptMatcher";
 
 /**
  * Main shopping list page with integrated inventory intelligence.
@@ -77,6 +88,11 @@ export const ListPageNew = (): ReactElement => {
   const [pendingEan, setPendingEan] = useState<string | null>(null);
   const [smartInput, setSmartInput] = useState<string>("");
   const [tendaDrawerOpen, setTendaDrawerOpen] = useState<boolean>(false);
+  const [nfceScannerOpen, setNfceScannerOpen] = useState<boolean>(false);
+  const [nfceReviewOpen, setNfceReviewOpen] = useState<boolean>(false);
+  const [nfceParsedDoc, setNfceParsedDoc] = useState<NfceParsedDocument | null>(null);
+  const [nfceMatchResult, setNfceMatchResult] = useState<MatchReceiptResult | null>(null);
+  const [nfceProcessing, setNfceProcessing] = useState<boolean>(false);
   const canUseCamera = typeof window !== "undefined" && window.isSecureContext;
 
   const parseListQuantity = useCallback((rawQuantity: string): { quantity: number; unit: Unit } => {
@@ -759,6 +775,85 @@ export const ListPageNew = (): ReactElement => {
     [fireUpdateItemUnitPrice],
   );
 
+  const handleNfceScanUrl = useCallback(
+    async (urlOrChave: string): Promise<void> => {
+      setLoading(true);
+      setError(null);
+      setNotice("Consultando nota fiscal na SEFAZ...");
+
+      try {
+        const doc = await fetchNfceData(urlOrChave);
+        const match = matchReceiptWithShoppingList(doc.itens, shoppingList, products);
+
+        setNfceParsedDoc(doc);
+        setNfceMatchResult(match);
+        setNfceReviewOpen(true);
+        setNotice(`Nota fiscal de ${doc.emitente} carregada com sucesso!`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Falha ao consultar nota fiscal");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [products, shoppingList],
+  );
+
+  const handleConfirmNfceFinalize = useCallback(
+    async (payload: NfceFinalizePayload): Promise<void> => {
+      if (!listId || !groupId) return;
+
+      setNfceProcessing(true);
+      setError(null);
+
+      try {
+        // 1. Atualiza itens casados (preço, quantidade e marca como comprado)
+        for (const item of payload.matchedItemsToUpdate) {
+          await updateListItemUnitPrice(item.listItemId, item.unitPrice, item.quantity);
+          await updateListItemQuantity(item.listItemId, `${item.quantity} ${item.unit}`);
+          if (item.validityDate !== undefined) {
+            await updateListItemValidityDate(
+              item.listItemId,
+              item.validityDate,
+              item.naoAplicaValidade,
+            );
+          }
+          await toggleListItemPurchased(item.listItemId, true);
+        }
+
+        // 2. Adiciona novos itens que constavam na nota fiscal
+        for (const newItem of payload.newItemsToAdd) {
+          await addListItem({
+            listId,
+            nome: newItem.name,
+            quantidade: `${newItem.quantity} ${newItem.unit}`,
+            categoria: "Outros",
+            price: newItem.totalPrice,
+            precoUnitario: newItem.unitPrice,
+            precoTotal: newItem.totalPrice,
+            comprado: true,
+          });
+        }
+
+        // 3. Finaliza a lista chamando a RPC transacional com a data de emissão da nota
+        const nextListId = await finishShoppingList(listId, groupId, payload.purchaseDate);
+        if (nextListId) {
+          setListId(nextListId);
+        }
+        await refreshItems(nextListId);
+
+        setNfceReviewOpen(false);
+        setNotice(
+          `Compra finalizada com sucesso via Nota Fiscal (${payload.marketName})!`,
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao finalizar compra com a nota");
+      } finally {
+        setNfceProcessing(false);
+      }
+    },
+    [groupId, listId, refreshItems, setListId],
+  );
+
   if (!groupId) {
     return <Alert type="warning">Selecione um grupo para continuar</Alert>;
   }
@@ -819,6 +914,7 @@ export const ListPageNew = (): ReactElement => {
           }}
           onOpenTendaQuotes={() => setTendaDrawerOpen(true)}
           onOpenImportModal={() => setImportModalOpen(true)}
+          onOpenNfceScan={() => setNfceScannerOpen(true)}
           onViewHistory={() => navigate("/history")}
           canUseScanner={canUseCamera}
           onScannerOpen={() => setScannerOpen(true)}
@@ -917,6 +1013,25 @@ export const ListPageNew = (): ReactElement => {
         onApplyPrice={handleApplyTendaPrice}
         onApplyAllPrices={handleApplyAllTendaPrices}
       />
+
+      {nfceScannerOpen && (
+        <NfceScannerModal
+          open={nfceScannerOpen}
+          onClose={() => setNfceScannerOpen(false)}
+          onScanUrl={(urlOrChave) => void handleNfceScanUrl(urlOrChave)}
+        />
+      )}
+
+      {nfceReviewOpen && (
+        <NfceReviewDrawer
+          open={nfceReviewOpen}
+          onClose={() => setNfceReviewOpen(false)}
+          parsedDoc={nfceParsedDoc}
+          matchResult={nfceMatchResult}
+          onConfirmFinalize={handleConfirmNfceFinalize}
+          loading={nfceProcessing}
+        />
+      )}
     </div>
   );
 };

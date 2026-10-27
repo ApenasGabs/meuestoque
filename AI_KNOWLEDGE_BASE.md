@@ -42,6 +42,59 @@ Documentação fora de `docs/ai/`:
 ---
 
 ## 📜 Log Recente de Modificações por IAs
+
+### 🧾 (26/10/2026) Feature: Importação de NFC-e via QR Code para Lista e Finalização (Issue #42)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[Botão Escanear Nota] --> B[NfceScannerModal - QR Code / Input]
+    B --> C[api/nfce - Vercel Edge Proxy SEFAZ]
+    C --> D[nfceParser - Normalização de Itens e Total]
+    D --> E[receiptMatcher - Match Inteligente com a Lista]
+    E --> F[NfceReviewDrawer - Painel de Conferência]
+    F -->|Confirmar e Finalizar| G[Atualização dos Itens e RPC Finalize]
+    G --> H[Estoque Atualizado com Validades Preservadas]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `api/nfce.ts` | Edge Function para consulta segura e parsing de NFC-e (SEFAZ-SP) com proteção SSRF e codificação de pipes |
+| `src/domain/nfceParser.ts` | Parser puro de HTML da NFC-e (extração de emitente, data, total e itens) |
+| `src/domain/nfceParser.test.ts` | Testes unitários do parser com HTML sintético |
+| `src/domain/receiptMatcher.ts` | Motor de correspondência 1-para-1 com expansão de abreviações e preservação de validades |
+| `src/domain/receiptMatcher.test.ts` | Testes unitários do motor de match |
+| `src/services/nfceService.ts` | Cliente frontend para consulta da API `/api/nfce` |
+| `src/services/nfceService.test.ts` | Testes unitários do serviço HTTP |
+| `src/lib/scannerDetector.ts` | Suporte a leitura de QR Code além de código de barras 1D |
+| `src/components/Scanner/NfceScannerModal.tsx` | Modal com mira de câmera para leitura de QR Code ou input de URL/chave |
+| `src/components/NfceReviewDrawer/NfceReviewDrawer.tsx` | Gaveta/Bottom Sheet de conferência de itens casados, novos e ausentes |
+| `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Botão "Escanear Nota" na barra de ações |
+| `src/pages/ListPageNew.tsx` | Integração do fluxo de leitura, conferência e finalização com a data da nota |
+| `src/lib/webData.ts` | Suporte a data de compra customizada em `finishShoppingList` e novos campos em `addListItem` |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Validade é sagrada. A nota fiscal não traz datas de validade, portanto o motor de match preserva rigorosamente a validade pré-cadastrada na lista de compras (data ou não se aplica).
+REGRA 2: Se o item está na nota mas não na lista, entra selecionado por padrão como novo item no estoque.
+REGRA 3: Se o item está na lista mas ausente na nota, permanece desmarcado e é reaproveitado na próxima lista.
+REGRA 4: A data efetiva da compra no estoque é sincronizada com a data de emissão do cupom fiscal.
+```
+
+#### Comportamento
+- O usuário clica em "Escanear Nota" na lista de compras.
+- Aponta a câmera para o QR Code impresso no cupom fiscal da SEFAZ (ou cola a URL / chave de 44 dígitos).
+- O backend consulta a SEFAZ-SP, normaliza os dados e cruza com a lista de compras atual.
+- Abre o painel de conferência exibindo itens casados (com novo preço e quantidade, mantendo validades) e novos itens adicionados.
+- Ao clicar em "Confirmar e Finalizar", os itens são atualizados e a lista é finalizada transacionalmente via RPC.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros)
+- [x] Typecheck passando (0 erros)
+- [x] Testes passando (26 suites, 227 testes verdes)
+- [x] Build de produção sem erros
+
 ### 🌐 (25/10/2026) Feature: Suporte a OAuth 2.1 para Claude Web e Conectores Remotos MCP (Issue #40)
 
 #### Arquitetura
