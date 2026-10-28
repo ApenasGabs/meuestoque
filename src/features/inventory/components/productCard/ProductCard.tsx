@@ -284,7 +284,7 @@ export const ProductCard = ({
                   onOpenCustomConsume(product);
                 }}
                 aria-label={`Consumir ${product.name}`}
-                className="h-7 min-h-7 px-1.5 bg-base-200 hover:bg-base-300 border-none text-[10px] font-bold font-mono"
+                className="h-11 min-h-11 sm:h-7 sm:min-h-7 px-1.5 bg-base-200 hover:bg-base-300 border-none text-[10px] font-bold font-mono"
               >
                 Consumir -{product.portionSize ?? 1}
               </Button>
@@ -300,7 +300,7 @@ export const ProductCard = ({
                   onAddToList(product);
                 }}
                 aria-label={`Adicionar ${product.name} na lista`}
-                className="h-8 w-8 min-h-8 p-0"
+                className="h-11 w-11 min-h-11 sm:h-8 sm:w-8 sm:min-h-8 p-0"
                 title="Adicionar na lista"
               >
                 <ShoppingCartOutlined className="text-base" />
@@ -314,7 +314,7 @@ export const ProductCard = ({
                     onViewHistory(product);
                   }}
                   aria-label={`Histórico de ${product.name}`}
-                  className="h-8 w-8 min-h-8 p-0 opacity-70 hover:opacity-100"
+                  className="h-11 w-11 min-h-11 sm:h-8 sm:w-8 sm:min-h-8 p-0 opacity-70 hover:opacity-100"
                   title="Histórico de consumo"
                 >
                   <span className="text-base">📊</span>
@@ -328,7 +328,7 @@ export const ProductCard = ({
                   onEdit(product);
                 }}
                 aria-label={`Editar ${product.name}`}
-                className="h-8 w-8 min-h-8 p-0 opacity-70 hover:opacity-100"
+                className="h-11 w-11 min-h-11 sm:h-8 sm:w-8 sm:min-h-8 p-0 opacity-70 hover:opacity-100"
                 title="Editar"
               >
                 <EditOutlined className="text-base" />
@@ -341,7 +341,7 @@ export const ProductCard = ({
                   setConfirmDeleteOpen(true);
                 }}
                 aria-label={`Remover ${product.name}`}
-                className="h-8 w-8 min-h-8 p-0 text-error/60 hover:text-error hover:bg-error/10"
+                className="h-11 w-11 min-h-11 sm:h-8 sm:w-8 sm:min-h-8 p-0 text-error/60 hover:text-error hover:bg-error/10"
                 title="Remover"
               >
                 <DeleteOutlined className="text-base" />
