@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.0](https://github.com/ApenasGabs/meuestoque/compare/v1.25.0...v1.26.0) (2026-10-28)
+
+### ✨ Features
+
+* ✨ importar NFC-e via QR Code para preencher e finalizar lista (Refs [#42](https://github.com/ApenasGabs/meuestoque/issues/42)) ([cf071d5](https://github.com/ApenasGabs/meuestoque/commit/cf071d575ddcdeae94ec1fbf7b83cb2e8772ba1f))
+
+### 🐛 Bug Fixes
+
+* 🐛 aplica itens da NFC-e na lista ativa antes de finalizar e registra histórico de preços ([cea6471](https://github.com/ApenasGabs/meuestoque/commit/cea64710706cd62a00c2fef979e10fef4df243a1))
+
 ## [1.25.0](https://github.com/ApenasGabs/meuestoque/compare/v1.24.0...v1.25.0) (2026-10-26)
 
 ### ✨ Features
