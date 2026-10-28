@@ -70,10 +70,26 @@ export const formatIsoDateToPtBr = (isoDate: string | null | undefined): string 
 };
 
 /**
+ * Retorna a data no fuso horário local no formato ISO "YYYY-MM-DD".
+ * Evita o bug de fuso horário onde .toISOString() no fuso UTC-3 à noite
+ * avança para a data do dia seguinte.
+ *
+ * @param date - Instância de Date opcional (padrão: data atual)
+ * @returns Data no padrão "YYYY-MM-DD" com base no fuso horário local
+ */
+export const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Normaliza e codifica a URL da SEFAZ para evitar bloqueios de firewall WAF (ex: pipes '|').
+ * Promove automaticamente requisições HTTP para HTTPS.
  *
  * @param rawUrl - URL do QR Code ou chave de acesso de 44 dígitos
- * @returns URL normalizada com pipes codificados como %7C
+ * @returns URL normalizada com pipes codificados como %7C e protocolo HTTPS
  */
 export const normalizeNfceUrl = (rawUrl: string): string => {
   const trimmed = rawUrl.trim();
@@ -85,6 +101,9 @@ export const normalizeNfceUrl = (rawUrl: string): string => {
 
   try {
     const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:") {
+      parsed.protocol = "https:";
+    }
     const pParam = parsed.searchParams.get("p");
     if (pParam && pParam.includes("|")) {
       const encodedP = pParam.split("|").join("%7C");
@@ -93,7 +112,7 @@ export const normalizeNfceUrl = (rawUrl: string): string => {
     }
     return parsed.toString();
   } catch {
-    return trimmed.replace(/\|/g, "%7C");
+    return trimmed.replace(/^http:\/\//i, "https://").replace(/\|/g, "%7C");
   }
 };
 
