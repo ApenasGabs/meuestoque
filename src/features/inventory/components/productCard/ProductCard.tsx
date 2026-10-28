@@ -240,14 +240,12 @@ export const ProductCard = ({
                   {product.quantity} {product.unit ?? "Un"}
                 </span>
               )}
+              {product.minStock > 0 && !isPendingValidity && (
+                <span className="text-sm font-bold tabular-nums text-base-content/60 select-none">
+                  {stockPercent}%
+                </span>
+              )}
             </div>
-
-            {/* Percentage centered in the middle of Row 3 */}
-            {product.minStock > 0 && !isPendingValidity && (
-              <span className="absolute left-1/2 -translate-x-1/2 text-sm font-bold tabular-nums text-base-content/60 select-none">
-                {stockPercent}%
-              </span>
-            )}
 
             <div className="flex items-center gap-1">
               {/* Consume Button */}
