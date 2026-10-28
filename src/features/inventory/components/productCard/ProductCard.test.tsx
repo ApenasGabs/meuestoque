@@ -43,4 +43,38 @@ describe("ProductCard - layout da linha de quantidade/percentual", () => {
     expect(percent.parentElement?.contains(consume)).toBe(false);
     expect(percent.parentElement?.textContent).toContain("2 Un");
   });
+
+  it("exibe metadados de consumo automatico e ruptura com legibilidade WCAG AA (sem opacity-40 nem text-[9px])", () => {
+    render(
+      <ProductCard
+        product={{
+          ...product,
+          quantity: 2,
+          packSize: 1,
+          packLabel: "pct",
+          consumeValue: 1,
+          consumeFrequency: "daily",
+          portionSize: 1,
+        }}
+        onEdit={vi.fn()}
+        onAddToList={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    const autoConsume = screen.getByText("⏰ -1/dia");
+    const autoConsumeRow = autoConsume.parentElement as HTMLElement;
+    expect(autoConsumeRow.className).toContain("text-xs");
+    expect(autoConsumeRow.className).toContain("text-base-content/75");
+    expect(autoConsumeRow.className).not.toContain("opacity-40");
+    expect(autoConsumeRow.className).not.toContain("text-[9px]");
+
+    const runout = screen.getByText(/dura ~2d/);
+    expect(runout.className).toContain("text-error");
+    expect(runout.className).toContain("font-bold");
+
+    const totalPackSpan = screen.getByText("(2 Un)");
+    expect(totalPackSpan.className).toContain("text-base-content/75");
+    expect(totalPackSpan.className).not.toContain("opacity-60");
+  });
 });
