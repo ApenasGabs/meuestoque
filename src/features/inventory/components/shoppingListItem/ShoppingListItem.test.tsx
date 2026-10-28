@@ -178,3 +178,36 @@ describe("ShoppingListItem - Edicao de Nome", () => {
     expect(handleUpdateName).not.toHaveBeenCalled();
   });
 });
+
+describe("ShoppingListItem - Contraste WCAG AA em itens comprados", () => {
+  it("nao aplica opacity-70 no Card pai quando item.checked e true e usa text-base-content/70 nos metadados", () => {
+    const checkedItem: InventoryShoppingListItem = {
+      ...mockItem,
+      checked: true,
+      naoAplicaValidade: true,
+    };
+
+    const { container } = render(
+      <ShoppingListItem
+        item={checkedItem}
+        product={mockProduct}
+        onToggle={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    const card = container.firstElementChild as HTMLElement;
+    expect(card.className).not.toMatch(/\bopacity-70\b/);
+
+    const itemName = screen.getByTestId(`shopping-item-name-${checkedItem.id}`);
+    expect(itemName.className).toContain("line-through");
+    expect(itemName.className).toContain("text-base-content/70");
+    expect(itemName.className).not.toContain("text-base-content/50");
+
+    const valLabel = screen.getByText("Val:");
+    expect(valLabel.className).toContain("text-base-content/70");
+
+    const naLabel = screen.getByText("N/A");
+    expect(naLabel.className).toContain("text-base-content/70");
+  });
+});

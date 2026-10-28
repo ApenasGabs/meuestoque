@@ -172,7 +172,7 @@ export const StockItemDetailsPage = () => {
                 <div key={lot.id} className="rounded-md border border-base-300 p-3">
                   <p>
                     Restante: <strong>{formatNumber(lot.quantidade_restante)}</strong> {lot.unidade}
-                    <span className="text-xs text-base-content/40 ml-1">
+                    <span className="text-xs text-base-content/70 ml-1">
                       (inicial: {formatNumber(lot.quantidade_inicial)})
                     </span>
                   </p>

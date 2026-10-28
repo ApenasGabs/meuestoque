@@ -230,18 +230,18 @@ export const ProductCard = ({
             <div className="flex items-center gap-2">
               {/* Quantity Indicator / Unit — shows pack count if pack_size is set */}
               {product.packSize && product.packSize > 0 ? (
-                <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                <span className="text-sm font-medium text-base-content/75 tracking-tighter">
                   {(product.quantity / product.packSize).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
                   {" "}{product.packLabel ?? "pac"}
-                  {" "}<span className="opacity-60 text-[10px]">({product.quantity} {product.unit ?? "Un"})</span>
+                  {" "}<span className="text-base-content/75 text-xs">({product.quantity} {product.unit ?? "Un"})</span>
                 </span>
               ) : (
-                <span className="text-sm font-medium text-base-content/60 tracking-tighter">
+                <span className="text-sm font-medium text-base-content/75 tracking-tighter">
                   {product.quantity} {product.unit ?? "Un"}
                 </span>
               )}
               {product.minStock > 0 && !isPendingValidity && (
-                <span className="text-sm font-bold tabular-nums text-base-content/60 select-none">
+                <span className="text-sm font-bold tabular-nums text-base-content/75 select-none">
                   {stockPercent}%
                 </span>
               )}
@@ -349,7 +349,7 @@ export const ProductCard = ({
 
           {/* Optional: Auto-consume mini info if exists, very subtle */}
           {autoConsumeLabel && (
-            <div className="flex items-center gap-1 opacity-40 text-[9px] -mt-1">
+            <div className="flex items-center gap-1 text-xs text-base-content/75 -mt-1">
               <span>{autoConsumeLabel}</span>
               {runoutDays !== null && (
                 <span className={runoutDays <= 3 ? "text-error font-bold" : ""}>

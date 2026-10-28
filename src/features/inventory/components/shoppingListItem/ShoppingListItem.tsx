@@ -249,7 +249,7 @@ export const ShoppingListItem = memo(({
 
   return (
     <Card
-      className={`shadow-none ${selected ? "border-primary bg-primary/5" : item.checked ? "opacity-70 border-base-300" : "border-base-300"}`}
+      className={`shadow-none ${selected ? "border-primary bg-primary/5" : item.checked ? "bg-base-200/50 border-base-300" : "border-base-300"}`}
       onPointerDown={handleLongPressStart}
       onPointerUp={handleLongPressEnd}
       onPointerCancel={handleLongPressEnd}
@@ -339,7 +339,7 @@ export const ShoppingListItem = memo(({
               ) : (
                 <>
                   <span
-                    className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/50" : ""}`}
+                    className={`text-sm font-medium truncate max-w-[140px] sm:max-w-none ${item.checked ? "line-through text-base-content/70" : ""}`}
                     data-testid={`shopping-item-name-${item.id}`}
                   >
                     {product.name}
@@ -373,7 +373,7 @@ export const ShoppingListItem = memo(({
             <div className="flex items-center gap-2 mt-0.5 sm:hidden">
               {!isExpanded && (
                 <>
-                  <span className="text-xs text-base-content/60 tabular-nums">
+                  <span className="text-xs text-base-content/70 tabular-nums">
                     {item.quantity} {baseUnit}
                   </span>
                   {item.price != null && (
@@ -421,7 +421,7 @@ export const ShoppingListItem = memo(({
         <div className={`flex items-center gap-1.5 flex-wrap mt-2 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:flex"}`}>
           {/* Qtd + unidade */}
           <div className="flex items-center gap-1 shrink-0">
-            <span className="text-[10px] uppercase font-bold text-base-content/40">Qtd</span>
+            <span className="text-[10px] uppercase font-bold text-base-content/70">Qtd</span>
             <input
               value={quantityDraft}
               onChange={(e) => setQuantityDraft(e.target.value)}
@@ -463,7 +463,7 @@ export const ShoppingListItem = memo(({
           {/* Pack size inline (se ativo) */}
           {showPackFields && (
             <div className="flex items-center gap-1 shrink-0">
-              <span className="text-xs text-base-content/40">x</span>
+              <span className="text-xs text-base-content/70">x</span>
               <input
                 value={packSizeDraft}
                 onChange={(e) => setPackSizeDraft(e.target.value)}
@@ -531,7 +531,7 @@ export const ShoppingListItem = memo(({
           {/* Validade (quando checked) */}
           {item.checked && (
             <div className="flex items-center gap-1 shrink-0 border-l border-base-300 pl-2">
-              <span className="text-[10px] uppercase font-bold text-base-content/50">Val:</span>
+              <span className="text-[10px] uppercase font-bold text-base-content/70">Val:</span>
               <input
                 type="date"
                 value={item.validityDate || ""}
@@ -545,7 +545,7 @@ export const ShoppingListItem = memo(({
                   checked={item.naoAplicaValidade || false}
                   onChange={(e) => onUpdateValidityDate?.(item.id, item.validityDate || null, e.target.checked)}
                 />
-                <span className="text-[10px] uppercase font-bold text-base-content/60">N/A</span>
+                <span className="text-[10px] uppercase font-bold text-base-content/70">N/A</span>
               </label>
             </div>
           )}
@@ -570,7 +570,7 @@ export const ShoppingListItem = memo(({
         {/* Pack info hint quando ha rendimento definido no produto */}
         {hasPack && !showPackFields && (
           <div className={`mt-1 ml-6 sm:ml-7 ${isExpanded ? "" : "hidden sm:block"}`}>
-            <span className="text-[10px] text-base-content/40">
+            <span className="text-[10px] text-base-content/70">
               (rende {product.packSize} {baseUnit})
             </span>
           </div>
