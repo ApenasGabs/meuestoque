@@ -512,7 +512,10 @@ export const ShoppingListView = ({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-28">
+      <div
+        className={`flex-1 overflow-y-auto p-4 space-y-2 ${!listBulk && checkedCount > 0 && onFinalizeShopping ? "pb-40" : "pb-36"}`}
+        data-testid="shopping-list-items-container"
+      >
         {filteredList.length === 0 ? (
           <div className="text-center text-sm text-base-content/60 py-12">
             Nenhum item encontrado.
@@ -545,8 +548,11 @@ export const ShoppingListView = ({
         )}
       </div>
 
-      <div className="fixed bottom-16 left-0 right-0 px-4 pb-3">
-        {!listBulk && checkedCount > 0 && onFinalizeShopping && (
+      {!listBulk && checkedCount > 0 && onFinalizeShopping && (
+        <div
+          className="fixed bottom-16 left-0 right-0 z-20 bg-base-100/95 backdrop-blur border-t border-base-300 px-4 py-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]"
+          data-testid="finalize-shopping-container"
+        >
           <Button
             variant="primary"
             className="w-full min-h-11"
@@ -557,8 +563,8 @@ export const ShoppingListView = ({
           >
             {finalizing ? "Finalizando..." : "Finalizar compra"}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {listBulk && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-slide-up">

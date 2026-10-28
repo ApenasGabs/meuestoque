@@ -110,7 +110,7 @@ body {
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 24px 96px;
 }
 
 .auth {
@@ -242,7 +242,7 @@ textarea:not(.textarea) {
   }
 
   .page {
-    padding: 16px;
+    padding: 16px 16px 112px;
   }
 }
 

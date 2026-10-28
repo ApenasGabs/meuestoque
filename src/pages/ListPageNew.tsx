@@ -940,7 +940,7 @@ export const ListPageNew = (): ReactElement => {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className={`flex-1 overflow-y-auto ${checkedCount > 0 ? "pb-40" : "pb-28"}`}>
         <ShoppingListView
           products={products}
           shoppingList={shoppingList}

@@ -366,7 +366,10 @@ export const StockView = ({
           </>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-0 pb-28">
+      <div
+        className="flex-1 overflow-y-auto p-2 space-y-0 pb-40"
+        data-testid="stock-items-container"
+      >
         {pendingGroupedProducts.size > 0 && (
           <CategorySection
             name="Pendentes de Validade"
