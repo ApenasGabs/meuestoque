@@ -60,11 +60,11 @@
   --color-info: oklch(54% 0.245 262.881);
   --color-info-content: oklch(97% 0.014 254.604);
   --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
+  --color-success-content: oklch(20% 0.06 184.704);
   --color-warning: oklch(68% 0.162 75.834);
-  --color-warning-content: oklch(98% 0.026 102.212);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
+  --color-warning-content: oklch(25% 0.08 75.834);
+  --color-error: oklch(52% 0.23 17.585);
+  --color-error-content: oklch(98% 0.015 12.422);
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -73,6 +73,16 @@
   --border: 2px;
   --depth: 1;
   --noise: 1;
+}
+
+/* Ajuste WCAG 2.1 AA (>= 4.5:1) para secondary e error no tema padrao light */
+:root,
+:root:has(input.theme-controller[value="light"]:checked),
+[data-theme="light"] {
+  --color-secondary: oklch(48% 0.22 354.308);
+  --color-secondary-content: oklch(98% 0.014 342.258);
+  --color-error: oklch(52% 0.22 17.585);
+  --color-error-content: oklch(98% 0.015 12.422);
 }
 
 /* Layout e formulários compartilhados com a experiência web (v0) */
@@ -110,7 +120,7 @@ body {
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 24px 96px;
 }
 
 .auth {
@@ -242,7 +252,7 @@ textarea:not(.textarea) {
   }
 
   .page {
-    padding: 16px;
+    padding: 16px 16px 112px;
   }
 }
 

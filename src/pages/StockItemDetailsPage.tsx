@@ -72,7 +72,7 @@ export const StockItemDetailsPage = () => {
 
   if (loading) {
     return (
-      <main className="page auth">
+      <main className="page auth pb-28 sm:pb-24">
         <h1>Carregando consumo</h1>
       </main>
     );
@@ -80,7 +80,7 @@ export const StockItemDetailsPage = () => {
 
   if (!item || !summary) {
     return (
-      <main className="page auth">
+      <main className="page auth pb-28 sm:pb-24">
         {error ? <Alert type="error">{error}</Alert> : <p>Item nao encontrado.</p>}
         <Button type="button" variant="ghost" onClick={() => navigate("/stock")}>
           Voltar para estoque
@@ -90,7 +90,7 @@ export const StockItemDetailsPage = () => {
   }
 
   return (
-    <main className="page">
+    <main className="page pb-36 sm:pb-28">
       <header className="page-header">
         <div>
           <h1>Detalhes e consumo</h1>
@@ -172,7 +172,7 @@ export const StockItemDetailsPage = () => {
                 <div key={lot.id} className="rounded-md border border-base-300 p-3">
                   <p>
                     Restante: <strong>{formatNumber(lot.quantidade_restante)}</strong> {lot.unidade}
-                    <span className="text-xs text-base-content/40 ml-1">
+                    <span className="text-xs text-base-content/70 ml-1">
                       (inicial: {formatNumber(lot.quantidade_inicial)})
                     </span>
                   </p>

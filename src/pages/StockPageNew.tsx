@@ -151,7 +151,7 @@ export const StockPageNew = (): ReactElement => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className={`flex-1 overflow-y-auto ${canUseCamera ? "pb-40" : "pb-28"}`}>
         <StockView
           products={products}
           categories={categories}
@@ -202,7 +202,7 @@ export const StockPageNew = (): ReactElement => {
       {canUseCamera && (
         <Button
           variant="primary"
-          className="fixed bottom-24 right-4 w-14 h-14 min-h-[3.5rem] p-0 rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-transform z-40"
+          className="fixed bottom-20 right-4 w-14 h-14 min-h-[3.5rem] p-0 rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-transform z-30"
           onClick={() => setScannerOpen(true)}
           aria-label="Escanear código de barras"
           data-testid="fab-scan-button"

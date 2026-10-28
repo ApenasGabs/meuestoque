@@ -43,6 +43,48 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 📱💻 (28/10/2026) Feature: Grid Responsivo e Max-Width para Tablet e Desktop (Issue #46)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A[ListPageNew / StockPageNew] --> B[StockView / ShoppingListView]
+    B -->|max-w-6xl mx-auto| C[CategorySection]
+    C -->|grid-cols-1 md:grid-cols-2 xl:grid-cols-3| D[ProductCard]
+    B -->|max-w-4xl mx-auto| E[ShoppingListItem]
+    B -->|fixed dock max-w-4xl| F[Finalize Shopping Dock]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/features/inventory/components/categorySection/CategorySection.tsx` | Aplicação de grid responsivo `grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3` com `data-testid="category-products-grid"` |
+| `src/features/inventory/components/categorySection/CategorySection.test.tsx` | Testes unitários para renderização dos produtos em grid e toggle de categorias |
+| `src/features/inventory/components/stockView/StockView.tsx` | Contêiner raiz e rolável com `max-w-6xl mx-auto w-full`, padding responsivo `p-2 sm:p-4` e `pb-40` para evitar conflito com FABs |
+| `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Contêiner raiz, lista rolável e dock de finalização delimitados em `max-w-4xl mx-auto w-full` com padding dinâmico |
+| `src/pages/ListPageNew.tsx` | Alinhamento do banner de NFC-e com a largura da lista (`max-w-4xl px-4 pt-4`) |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Telas mobile (< 768px) mantêm layout em coluna única (grid-cols-1), garantindo conforto e densidade no uso com uma mão.
+REGRA 2: Telas tablet (>= 768px) utilizam 2 colunas no estoque (md:grid-cols-2) e centralização de lista em max-w-4xl mx-auto.
+REGRA 3: Telas desktop (>= 1280px) expandem o estoque para 3 colunas (xl:grid-cols-3) contidas em max-w-6xl mx-auto, evitando estiramento excessivo dos cards.
+REGRA 4: A barra inferior flutuante de finalização de compra acompanha a largura máxima do conteúdo central (max-w-4xl mx-auto) sobre o dock translúcido de largura total.
+```
+
+#### Comportamento
+- Em telas mobile, os cards de estoque e da lista de compras continuam em lista vertical com touch targets adequados.
+- Em tablets e iPads, o estoque se distribui em 2 colunas organizadas por categoria, e a lista de compras é centralizada para leitura ergonômica.
+- Em monitores desktop ultrawide ou 1080p+, o estoque se expande em até 3 colunas dentro de 1152px (max-w-6xl), evitando linhas esticadas de ponta a ponta.
+- A barra de finalizar compra mantém o fundo translúcido e borda superior por toda a largura da tela, com o botão principal alinhado ao centro junto aos cards da lista.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros)
+- [x] Typecheck passando (0 erros)
+- [x] Testes unitários passando (32 suites, 264 testes verdes)
+- [x] Build de produção concluído com sucesso
+- [x] Conflitos de merge com a branch `main` (após PR #48 e #47) 100% resolvidos
+
 ### 🧾 (26/10/2026) Feature: Importação de NFC-e via QR Code para Lista e Finalização (Issue #42)
 
 #### Arquitetura
