@@ -5,6 +5,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.2](https://github.com/ApenasGabs/meuestoque/compare/v1.26.1...v1.26.2) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* **ux:** corrigir contraste WCAG AA em badges, itens riscados e metadados de validade/FIFO (Refs [#47](https://github.com/ApenasGabs/meuestoque/issues/47)) ([#53](https://github.com/ApenasGabs/meuestoque/issues/53)) ([850b6b4](https://github.com/ApenasGabs/meuestoque/commit/850b6b44d187460d6f9d5cfae8b729a27ee881ad))
+* **ux:** evitar sobreposição de botões flutuantes sobre os cards finais (Refs [#48](https://github.com/ApenasGabs/meuestoque/issues/48)) ([9a959dd](https://github.com/ApenasGabs/meuestoque/commit/9a959dd3074cfe8539e820fb0f86d923c8dc0a74))
+
+### 🧪 Tests
+
+* **ux:** refatorar testes da lista e estoque para validar comportamento observável (Refs [#48](https://github.com/ApenasGabs/meuestoque/issues/48)) ([28650c6](https://github.com/ApenasGabs/meuestoque/commit/28650c641c3fd0c71bb370d99f2fc049f82121dc))
+
 ## [1.26.1](https://github.com/ApenasGabs/meuestoque/compare/v1.26.0...v1.26.1) (2026-10-28)
 
 ### 🐛 Bug Fixes
