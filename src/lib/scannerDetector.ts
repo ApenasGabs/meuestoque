@@ -27,14 +27,35 @@ export const createBarcodeScanner = async (): Promise<ScannerInstance> => {
       // Feature check: ensure it supports EAN/UPC
       const formats = await window.BarcodeDetector?.getSupportedFormats() || [];
       if (formats.includes('ean_13') || formats.includes('upc_a')) {
-        return new NativeBarcodeScanner();
+        return new NativeBarcodeScanner(['ean_13', 'ean_8', 'upc_a', 'upc_e']);
       }
     } catch {
       // Fallthrough to fallback on error
     }
   }
 
-  return new FallbackBarcodeScanner();
+  return new FallbackBarcodeScanner(false);
+};
+
+/**
+ * Instancia o leitor de QR Code para leitura de NFC-e.
+ * Prioriza a API nativa do navegador se disponível, caso contrário utiliza o fallback html5-qrcode.
+ *
+ * @returns Promessa contendo a instância de ScannerInstance configurada para QR Code
+ */
+export const createQrCodeScanner = async (): Promise<ScannerInstance> => {
+  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+    try {
+      const formats = await window.BarcodeDetector?.getSupportedFormats() || [];
+      if (formats.includes('qr_code')) {
+        return new NativeBarcodeScanner(['qr_code']);
+      }
+    } catch {
+      // Fallthrough to fallback on error
+    }
+  }
+
+  return new FallbackBarcodeScanner(true);
 };
 
 class NativeBarcodeScanner implements ScannerInstance {
@@ -44,8 +65,8 @@ class NativeBarcodeScanner implements ScannerInstance {
   private rafId: number | null = null;
   private isScanning = false;
 
-  constructor() {
-    this.detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+  constructor(formats: string[] = ['ean_13', 'ean_8', 'upc_a', 'upc_e']) {
+    this.detector = new BarcodeDetector({ formats });
   }
 
   async start(containerId: string, onScan: (ean: string) => void): Promise<void> {
@@ -122,26 +143,35 @@ class NativeBarcodeScanner implements ScannerInstance {
 
 class FallbackBarcodeScanner implements ScannerInstance {
   private scanner: import('html5-qrcode').Html5Qrcode | null = null;
+  private isQrCode: boolean;
+
+  constructor(isQrCode = false) {
+    this.isQrCode = isQrCode;
+  }
 
   async start(containerId: string, onScan: (ean: string) => void): Promise<void> {
     const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
-    
+
+    const formatsToSupport = this.isQrCode
+      ? [Html5QrcodeSupportedFormats.QR_CODE]
+      : [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ];
+
     this.scanner = new Html5Qrcode(containerId, {
       verbose: false,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-      ]
+      formatsToSupport,
     });
-    
+
     await this.scanner.start(
       { facingMode: "environment" },
-      { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.0
+      {
+        fps: 10,
+        qrbox: this.isQrCode ? { width: 250, height: 250 } : { width: 250, height: 150 },
+        aspectRatio: 1.0,
       },
       (decodedText: string) => {
         onScan(decodedText);

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   calculatePriceTrend,
   getPriceHistoryForBaseProduct,
+  recordNfcePriceHistory,
   recordStorePriceHistory,
   type StorePriceRecord,
 } from "./priceHistoryService";
@@ -181,6 +182,48 @@ describe("priceHistoryService", () => {
     it("deve retornar array vazio se baseProduct for vazio", async () => {
       const history = await getPriceHistoryForBaseProduct("");
       expect(history).toEqual([]);
+    });
+  });
+
+  describe("recordNfcePriceHistory", () => {
+    it("deve persistir precos unitarios dos itens da NFC-e no store_price_history", async () => {
+      const upsertMock = vi.fn().mockResolvedValueOnce({ error: null });
+      vi.spyOn(supabase, "from").mockReturnValueOnce({
+        upsert: upsertMock,
+      } as unknown as ReturnType<typeof supabase.from>);
+
+      await recordNfcePriceHistory(
+        [
+          {
+            productName: "LEITE L V SHEFA 1L GFA INT",
+            baseProductHint: "Leite Integral",
+            unitPrice: 5.99,
+            quantity: 12,
+            unit: "Un",
+          },
+          {
+            productName: "KETCHUP HEINZ 397G SQZ",
+            unitPrice: 11.99,
+            quantity: 1,
+            unit: "Un",
+          },
+        ],
+        "SUPERMERCADOS PAGUE MENOS",
+        "2026-10-25",
+      );
+
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+      const [insertedRows] = upsertMock.mock.calls[0] as [StorePriceRecord[]];
+      expect(insertedRows).toHaveLength(2);
+      expect(insertedRows[0]).toMatchObject({
+        loja: "supermercados pague menos",
+        filial_id: 0,
+        filial_nome: "SUPERMERCADOS PAGUE MENOS",
+        produto_base: "Leite Integral",
+        produto_nome: "LEITE L V SHEFA 1L GFA INT",
+        preco: 5.99,
+        data_cotacao: "2026-10-25",
+      });
     });
   });
 });
