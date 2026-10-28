@@ -5,6 +5,14 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.1](https://github.com/ApenasGabs/meuestoque/compare/v1.26.0...v1.26.1) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* 🐛 atender apontamentos de code review do scanner e importação de NFC-e (Refs [#42](https://github.com/ApenasGabs/meuestoque/issues/42)) ([#51](https://github.com/ApenasGabs/meuestoque/issues/51)) ([e73c579](https://github.com/ApenasGabs/meuestoque/commit/e73c579d261339d9992a415ce248467b2dc8385a))
+* **ux:** adequa touch targets >=44px e visibilidade de controles mobile (refs [#45](https://github.com/ApenasGabs/meuestoque/issues/45)) ([#50](https://github.com/ApenasGabs/meuestoque/issues/50)) ([0fce23f](https://github.com/ApenasGabs/meuestoque/commit/0fce23f920019cdcff1b73dd73f6e500a7c06eb2))
+* **ux:** corrigir sobreposição do percentual sobre o botão Consumir no ProductCard ([#49](https://github.com/ApenasGabs/meuestoque/issues/49)) ([b52ce3f](https://github.com/ApenasGabs/meuestoque/commit/b52ce3fb6c96e907bc95526784d57450ba5aedbe)), closes [#44](https://github.com/ApenasGabs/meuestoque/issues/44) [#44](https://github.com/ApenasGabs/meuestoque/issues/44)
+
 ## [1.26.0](https://github.com/ApenasGabs/meuestoque/compare/v1.25.0...v1.26.0) (2026-10-28)
 
 ### ✨ Features
