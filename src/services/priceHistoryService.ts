@@ -42,6 +42,7 @@ export interface PriceTrendSummary {
  *
  * @param quotes - Lista de cotações com produtos encontrados
  * @param branchInfo - Dados da filial consultada
+ * @returns Promessa resolvida após persistência dos registros
  */
 export const recordStorePriceHistory = async (
   quotes: TendaItemQuote[],
@@ -119,6 +120,7 @@ export const recordStorePriceHistory = async (
  * @param entries - Itens da nota fiscal com preços unitários e quantidades
  * @param marketName - Nome do estabelecimento emissor da nota
  * @param purchaseDate - Data da compra no formato YYYY-MM-DD (opcional)
+ * @returns Promessa resolvida após inserção dos dados de preço
  */
 export const recordNfcePriceHistory = async (
   entries: NfcePriceHistoryEntry[],

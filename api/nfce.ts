@@ -34,6 +34,16 @@ export default async (req: Request): Promise<Response> => {
     });
   }
 
+  if (req.method !== "GET" && req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Método não permitido (use GET ou POST)." }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
   let rawUrl = "";
 
   if (req.method === "GET") {
@@ -109,9 +119,11 @@ export default async (req: Request): Promise<Response> => {
   const timeoutId = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
   try {
-    const upstreamRes = await fetch(targetUrl, {
+    let currentUrl = targetUrl;
+    let upstreamRes = await fetch(currentUrl, {
       method: "GET",
       signal: controller.signal,
+      redirect: "manual",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36",
@@ -119,6 +131,36 @@ export default async (req: Request): Promise<Response> => {
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8",
       },
     });
+
+    if ([301, 302, 303, 307, 308].includes(upstreamRes.status)) {
+      const location = upstreamRes.headers.get("location");
+      if (location) {
+        const redirected = new URL(location, currentUrl);
+        if (redirected.protocol !== "https:" || !ALLOWED_HOSTS.has(redirected.hostname)) {
+          return new Response(
+            JSON.stringify({
+              error: "Redirecionamento para domínio não autorizado rejeitado.",
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+        currentUrl = redirected.toString();
+        upstreamRes = await fetch(currentUrl, {
+          method: "GET",
+          signal: controller.signal,
+          redirect: "error",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8",
+          },
+        });
+      }
+    }
 
     if (!upstreamRes.ok) {
       return new Response(

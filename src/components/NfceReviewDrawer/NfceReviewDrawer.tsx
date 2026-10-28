@@ -3,7 +3,7 @@ import { Drawer } from "../Drawer/Drawer";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
 import { Checkbox } from "../Checkbox/Checkbox";
-import { formatIsoDateToPtBr, type NfceParsedDocument } from "../../domain/nfceParser";
+import { formatIsoDateToPtBr, getLocalDateString, type NfceParsedDocument } from "../../domain/nfceParser";
 import type {
   MatchReceiptResult,
   MatchedReceiptItem,
@@ -135,7 +135,7 @@ export const NfceReviewDrawer = ({
 
     const purchaseDate = parsedDoc.dataEmissao
       ? parsedDoc.dataEmissao.slice(0, 10)
-      : new Date().toISOString().slice(0, 10);
+      : getLocalDateString();
 
     await onConfirmFinalize({
       purchaseDate,
@@ -200,7 +200,8 @@ export const NfceReviewDrawer = ({
                 return (
                   <label
                     key={m.listItem.id}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    data-testid={`matched-item-${m.listItem.id}`}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 focus-within:ring-2 focus-within:ring-primary ${
                       isChecked
                         ? "bg-base-100 border-success/40 shadow-xs"
                         : "bg-base-200/40 border-base-300 opacity-60"
@@ -211,6 +212,7 @@ export const NfceReviewDrawer = ({
                         checked={isChecked}
                         onChange={() => toggleMatch(m.listItem.id)}
                         aria-label={`Selecionar ${m.product.name}`}
+                        data-testid={`checkbox-match-${m.listItem.id}`}
                       />
                       <div className="truncate">
                         <div className="font-semibold text-sm text-base-content truncate">
@@ -274,7 +276,8 @@ export const NfceReviewDrawer = ({
                 return (
                   <label
                     key={u.notaItem.id}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    data-testid={`unmatched-item-${u.notaItem.id}`}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 focus-within:ring-2 focus-within:ring-primary ${
                       isChecked
                         ? "bg-base-100 border-info/40 shadow-xs"
                         : "bg-base-200/40 border-base-300 opacity-60"
@@ -285,6 +288,7 @@ export const NfceReviewDrawer = ({
                         checked={isChecked}
                         onChange={() => toggleNewItem(u.notaItem.id)}
                         aria-label={`Selecionar item novo ${u.notaItem.descricao}`}
+                        data-testid={`checkbox-new-${u.notaItem.id}`}
                       />
                       <div className="truncate">
                         <div className="font-semibold text-sm text-base-content truncate">
