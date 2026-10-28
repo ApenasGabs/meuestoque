@@ -311,7 +311,7 @@ export const ShoppingListView = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-4xl mx-auto w-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100 sticky top-0 z-10 space-y-3">
         {listBulk && (
           <div className="flex items-center justify-between gap-3 h-10">
@@ -512,7 +512,7 @@ export const ShoppingListView = ({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-28">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-28 max-w-4xl mx-auto w-full">
         {filteredList.length === 0 ? (
           <div className="text-center text-sm text-base-content/60 py-12">
             Nenhum item encontrado.
@@ -545,7 +545,7 @@ export const ShoppingListView = ({
         )}
       </div>
 
-      <div className="fixed bottom-16 left-0 right-0 px-4 pb-3">
+      <div className="fixed bottom-16 left-0 right-0 px-4 pb-3 max-w-4xl mx-auto w-full">
         {!listBulk && checkedCount > 0 && onFinalizeShopping && (
           <Button
             variant="primary"
