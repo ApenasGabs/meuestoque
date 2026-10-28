@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ShoppingListView } from "./ShoppingListView";
 import { StockView } from "../stockView/StockView";
+import { useBulkStore } from "../../../../stores/bulkStore";
 import type { InventoryCategory, InventoryProduct, InventoryShoppingListItem } from "../../types";
 
 const mockProducts: InventoryProduct[] = [
@@ -11,6 +12,14 @@ const mockProducts: InventoryProduct[] = [
     name: "Arroz Agulhinha 5kg",
     quantity: 2,
     minStock: 1,
+    categoryId: "cat-1",
+    unit: "Un",
+  },
+  {
+    id: "prod-2",
+    name: "Detergente Neutro",
+    quantity: 1,
+    minStock: 2,
     categoryId: "cat-1",
     unit: "Un",
   },
@@ -32,43 +41,120 @@ const mockShoppingList: InventoryShoppingListItem[] = [
     checked: true,
     price: 28.9,
   },
+  {
+    id: "item-2",
+    productId: "prod-2",
+    quantity: 1,
+    checked: false,
+    price: 2.99,
+  },
 ];
 
-describe("Prevenção de sobreposição de camadas flutuantes (Issue #48)", () => {
-  it("renderiza container docked com fundo translúcido e borda superior para o botão Finalizar compra e aplica pb-40 na lista", () => {
+describe("ShoppingListView e StockView - Barra de finalização e ações dos cards finais (Issue #48)", () => {
+  beforeEach(() => {
+    useBulkStore.getState().exitBulkMode();
+  });
+
+  it("exibe o botão Finalizar compra acionável quando há itens marcados e mantém o último card da lista interativo", () => {
+    const onFinalize = vi.fn();
+    const onToggle = vi.fn();
+
     render(
       <ShoppingListView
         products={mockProducts}
         shoppingList={mockShoppingList}
         checkedCount={1}
-        uncheckedCount={0}
+        uncheckedCount={1}
         onSmartAdd={vi.fn()}
-        onToggle={vi.fn()}
+        onToggle={onToggle}
         onRemove={vi.fn()}
         onGenerateSmartList={vi.fn()}
-        onFinalizeShopping={vi.fn()}
+        onFinalizeShopping={onFinalize}
         smartInput=""
         onSmartInputChange={vi.fn()}
       />,
     );
 
-    const listContainer = screen.getByTestId("shopping-list-items-container");
-    expect(listContainer.className).toContain("pb-40");
+    const lastCardCheckbox = screen.getByRole("checkbox", {
+      name: /Marcar Detergente Neutro/i,
+    });
+    fireEvent.click(lastCardCheckbox);
+    expect(onToggle).toHaveBeenCalledWith("item-2");
 
-    const finalizeContainer = screen.getByTestId("finalize-shopping-container");
-    expect(finalizeContainer.className).toContain("bg-base-100/95");
-    expect(finalizeContainer.className).toContain("backdrop-blur");
-    expect(finalizeContainer.className).toContain("border-t");
-    expect(finalizeContainer.className).toContain("border-base-300");
-    expect(screen.getByTestId("finalize-shopping-button")).toBeInTheDocument();
+    const finalizeButton = screen.getByRole("button", { name: /Finalizar compra/i });
+    expect(finalizeButton).toBeEnabled();
+    fireEvent.click(finalizeButton);
+    expect(onFinalize).toHaveBeenCalledTimes(1);
   });
 
-  it("oculta o container de Finalizar compra quando não há itens marcados e mantém pb-36 na lista", () => {
-    render(
+  it("oculta o dock de Finalizar compra quando não há itens marcados e o exibe ao marcar o primeiro item", () => {
+    const onFinalize = vi.fn();
+    const uncheckedList = mockShoppingList.map((item) => ({ ...item, checked: false }));
+
+    const { rerender } = render(
       <ShoppingListView
         products={mockProducts}
-        shoppingList={[{ ...mockShoppingList[0], checked: false }]}
+        shoppingList={uncheckedList}
         checkedCount={0}
+        uncheckedCount={2}
+        onSmartAdd={vi.fn()}
+        onToggle={vi.fn()}
+        onRemove={vi.fn()}
+        onGenerateSmartList={vi.fn()}
+        onFinalizeShopping={onFinalize}
+        smartInput=""
+        onSmartInputChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: /Finalizar compra/i })).not.toBeInTheDocument();
+
+    rerender(
+      <ShoppingListView
+        products={mockProducts}
+        shoppingList={mockShoppingList}
+        checkedCount={1}
+        uncheckedCount={1}
+        onSmartAdd={vi.fn()}
+        onToggle={vi.fn()}
+        onRemove={vi.fn()}
+        onGenerateSmartList={vi.fn()}
+        onFinalizeShopping={onFinalize}
+        smartInput=""
+        onSmartInputChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /Finalizar compra/i })).toBeInTheDocument();
+  });
+
+  it("não renderiza o dock de Finalizar compra quando onFinalizeShopping não é fornecido ou quando o modo em lote está ativo", () => {
+    const { rerender } = render(
+      <ShoppingListView
+        products={mockProducts}
+        shoppingList={mockShoppingList}
+        checkedCount={1}
+        uncheckedCount={1}
+        onSmartAdd={vi.fn()}
+        onToggle={vi.fn()}
+        onRemove={vi.fn()}
+        onGenerateSmartList={vi.fn()}
+        smartInput=""
+        onSmartInputChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: /Finalizar compra/i })).not.toBeInTheDocument();
+
+    act(() => {
+      useBulkStore.getState().enterBulkMode("shopping_list", "item-1");
+    });
+
+    rerender(
+      <ShoppingListView
+        products={mockProducts}
+        shoppingList={mockShoppingList}
+        checkedCount={1}
         uncheckedCount={1}
         onSmartAdd={vi.fn()}
         onToggle={vi.fn()}
@@ -80,12 +166,11 @@ describe("Prevenção de sobreposição de camadas flutuantes (Issue #48)", () =
       />,
     );
 
-    const listContainer = screen.getByTestId("shopping-list-items-container");
-    expect(listContainer.className).toContain("pb-36");
-    expect(screen.queryByTestId("finalize-shopping-container")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Finalizar compra/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Definir Validade/i })).toBeInTheDocument();
   });
 
-  it("aplica pb-40 no container rolável do StockView para evitar sobreposição do FAB da câmera", () => {
+  it("mantém os botões de ação (Editar e Remover) do último card do estoque acessíveis e abre a confirmação de remoção", () => {
     render(
       <MemoryRouter>
         <StockView
@@ -105,7 +190,11 @@ describe("Prevenção de sobreposição de camadas flutuantes (Issue #48)", () =
       </MemoryRouter>,
     );
 
-    const stockContainer = screen.getByTestId("stock-items-container");
-    expect(stockContainer.className).toContain("pb-40");
+    const removeLastCardBtn = screen.getByRole("button", {
+      name: /Remover Detergente Neutro/i,
+    });
+    fireEvent.click(removeLastCardBtn);
+
+    expect(screen.getByText("Remover produto")).toBeInTheDocument();
   });
 });
