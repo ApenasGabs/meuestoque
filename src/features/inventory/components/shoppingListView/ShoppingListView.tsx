@@ -320,7 +320,7 @@ export const ShoppingListView = ({
                 variant="ghost"
                 size="sm"
                 onClick={exitBulkMode}
-                className="p-0 w-8 h-8 min-h-8"
+                className="p-0 w-11 h-11 min-h-11 sm:w-8 sm:h-8 sm:min-h-8"
                 aria-label="Cancelar seleção"
               >
                 <XOutlined />
@@ -410,12 +410,12 @@ export const ShoppingListView = ({
                     onKeyDown={handleSmartKeyDown}
                     placeholder="Nome, quantidade, valor"
                     data-testid="smart-shopping-input"
-                    className="flex-1"
+                    className="flex-1 min-h-11 h-11"
                   />
                   {canUseScanner && onScannerOpen && (
                     <Button
                       variant="ghost"
-                      className="px-3 text-xl"
+                      className="px-3 text-xl min-h-11"
                       onClick={onScannerOpen}
                       aria-label="Escanear código"
                       data-testid="camera-scan-button"
@@ -486,7 +486,7 @@ export const ShoppingListView = ({
               <div className="flex items-end">
                 <Button
                   variant="primary"
-                  className="w-full"
+                  className="w-full min-h-11"
                   onClick={handleSmartSubmit}
                   data-testid="add-item-button"
                 >
@@ -549,7 +549,7 @@ export const ShoppingListView = ({
         {!listBulk && checkedCount > 0 && onFinalizeShopping && (
           <Button
             variant="primary"
-            className="w-full"
+            className="w-full min-h-11"
             size="sm"
             onClick={onFinalizeShopping}
             disabled={finalizeDisabled}

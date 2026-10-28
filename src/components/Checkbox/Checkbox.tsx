@@ -52,7 +52,7 @@ export const Checkbox = ({
   const colorClass = colorClasses[color] || colorClasses.primary;
 
   return (
-    <label className="label cursor-pointer">
+    <label className="label cursor-pointer min-w-11 min-h-11 flex items-center justify-center">
       <input
         type="checkbox"
         className={`checkbox ${colorClass} ${sizeClass} ${className}`.trim()}

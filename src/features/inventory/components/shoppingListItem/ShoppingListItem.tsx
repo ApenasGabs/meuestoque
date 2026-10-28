@@ -315,7 +315,7 @@ export const ShoppingListItem = memo(({
                       e.preventDefault();
                       handleNameSave();
                     }}
-                    className="btn btn-ghost btn-xs text-success p-1 min-h-0 h-6 w-6 shrink-0"
+                    className="btn btn-ghost btn-xs text-success p-1 min-h-11 h-11 w-11 sm:min-h-0 sm:h-6 sm:w-6 shrink-0"
                     title="Salvar"
                     aria-label="Salvar nome"
                     data-testid="save-item-name-button"
@@ -328,7 +328,7 @@ export const ShoppingListItem = memo(({
                       e.preventDefault();
                       handleNameCancel();
                     }}
-                    className="btn btn-ghost btn-xs text-error p-1 min-h-0 h-6 w-6 shrink-0"
+                    className="btn btn-ghost btn-xs text-error p-1 min-h-11 h-11 w-11 sm:min-h-0 sm:h-6 sm:w-6 shrink-0"
                     title="Cancelar"
                     aria-label="Cancelar edicao"
                     data-testid="cancel-item-name-button"
@@ -351,7 +351,7 @@ export const ShoppingListItem = memo(({
                         e.stopPropagation();
                         handleStartEditName();
                       }}
-                      className="btn btn-ghost btn-xs p-0.5 min-h-0 h-5 w-5 opacity-40 hover:opacity-100 shrink-0"
+                      className="btn btn-ghost btn-xs p-0.5 min-h-11 h-11 w-11 sm:min-h-0 sm:h-5 sm:w-5 opacity-40 hover:opacity-100 shrink-0"
                       title="Editar nome"
                       aria-label={`Editar nome de ${product.name}`}
                       data-testid={`edit-item-name-${item.id}`}
@@ -390,7 +390,7 @@ export const ShoppingListItem = memo(({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-            className="btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 sm:hidden"
+            className="btn btn-ghost btn-xs p-1 min-h-11 h-11 w-11 sm:min-h-0 sm:h-6 sm:w-6 shrink-0 sm:hidden"
             aria-label={isExpanded ? "Recolher" : "Expandir"}
           >
             <svg 
@@ -408,7 +408,7 @@ export const ShoppingListItem = memo(({
             type="button"
             onClick={() => onRemove(item.id)}
             data-testid="remove-item-button"
-            className={`btn btn-ghost btn-xs p-1 min-h-0 h-6 w-6 shrink-0 ${isExpanded ? "" : "hidden sm:flex"}`}
+            className={`btn btn-ghost btn-xs p-1 min-h-11 h-11 w-11 sm:min-h-0 sm:h-6 sm:w-6 shrink-0 ${isExpanded ? "inline-flex" : "hidden sm:inline-flex"}`}
             title="Excluir"
           >
             <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,11 +428,11 @@ export const ShoppingListItem = memo(({
               onFocus={(e) => e.target.select()}
               onBlur={handleQuantityBlur}
               inputMode="decimal"
-              className="input input-bordered input-sm w-12 h-7 min-h-7 px-1 text-center tabular-nums"
+              className="input input-bordered input-sm w-12 h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-center tabular-nums"
               data-testid="shopping-item-quantity"
             />
             <select
-              className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
+              className="select select-bordered select-sm h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-xs uppercase font-bold"
               value={baseUnit}
               onChange={(event) => {
                 event.stopPropagation();
@@ -455,7 +455,7 @@ export const ShoppingListItem = memo(({
             type="button"
             onClick={(e) => { e.stopPropagation(); setShowPackFields((prev) => !prev); }}
             title={showPackFields ? "Ocultar rendimento" : "Informar rendimento"}
-            className={`btn btn-sm h-7 min-h-7 px-1.5 ${showPackFields ? "btn-primary btn-outline" : "btn-ghost"}`}
+            className={`btn btn-sm h-11 min-h-11 sm:h-7 sm:min-h-7 px-1.5 ${showPackFields ? "btn-primary btn-outline" : "btn-ghost"}`}
           >
             📦
           </button>
@@ -471,11 +471,11 @@ export const ShoppingListItem = memo(({
                 onBlur={handlePackSizeBlur}
                 placeholder="0"
                 inputMode="decimal"
-                className="input input-bordered input-sm w-10 h-7 min-h-7 px-1 text-center tabular-nums"
+                className="input input-bordered input-sm w-10 h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-center tabular-nums"
                 aria-label="Rendimento por embalagem"
               />
               <select
-                className="select select-bordered select-sm h-7 min-h-7 px-1 text-xs uppercase font-bold"
+                className="select select-bordered select-sm h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-xs uppercase font-bold"
                 value={packUnitDraft}
                 onChange={(e) => { e.stopPropagation(); handlePackUnitChange(e.target.value as Unit); }}
                 onClick={(e) => e.stopPropagation()}
@@ -502,7 +502,7 @@ export const ShoppingListItem = memo(({
               type="button"
               onClick={togglePriceMode}
               title={priceMode === "total" ? `Mudar para R$/${displayUnit}` : "Mudar para total"}
-              className="btn btn-ghost btn-sm h-7 min-h-7 px-1.5 text-[10px] font-bold uppercase"
+              className="btn btn-ghost btn-sm h-11 min-h-11 sm:h-7 sm:min-h-7 px-1.5 text-[10px] font-bold uppercase"
             >
               {priceMode === "total" ? "R$ Total" : `R$/${displayUnit}`}
             </button>
@@ -513,7 +513,7 @@ export const ShoppingListItem = memo(({
               onBlur={handlePriceBlur}
               placeholder="0,00"
               inputMode="decimal"
-              className="input input-bordered input-sm w-16 h-7 min-h-7 px-1 text-center tabular-nums"
+              className="input input-bordered input-sm w-16 h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-center tabular-nums"
               data-testid="shopping-item-price"
             />
             {priceMode === "unit" && calculatedTotal != null && (
@@ -536,7 +536,7 @@ export const ShoppingListItem = memo(({
                 type="date"
                 value={item.validityDate || ""}
                 onChange={(e) => onUpdateValidityDate?.(item.id, e.target.value || null, item.naoAplicaValidade)}
-                className="input input-bordered input-sm w-[110px] h-7 min-h-7 px-1 text-xs"
+                className="input input-bordered input-sm w-[110px] h-11 min-h-11 sm:h-7 sm:min-h-7 px-1 text-xs"
                 disabled={item.naoAplicaValidade}
               />
               <label className="flex items-center gap-1 cursor-pointer">
