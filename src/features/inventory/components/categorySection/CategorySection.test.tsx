@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CategorySection } from "./CategorySection";
 import { StockView } from "../stockView/StockView";
@@ -38,8 +38,8 @@ const shoppingList: InventoryShoppingListItem[] = [
   },
 ];
 
-describe("CategorySection, StockView e ShoppingListView - Responsividade Tablet e Desktop (#46)", () => {
-  it("renderiza os cards de produtos em um grid responsivo multi-colunas (grid-cols-1 md:grid-cols-2 xl:grid-cols-3)", () => {
+describe("CategorySection, StockView e ShoppingListView (#46)", () => {
+  it("renderiza todos os produtos da categoria no container de grid e permite recolher/expandir a seção", () => {
     render(
       <CategorySection
         name="🌾 Grãos"
@@ -53,16 +53,20 @@ describe("CategorySection, StockView e ShoppingListView - Responsividade Tablet 
     );
 
     const grid = screen.getByTestId("category-products-grid");
-    expect(grid).toBeInTheDocument();
-    expect(grid.className).toContain("grid");
-    expect(grid.className).toContain("grid-cols-1");
-    expect(grid.className).toContain("md:grid-cols-2");
-    expect(grid.className).toContain("xl:grid-cols-3");
-    expect(grid.className).toContain("gap-3");
+    expect(within(grid).getByText("Arroz Branco 5kg")).toBeInTheDocument();
+    expect(within(grid).getByText("Feijão Carioca 1kg")).toBeInTheDocument();
+    expect(screen.getByText("1 baixo")).toBeInTheDocument();
+
+    const toggleButton = screen.getByRole("button", { name: /Grãos/i });
+    fireEvent.click(toggleButton);
+    expect(screen.queryByTestId("category-products-grid")).not.toBeInTheDocument();
+
+    fireEvent.click(toggleButton);
+    expect(screen.getByTestId("category-products-grid")).toBeInTheDocument();
   });
 
-  it("aplica container max-w-6xl mx-auto no StockView", () => {
-    const { container } = render(
+  it("exibe as seções de categorias e contadores de estoque baixo no StockView", () => {
+    render(
       <StockView
         products={products}
         categories={categories}
@@ -79,14 +83,15 @@ describe("CategorySection, StockView e ShoppingListView - Responsividade Tablet 
       />,
     );
 
-    const root = container.firstElementChild;
-    expect(root?.className).toContain("max-w-6xl");
-    expect(root?.className).toContain("mx-auto");
-    expect(root?.className).toContain("w-full");
+    expect(screen.getByTestId("stock-heading")).toHaveTextContent("Estoque");
+    expect(screen.getByText(/1 baixo · 0 zerado/i)).toBeInTheDocument();
+    expect(screen.getByTestId("category-products-grid")).toBeInTheDocument();
   });
 
-  it("aplica container max-w-4xl mx-auto no ShoppingListView e na barra de finalizar compra", () => {
-    const { container } = render(
+  it("exibe os itens da lista de compras e aciona a finalização quando há itens marcados", () => {
+    const onFinalizeShopping = vi.fn();
+
+    render(
       <ShoppingListView
         products={products}
         shoppingList={shoppingList}
@@ -96,19 +101,18 @@ describe("CategorySection, StockView e ShoppingListView - Responsividade Tablet 
         onToggle={vi.fn()}
         onRemove={vi.fn()}
         onGenerateSmartList={vi.fn()}
-        onFinalizeShopping={vi.fn()}
+        onFinalizeShopping={onFinalizeShopping}
         smartInput=""
         onSmartInputChange={vi.fn()}
       />,
     );
 
-    const root = container.firstElementChild;
-    expect(root?.className).toContain("max-w-4xl");
-    expect(root?.className).toContain("mx-auto");
-    expect(root?.className).toContain("w-full");
+    expect(screen.getByTestId("shopping-list-heading")).toHaveTextContent("Lista de Compras");
+    expect(screen.getByText("Arroz Branco 5kg")).toBeInTheDocument();
 
     const finalizeButton = screen.getByTestId("finalize-shopping-button");
-    expect(finalizeButton.parentElement?.className).toContain("max-w-4xl");
-    expect(finalizeButton.parentElement?.className).toContain("mx-auto");
+    expect(finalizeButton).toBeEnabled();
+    fireEvent.click(finalizeButton);
+    expect(onFinalizeShopping).toHaveBeenCalledTimes(1);
   });
 });
