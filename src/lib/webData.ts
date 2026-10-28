@@ -378,6 +378,7 @@ export interface ApplyReceiptMatchInput {
  * em uma única atualização atômica, preservando a validade já preenchida.
  *
  * @param input - Dados conciliados do item da nota fiscal e ID do item na lista
+ * @returns Promessa resolvida quando o item for atualizado
  */
 export const applyReceiptMatchToListItem = async (
   input: ApplyReceiptMatchInput,

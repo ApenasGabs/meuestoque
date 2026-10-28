@@ -3,6 +3,7 @@ import {
   parseBrazilianNumber,
   parseBrazilianDate,
   formatIsoDateToPtBr,
+  getLocalDateString,
   normalizeNfceUrl,
   extractChaveAcesso,
   parseNfceHtml,
@@ -52,7 +53,25 @@ describe("nfceParser", () => {
     });
   });
 
+  describe("getLocalDateString", () => {
+    it("deve retornar data formatada no formato YYYY-MM-DD para uma data específica", () => {
+      const fixedDate = new Date(2026, 9, 28, 23, 30, 0); // 28 de Outubro de 2026, 23:30 local
+      expect(getLocalDateString(fixedDate)).toBe("2026-10-28");
+    });
+
+    it("deve retornar uma string no formato YYYY-MM-DD para a data padrão atual", () => {
+      const result = getLocalDateString();
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
   describe("normalizeNfceUrl", () => {
+    it("deve promover URLs HTTP para HTTPS para atender a política de segurança", () => {
+      const httpUrl = "http://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=35261000000000000000652080000474581006519038";
+      const normalized = normalizeNfceUrl(httpUrl);
+      expect(normalized.startsWith("https://")).toBe(true);
+    });
+
     it("deve codificar pipes na URL da SEFAZ", () => {
       const raw =
         "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=35261000000000000000652080000474581006519038|2|1|1|abc123hash";

@@ -62,15 +62,18 @@ graph TD
 |---|---|
 | `api/nfce.ts` | Edge Function para consulta segura e parsing de NFC-e (SEFAZ-SP) com proteção SSRF e codificação de pipes |
 | `src/domain/nfceParser.ts` | Parser puro de HTML da NFC-e (extração de emitente, data, total e itens) |
-| `src/domain/nfceParser.test.ts` | Testes unitários do parser com HTML sintético |
+| `src/domain/nfceParser.test.ts` | Testes unitários do parser com HTML sintético e conversão segura de data local |
 | `src/domain/receiptMatcher.ts` | Motor de correspondência 1-para-1 com expansão de abreviações e preservação de validades |
 | `src/domain/receiptMatcher.test.ts` | Testes unitários do motor de match |
 | `src/services/nfceService.ts` | Cliente frontend para consulta da API `/api/nfce` |
 | `src/services/nfceService.test.ts` | Testes unitários do serviço HTTP |
-| `src/services/priceHistoryService.ts` | Adicionado `recordNfcePriceHistory` para persistir os preços unitários da nota em `store_price_history` |
+| `src/services/priceHistoryService.ts` | Adicionado `recordNfcePriceHistory` para persistir os preços unitários da nota em `store_price_history` com tags JSDoc completas |
 | `src/lib/scannerDetector.ts` | Suporte a leitura de QR Code além de código de barras 1D |
-| `src/components/Scanner/NfceScannerModal.tsx` | Modal com mira de câmera para leitura de QR Code ou input de URL/chave |
-| `src/components/NfceReviewDrawer/NfceReviewDrawer.tsx` | Gaveta/Bottom Sheet de conferência de itens casados, novos e ausentes |
+| `src/components/Scanner/NfceScannerModal.tsx` | Modal com mira de câmera para leitura de QR Code ou input de URL/chave com atributos `aria-label` e fallback para conexões não seguras |
+| `src/components/Scanner/__tests__/NfceScannerModal.test.tsx` | Testes unitários do modal de scanner e entrada manual acessível |
+| `src/components/NfceReviewDrawer/NfceReviewDrawer.tsx` | Gaveta/Bottom Sheet de conferência de itens casados, novos e ausentes com `label` acessível, `focus-within`, `data-testid` e data local sem desvio UTC-3 |
+| `src/components/NfceReviewDrawer/__tests__/NfceReviewDrawer.test.tsx` | Testes unitários da gaveta de conferência de NFC-e |
+| `src/api/__tests__/nfce.test.ts` | Testes unitários da Edge Function de NFC-e (SSRF, timeout, allowlist de hosts e validação de parâmetros) |
 | `src/features/inventory/components/shoppingListView/ShoppingListView.tsx` | Botão "Escanear Nota" na barra de ações |
 | `src/pages/ListPageNew.tsx` | Fluxo em 2 etapas: aplica a nota na lista ativa (com banner de revisão) e finaliza com a data de emissão da nota + refresh do `useStockStore` |
 | `src/lib/webData.ts` | `applyReceiptMatchToListItem`, suporte a data de compra em `finishShoppingList` e ordenação de `loadShoppingHistory` por `finalizada_em` |
@@ -94,8 +97,9 @@ REGRA 4: A data efetiva da compra no estoque e no histórico é sincronizada com
 #### Checklist de Aceite
 - [x] Lint passando (0 erros)
 - [x] Typecheck passando (0 erros)
-- [x] Testes passando (26 suites, 227 testes verdes)
+- [x] Testes passando (29 suites, 253 testes verdes)
 - [x] Build de produção sem erros
+- [x] Apontamentos de code review (SSRF, timeout, acessibilidade, fuso horário UTC-3 e JSDoc) 100% resolvidos e testados
 
 ### 🌐 (25/10/2026) Feature: Suporte a OAuth 2.1 para Claude Web e Conectores Remotos MCP (Issue #40)
 
