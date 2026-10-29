@@ -5,6 +5,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.3](https://github.com/ApenasGabs/meuestoque/compare/v1.26.2...v1.26.3) (2026-10-29)
+
+### 🐛 Bug Fixes
+
+* **ux:** 🐛 resolver conflitos com main e manter layout responsivo (Refs [#46](https://github.com/ApenasGabs/meuestoque/issues/46)) ([77e39c6](https://github.com/ApenasGabs/meuestoque/commit/77e39c6e4eb32d37ba903b0afa5bf01117c2f9dd))
+* **ux:** implementar grid responsivo e max-width para Tablet e Desktop (Closes [#46](https://github.com/ApenasGabs/meuestoque/issues/46)) ([8a76e5d](https://github.com/ApenasGabs/meuestoque/commit/8a76e5de7e86e308be38e2250ab382c8d6db9129))
+
+### 🧪 Tests
+
+* **inventory:** validar comportamento de CategorySection, StockView e ShoppingListView sem acoplamento a classes CSS ([6f2cf62](https://github.com/ApenasGabs/meuestoque/commit/6f2cf62d8ff598f4fa158d6ceab8065bbfe6fcb2))
+
 ## [1.26.2](https://github.com/ApenasGabs/meuestoque/compare/v1.26.1...v1.26.2) (2026-10-28)
 
 ### 🐛 Bug Fixes
