@@ -288,7 +288,7 @@ export const StockView = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-6xl mx-auto w-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur space-y-3 sticky top-0 z-10">
         {inventoryBulk ? (
           <div className="flex items-center justify-between gap-3 h-10">
@@ -367,7 +367,7 @@ export const StockView = ({
         )}
       </div>
       <div
-        className="flex-1 overflow-y-auto p-2 space-y-0 pb-40"
+        className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 pb-40 max-w-6xl mx-auto w-full"
         data-testid="stock-items-container"
       >
         {pendingGroupedProducts.size > 0 && (

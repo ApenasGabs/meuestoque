@@ -311,7 +311,7 @@ export const ShoppingListView = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-4xl mx-auto w-full">
       <div className="px-4 py-3 border-b border-base-300 bg-base-100 sticky top-0 z-10 space-y-3">
         {listBulk && (
           <div className="flex items-center justify-between gap-3 h-10">
@@ -513,7 +513,7 @@ export const ShoppingListView = ({
       </div>
 
       <div
-        className={`flex-1 overflow-y-auto p-4 space-y-2 ${!listBulk && checkedCount > 0 && onFinalizeShopping ? "pb-40" : "pb-36"}`}
+        className={`flex-1 overflow-y-auto p-4 space-y-2 ${!listBulk && checkedCount > 0 && onFinalizeShopping ? "pb-40" : "pb-36"} max-w-4xl mx-auto w-full`}
         data-testid="shopping-list-items-container"
       >
         {filteredList.length === 0 ? (
@@ -553,16 +553,18 @@ export const ShoppingListView = ({
           className="fixed bottom-16 left-0 right-0 z-20 bg-base-100/95 backdrop-blur border-t border-base-300 px-4 py-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]"
           data-testid="finalize-shopping-container"
         >
-          <Button
-            variant="primary"
-            className="w-full min-h-11"
-            size="sm"
-            onClick={onFinalizeShopping}
-            disabled={finalizeDisabled}
-            data-testid="finalize-shopping-button"
-          >
-            {finalizing ? "Finalizando..." : "Finalizar compra"}
-          </Button>
+          <div className="max-w-4xl mx-auto w-full">
+            <Button
+              variant="primary"
+              className="w-full min-h-11"
+              size="sm"
+              onClick={onFinalizeShopping}
+              disabled={finalizeDisabled}
+              data-testid="finalize-shopping-button"
+            >
+              {finalizing ? "Finalizando..." : "Finalizar compra"}
+            </Button>
+          </div>
         </div>
       )}
 

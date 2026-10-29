@@ -912,7 +912,7 @@ export const ListPageNew = (): ReactElement => {
       {nfceAppliedReceipt && (
         <div
           data-testid="nfce-applied-banner"
-          className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-8"
+          className="mx-auto w-full max-w-4xl px-4 pt-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-success/40 bg-success/10 p-4">
             <div>
