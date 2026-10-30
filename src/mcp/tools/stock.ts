@@ -72,13 +72,15 @@ export const registerStockTools = (server: unknown) => {
       const { supabase, userId } = context;
 
       const { error } = await supabase.rpc("consume_stock_fifo", {
-        p_item_id: (args as { item_id: string }).item_id,
-        p_quantidade: (args as { quantidade: string | number }).quantidade,
-        p_user_id: userId,
+        p_stock_item_id: (args as { item_id: string }).item_id,
+        p_quantidade: (args as { quantidade: number }).quantidade,
+        p_tipo: "saida",
+        p_origem: "quick_consume",
+        p_criado_por: userId,
       });
 
       if (error) {
-        console.error("[MCP] consume_stock_fifo:", error.code);
+        console.error("[MCP] consume_stock_fifo:", error.code, error.message);
         throw new Error("Erro interno ao consumir estoque");
       }
       return { content: [{ type: "text", text: `Consumo registrado com sucesso.` }] };

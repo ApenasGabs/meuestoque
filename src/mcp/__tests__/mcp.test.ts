@@ -173,4 +173,73 @@ describe("MCP Tools (Stock)", () => {
       tools["get_stock_items"]({ group_id: "g1", filtro: "todos" }, extra)
     ).rejects.toThrow("Erro interno de banco de dados");
   });
+
+  it("executes consume_stock_item successfully calling consume_stock_fifo with correct parameters", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const fakeSupabase = { rpc: rpcMock };
+
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["consume_stock_item"](
+      { item_id: "99240b13-7904-4f19-9784-60db8893834c", quantidade: 1 },
+      extra,
+    );
+
+    expect(result).toBeDefined();
+    expect(result.content[0].text).toContain("Consumo registrado com sucesso.");
+    expect(rpcMock).toHaveBeenCalledWith("consume_stock_fifo", {
+      p_stock_item_id: "99240b13-7904-4f19-9784-60db8893834c",
+      p_quantidade: 1,
+      p_tipo: "saida",
+      p_origem: "quick_consume",
+      p_criado_por: "u-test-123",
+    });
+  });
+
+  it("throws generic error when consume_stock_fifo fails in consume_stock_item", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "P0001", message: "item não encontrado" },
+    });
+    const fakeSupabase = { rpc: rpcMock };
+
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    await expect(
+      tools["consume_stock_item"](
+        { item_id: "99240b13-7904-4f19-9784-60db8893834c", quantidade: 1 },
+        extra,
+      ),
+    ).rejects.toThrow("Erro interno ao consumir estoque");
+  });
 });
