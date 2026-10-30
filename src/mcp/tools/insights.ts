@@ -48,7 +48,7 @@ export const registerInsightTools = (server: unknown) => {
       const { data, error } = await query;
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao carregar histórico de consumo: ${error.message || error.code || "erro no banco de dados"}`);
       }
 
       const formatted = (data || []).map((d) => ({
@@ -94,7 +94,7 @@ export const registerInsightTools = (server: unknown) => {
 
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao carregar resumo de gastos: ${error.message || error.code || "erro no banco de dados"}`);
       }
 
       const summary = (data || []).reduce((acc: unknown, row: unknown) => {
@@ -138,7 +138,7 @@ export const registerInsightTools = (server: unknown) => {
 
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao consultar tendência de preços: ${error.message || error.code || "erro no banco de dados"}`);
       }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
