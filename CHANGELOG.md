@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.4](https://github.com/ApenasGabs/meuestoque/compare/v1.26.3...v1.26.4) (2026-10-30)
+
+### 🐛 Bug Fixes
+
+* **mcp:** 🐛 alinhar parâmetros de consume_stock_fifo na tool consume_stock_item (Refs [#56](https://github.com/ApenasGabs/meuestoque/issues/56)) ([c0628dc](https://github.com/ApenasGabs/meuestoque/commit/c0628dce1b37c064d976ea8d6d42077e457eefa8))
+
 ## [1.26.3](https://github.com/ApenasGabs/meuestoque/compare/v1.26.2...v1.26.3) (2026-10-29)
 
 ### 🐛 Bug Fixes
