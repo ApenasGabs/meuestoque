@@ -82,7 +82,7 @@ export const registerListTools = (server: unknown) => {
         .limit(1)
         .maybeSingle();
 
-      if (!activeList) throw new Error("Lista ativa não encontrada");
+      if (!activeList) throw new Error("Nenhuma lista de compras ativa encontrada para o grupo especificado.");
 
       // TODO: Refatorar para usar a procedure "add_item_to_list" em vez de inserção direta com valores default otimistas.
       const { error } = await supabase.from("items").insert({
@@ -95,7 +95,7 @@ export const registerListTools = (server: unknown) => {
         criado_por: userId,
       });
 
-      if (error) throw new Error(`Erro ao inserir: ${error.message}`);
+      if (error) throw new Error(`Falha ao adicionar item '${(args as { nome: string }).nome}' na lista: ${error.message}`);
       return { content: [{ type: "text", text: `Item ${(args as { nome: string }).nome} adicionado com sucesso.` }] };
     },
   );
@@ -110,7 +110,7 @@ export const registerListTools = (server: unknown) => {
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const { supabase } = extractWriteContext(extra);
       const { error } = await supabase.from("items").delete().eq("id", (args as { item_id: string }).item_id);
-      if (error) throw new Error(`Erro ao remover: ${error.message}`);
+      if (error) throw new Error(`Falha ao remover item da lista (ID: ${(args as { item_id: string }).item_id}): ${error.message}`);
       return { content: [{ type: "text", text: "Item removido com sucesso." }] };
     },
   );
@@ -136,7 +136,7 @@ export const registerListTools = (server: unknown) => {
       }
 
       const { error } = await supabase.from("items").update(updateData as never).eq("id", (args as { item_id: string }).item_id);
-      if (error) throw new Error(`Erro ao marcar item: ${error.message}`);
+      if (error) throw new Error(`Falha ao atualizar status do item (ID: ${(args as { item_id: string }).item_id}): ${error.message}`);
       return {
         content: [
           { type: "text", text: `Item marcado como ${(args as { comprado: boolean }).comprado ? "comprado" : "pendente"}.` },
@@ -163,7 +163,7 @@ export const registerListTools = (server: unknown) => {
         p_purchase_date: (args as { data_compra?: string }).data_compra ?? new Date().toISOString().slice(0, 10),
       });
 
-      if (error) throw new Error(`Erro ao finalizar lista: ${error.message}`);
+      if (error) throw new Error(`Falha ao finalizar lista de compras: ${error.message}`);
       return { content: [{ type: "text", text: JSON.stringify(data || {}, null, 2) }] };
     },
   );

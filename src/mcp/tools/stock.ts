@@ -50,7 +50,7 @@ export const registerStockTools = (server: unknown) => {
       const { data, error } = await query;
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao carregar itens do estoque: ${error.message || error.code || "erro no banco de dados"}`);
       }
 
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
@@ -81,7 +81,8 @@ export const registerStockTools = (server: unknown) => {
 
       if (error) {
         console.error("[MCP] consume_stock_fifo:", error.code, error.message);
-        throw new Error("Erro interno ao consumir estoque");
+        const detail = error.message ? `: ${error.message}` : "";
+        throw new Error(`Falha ao consumir estoque${detail}`);
       }
       return { content: [{ type: "text", text: `Consumo registrado com sucesso.` }] };
     },
@@ -120,7 +121,7 @@ export const registerStockTools = (server: unknown) => {
 
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao carregar itens a vencer: ${error.message || error.code || "erro no banco de dados"}`);
       }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
     },
@@ -155,7 +156,7 @@ export const registerStockTools = (server: unknown) => {
 
       if (error) {
         console.error(error);
-        throw new Error("Erro interno de banco de dados");
+        throw new Error(`Falha ao carregar itens com estoque baixo: ${error.message || error.code || "erro no banco de dados"}`);
       }
 
       const filtered = (data || []).filter((item) => item.quantidade <= item.quantidade_minima);

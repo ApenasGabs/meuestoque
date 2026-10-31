@@ -171,7 +171,7 @@ describe("MCP Tools (Stock)", () => {
 
     await expect(
       tools["get_stock_items"]({ group_id: "g1", filtro: "todos" }, extra)
-    ).rejects.toThrow("Erro interno de banco de dados");
+    ).rejects.toThrow("Falha ao carregar itens do estoque: connection timeout");
   });
 
   it("executes consume_stock_item successfully calling consume_stock_fifo with correct parameters", async () => {
@@ -240,6 +240,6 @@ describe("MCP Tools (Stock)", () => {
         { item_id: "99240b13-7904-4f19-9784-60db8893834c", quantidade: 1 },
         extra,
       ),
-    ).rejects.toThrow("Erro interno ao consumir estoque");
+    ).rejects.toThrow("Falha ao consumir estoque: item não encontrado");
   });
 });

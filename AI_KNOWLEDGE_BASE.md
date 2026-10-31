@@ -43,6 +43,42 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 📢 (29/10/2026) Fix: Mensagens de Erro Contextuais e Descritivas nas Tools MCP (Issue #58)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Cliente MCP / Conector ('Nosso estoque')"] -->|"POST /api/mcp"| B["Tools MCP (stock / list / insights)"]
+    B -->|"Supabase RPC ou Query"| C["Postgres / Supabase"]
+    C -->|"Erro retornado (error.message / error.code)"| B
+    B -->|"Lança Error com contexto de operação + detalhe real"| A
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/stock.ts` | Substituição de mensagens opacas por mensagens contextuais com detalhes retornados pelo Postgres (`Falha ao consumir estoque: <detalhe>`, `Falha ao carregar itens do estoque: <detalhe>`, etc.) |
+| `src/mcp/tools/list.ts` | Mensagens de erro aprimoradas para adição, remoção, atualização e finalização de listas |
+| `src/mcp/tools/insights.ts` | Mensagens de erro aprimoradas para consumo histórico, resumo financeiro e cotações |
+| `src/mcp/__tests__/mcp.test.ts` | Asserções de teste unitário atualizadas para validar os novos formatos de mensagem de erro |
+| `AI_KNOWLEDGE_BASE.md` | Registro documental deste incremento de qualidade |
+
+#### Lógica de Decisão
+```text
+REGRA: Mensagens de erro de ferramentas MCP devem ser transparentes e orientadas à ação, expondo o motivo real (ex: permissão negada, item não encontrado, saldo insuficiente) para que o agente e o usuário compreendam exatamente a causa da falha.
+```
+
+#### Comportamento
+- Erros de banco de dados ou RPC não são mais mascarados com "Erro interno de banco de dados".
+- Agentes de IA recebem mensagens informativas com a causa exata para recuperação automática ou feedback ao usuário.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Typecheck passando (0 erros TypeScript)
+- [x] Testes unitários passando (32 suites, 266 testes verdes)
+- [x] Build de produção concluído com sucesso
+
+
 ### 🐛 (29/10/2026) Fix: Assinatura e Parâmetros da RPC consume_stock_fifo no MCP (Issue #56)
 
 #### Arquitetura
@@ -56,8 +92,10 @@ graph TD
 #### Arquivos Modificados / Criados
 | Arquivo | Mudança / Propósito |
 |---|---|
-| `src/mcp/tools/stock.ts` | Correção dos parâmetros na chamada RPC `consume_stock_fifo`: substituição de `p_item_id` por `p_stock_item_id`, `p_user_id` por `p_criado_por`, e definição explícita de `p_tipo: 'saida'` e `p_origem: 'quick_consume'` |
-| `src/mcp/__tests__/mcp.test.ts` | Adicionados testes unitários para a tool `consume_stock_item` validando a chamada da RPC com a assinatura correta e o tratamento de erros |
+| `src/mcp/tools/stock.ts` | Correção dos parâmetros na chamada RPC `consume_stock_fifo` (`p_stock_item_id`, `p_quantidade`, `p_tipo`, `p_origem`, `p_criado_por`) e substituição de mensagens genéricas ("Erro interno...") por mensagens contextuais com detalhes da causa raiz |
+| `src/mcp/tools/list.ts` | Mensagens de erro aprimoradas para inclusão, remoção, marcação e finalização de lista |
+| `src/mcp/tools/insights.ts` | Mensagens de erro aprimoradas para histórico de consumo, resumo de gastos e cotações |
+| `src/mcp/__tests__/mcp.test.ts` | Testes unitários para `consume_stock_item` e validação das novas mensagens de erro detalhadas |
 | `AI_KNOWLEDGE_BASE.md` | Registro deste histórico de engenharia, arquitetura e decisões de negócio |
 
 #### Lógica de Decisão
@@ -65,10 +103,12 @@ graph TD
 REGRA 1: A RPC Postgres consume_stock_fifo requer obrigatoriamente p_stock_item_id, p_quantidade e aceita p_tipo, p_observacao, p_origem e p_criado_por.
 REGRA 2: A constraint stock_movements_origem_check restringe a coluna origem a: 'list_finalize', 'quick_consume', 'import' ou 'adjustment'. Chamadas do MCP utilizam 'quick_consume'.
 REGRA 3: O contexto de autenticação MCP extrai userId verificado via token PAT/OAuth e o repassa em p_criado_por para auditoria rastreável dos movimentos.
+REGRA 4: Mensagens de erro de tools MCP devem ser claras, orientadas à ação e incluir o motivo real (ex: permissão, item não encontrado, limite atingido), evitando textos opacos como "Erro interno".
 ```
 
 #### Comportamento
 - Chamadas à tool `consume_stock_item` não falham mais com "Erro interno ao consumir estoque".
+- Se houver falha (ex: item inexistente, quantidade negativa ou falta de permissão), a mensagem retorna o motivo exato retornado pelo banco.
 - O estoque é debitado corretamente segundo a estratégia FIFO e registrado na tabela `stock_movements`.
 - Conectores MCP ("Nosso estoque" / "Meu estoque") operam sem inconsistência de assinatura de banco.
 
