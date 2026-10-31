@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.5](https://github.com/ApenasGabs/meuestoque/compare/v1.26.4...v1.26.5) (2026-10-31)
+
+### 🐛 Bug Fixes
+
+* **mcp:** 🐛 melhorar mensagens de erro e detalhamento nas tools MCP (Refs [#58](https://github.com/ApenasGabs/meuestoque/issues/58)) ([1839a34](https://github.com/ApenasGabs/meuestoque/commit/1839a349963a4cd563d4f911e76dd7ea25201cdb))
+
 ## [1.26.4](https://github.com/ApenasGabs/meuestoque/compare/v1.26.3...v1.26.4) (2026-10-30)
 
 ### 🐛 Bug Fixes
