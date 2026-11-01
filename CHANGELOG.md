@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.26.6](https://github.com/ApenasGabs/meuestoque/compare/v1.26.5...v1.26.6) (2026-11-01)
+
+### ♻️ Refactoring
+
+* **tests:** remover CategorySection.test.tsx acoplado a classes de layout (Refs [#55](https://github.com/ApenasGabs/meuestoque/issues/55)) ([0eed7c7](https://github.com/ApenasGabs/meuestoque/commit/0eed7c7cd14043a2d4f05ea73ee0646cc6394303))
+
 ## [1.26.5](https://github.com/ApenasGabs/meuestoque/compare/v1.26.4...v1.26.5) (2026-10-31)
 
 ### 🐛 Bug Fixes
