@@ -43,6 +43,37 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🧹 (01/11/2026) Refactor: Remoção de CategorySection.test.tsx Acoplado a Classes CSS (Issue #55)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Suíte Vitest (JSDOM)"] -->|"Testes comportamentais desacoplados de CSS"| B["Componentes de Inventário"]
+    C["Playwright E2E (Viewport Real)"] -->|"Validação de responsividade e layout"| D["CategorySection.tsx"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/features/inventory/components/categorySection/CategorySection.test.tsx` | Removido por acoplar testes unitários JSDOM a classes utilitárias Tailwind (`grid-cols-*`) sem validar layout real |
+| `AI_KNOWLEDGE_BASE.md` | Registro documental da remoção e diretriz de desacoplamento de testes unitários |
+
+#### Lógica de Decisão
+```text
+REGRA: Testes unitários em JSDOM devem validar comportamento, estado e contratos de acessibilidade/DOM, nunca strings de classes CSS do Tailwind; a validação de layout responsivo pertence aos testes E2E em navegador real (Playwright).
+```
+
+#### Comportamento
+- A suíte de testes unitários permanece limpa, rápida e resiliente a refatorações puramente visuais de classes utilitárias.
+- O componente `CategorySection.tsx` mantém sua cobertura de layout responsivo na camada E2E.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Typecheck passando (0 erros TypeScript)
+- [x] Testes unitários passando (31 suites, 263 testes verdes)
+- [x] Build de produção concluído com sucesso
+
+
 ### 📢 (29/10/2026) Fix: Mensagens de Erro Contextuais e Descritivas nas Tools MCP (Issue #58)
 
 #### Arquitetura
