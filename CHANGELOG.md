@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.27.0](https://github.com/ApenasGabs/meuestoque/compare/v1.26.6...v1.27.0) (2026-11-05)
+
+### ✨ Features
+
+* **mcp:** adicionar tool update_stock_item_validity no estoque (Fixes [#61](https://github.com/ApenasGabs/meuestoque/issues/61)) ([c70e73f](https://github.com/ApenasGabs/meuestoque/commit/c70e73f7f1b57ea3edf31128582dd62c44af6bf6))
+
 ## [1.26.6](https://github.com/ApenasGabs/meuestoque/compare/v1.26.5...v1.26.6) (2026-11-01)
 
 ### ♻️ Refactoring
