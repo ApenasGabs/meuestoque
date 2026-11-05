@@ -43,6 +43,56 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### ✨ (05/11/2026) Feat: Expansão de Ferramentas MCP de Estoque e Modelo de Livro-Razão (Issue #64 / PR #65)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Cliente MCP / Assistente de IA"] -->|"Chamada de Tool MCP"| B["Validação & Resolução Amigável de Grupos (UUID / Nome)"]
+    B --> C["Tools de Estoque & Lista (src/mcp/tools)"]
+    C --> D1["consume_stock_item (Saída por consumo, descarte/vencido ou perda)"]
+    C --> D2["set_stock_quantity (Correção auditada de inventário / erro de nota)"]
+    C --> D3["add_stock_item (Carga de estoque inicial pré-existente)"]
+    C --> D4["update_stock_item & delete_stock_item (Metadados e exclusão segura)"]
+    C --> D5["find_duplicate_stock_items & merge_stock_items (Consolidação de lotes e histórico)"]
+    C --> D6["get_stock_items & get_expiring_items (Filtro 'vencido' e apenas_vencidos)"]
+    D1 & D2 & D3 & D5 -->|"Registro de Movimentações Auditadas"| E["stock_movements (tipo: saida/descarte/perda/ajuste/estoque_inicial/mescla)"]
+    D1 & D5 -->|"Gestão de Lotes FIFO"| F["stock_lots & stock_items"]
+    E -.->|"Exclusão de descartes do histórico de consumo real"| G["get_consumption_history (insights.ts)"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/stock.ts` | Expansão das ferramentas MCP de estoque: `add_stock_item` (carga de estoque inicial), `set_stock_quantity` (correção auditada de contagem), `consume_stock_item` (suporte a descarte/perda sem inflar consumo), `update_stock_item`, `delete_stock_item`, `find_duplicate_stock_items`, `merge_stock_items`, e suporte a filtro `"vencido"` |
+| `src/mcp/tools/insights.ts` | Refinamento de `get_consumption_history` para filtrar por saídas legítimas (`consumo`, `saida`, `consumo_auto`), desacoplando descartes e perdas da taxa de consumo |
+| `src/mcp/auth.ts` | Inclusão de `groups(id, nome)` no contexto autenticado para permitir resolução amigável de grupos |
+| `src/mcp/context.ts` | Tipagem e helpers atualizados com a lista enriquecida de grupos |
+| `src/mcp/__tests__/mcp.test.ts` | Suíte com 30 testes unitários cobrindo todas as ferramentas, validações e cenários de exceção |
+| `AI_KNOWLEDGE_BASE.md` | Registro canônico da arquitetura e das decisões de modelagem de estoque como livro-razão |
+
+#### Lógica de Decisão
+```text
+REGRA 1: O estoque opera como um livro-razão (ledger) onde toda entrada decorre de compra (lista) ou carga de estoque inicial, e toda saída possui motivo rastreável.
+REGRA 2: Baixas por descarte de alimentos vencidos ou avarias/perdas devem dar baixa dos lotes FIFO normalmente, mas registrar tipo = 'descarte' ou 'perda', ficando explicitamente excluídas do histórico de consumo da família.
+REGRA 3: Ajustes manuais de quantidade representam correções auditadas de contagem ou divergências de notas fiscais, exigindo rastreabilidade com tipo = 'ajuste' em stock_movements.
+REGRA 4: Grupos multi-tenant podem ser resolvidos dinamicamente por UUID ou nome amigável (case-insensitive), listando opções legíveis em caso de ambiguidade.
+```
+
+#### Comportamento
+- O assistente de IA agora consegue dar baixa informando se o item foi consumido ou descartado por estar vencido (`tipo: 'descarte'`), sem distorcer as métricas de consumo.
+- Correções de quantidade agora operam como auditoria explícita (`[Correção Auditada]`).
+- Cargas iniciais de despensa são registradas como `estoque_inicial` sem poluir os relatórios de gastos em supermercado.
+- Itens duplicados por divergência de nomes de notas fiscais podem ser identificados e unificados com transferência automática de lotes e histórico.
+- Itens vencidos podem ser consultados diretamente com `filtro: 'vencido'` ou `apenas_vencidos: true`.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Typecheck passando (0 erros TypeScript)
+- [x] Testes unitários passando (31 suítes, 279 testes verdes)
+- [x] Build de produção concluído com sucesso
+
+
 ### 🧹 (01/11/2026) Refactor: Remoção de CategorySection.test.tsx Acoplado a Classes CSS (Issue #55)
 
 #### Arquitetura
