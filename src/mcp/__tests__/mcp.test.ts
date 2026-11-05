@@ -367,6 +367,43 @@ describe("MCP Tools (Stock)", () => {
       p_stock_item_id: "99240b13-7904-4f19-9784-60db8893834c",
       p_quantidade: 1,
       p_tipo: "saida",
+      p_observacao: "Consumo rápido",
+      p_origem: "quick_consume",
+      p_criado_por: "u-test-123",
+    });
+  });
+
+  it("executes consume_stock_item with tipo 'descarte' and motivo for expired food without inflating consumption", async () => {
+    const { tools } = setupStockTools();
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const fakeSupabase = { rpc: rpcMock };
+
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["consume_stock_item"](
+      {
+        item_id: "99240b13-7904-4f19-9784-60db8893834c",
+        quantidade: 2,
+        tipo: "descarte",
+        motivo: "Venceu semana passada",
+      },
+      extra,
+    );
+
+    expect(result).toBeDefined();
+    expect(result.content[0].text).toContain("Descarte registrado com sucesso.");
+    expect(rpcMock).toHaveBeenCalledWith("consume_stock_fifo", {
+      p_stock_item_id: "99240b13-7904-4f19-9784-60db8893834c",
+      p_quantidade: 2,
+      p_tipo: "descarte",
+      p_observacao: "Venceu semana passada",
       p_origem: "quick_consume",
       p_criado_por: "u-test-123",
     });
@@ -540,12 +577,19 @@ describe("MCP Tools (Stock)", () => {
       error: null,
     });
     const selectMock = vi.fn(() => ({ maybeSingle: maybeSingleMock }));
-    const insertMock = vi.fn(() => ({ select: selectMock }));
+    const stockItemsInsertMock = vi.fn(() => ({ select: selectMock }));
+    const movementsInsertMock = vi.fn().mockResolvedValue({ error: null });
 
     const fakeSupabase = {
-      from: vi.fn(() => ({
-        insert: insertMock,
-      })),
+      from: vi.fn((table: string) => {
+        if (table === "stock_items") {
+          return { insert: stockItemsInsertMock };
+        }
+        if (table === "stock_movements") {
+          return { insert: movementsInsertMock };
+        }
+        return {};
+      }),
     };
 
     const extra = {
@@ -568,6 +612,7 @@ describe("MCP Tools (Stock)", () => {
         quantidade: 3,
         quantidade_minima: 1,
         unidade: "kg",
+        origem: "estoque_inicial",
         data_validade: "2027-06-01",
         nao_aplica: false,
         auto_adicionar_lista: true,
@@ -575,7 +620,7 @@ describe("MCP Tools (Stock)", () => {
       extra,
     );
 
-    expect(insertMock).toHaveBeenCalledWith(
+    expect(stockItemsInsertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         group_id: "g-casa",
         nome: "Feijão Carioca",
@@ -588,6 +633,16 @@ describe("MCP Tools (Stock)", () => {
         data_validade_alerta: "2027-06-01",
         validade_nao_aplica: false,
         auto_adicionar_lista: true,
+      }),
+    );
+    expect(movementsInsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        item_id: "new-item-uuid",
+        stock_item_id: "new-item-uuid",
+        tipo: "estoque_inicial",
+        quantidade: 3,
+        unidade: "Kg",
+        origem: "initial_stock",
       }),
     );
     expect(result.content[0].text).toContain("Feijão Carioca");
@@ -660,7 +715,7 @@ describe("MCP Tools (Stock)", () => {
       tipo: "ajuste",
       quantidade: 5,
       unidade: "pct",
-      observacao: "Contagem física na despensa",
+      observacao: "[Correção Auditada] Contagem física na despensa (2 -> 5)",
       origem: "adjustment",
       criado_por: "u-auditor",
     });

@@ -32,7 +32,7 @@ export const registerInsightTools = (server: unknown) => {
         .from("stock_movements")
         .select("criado_em, quantidade, tipo, stock_items!inner(nome, unidade, group_id)")
         .eq("stock_items.group_id", groupId)
-        .eq("tipo", "consumo")
+        .in("tipo", ["consumo", "saida", "consumo_auto"])
         .gte("criado_em", thresholdISO)
         .order("criado_em", { ascending: false })
         .limit(100);

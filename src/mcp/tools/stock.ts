@@ -226,14 +226,25 @@ export const registerStockTools = (server: unknown) => {
     "consume_stock_item",
     {
       title: "Consume Stock Item",
-      description: "Registra o consumo de um item do estoque",
+      description:
+        "Registra a saída ou baixa de um item do estoque por consumo habitual, descarte de vencido ou perda, preservando a rastreabilidade contábil",
       inputSchema: z.object({
         group_id: z
           .string()
           .optional()
           .describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
-        item_id: z.string().uuid(),
-        quantidade: z.number().positive(),
+        item_id: z.string().uuid().describe("ID do item de estoque"),
+        quantidade: z.number().positive().describe("Quantidade a dar baixa"),
+        tipo: z
+          .enum(["consumo", "descarte", "perda", "vencido", "saida"])
+          .default("consumo")
+          .describe(
+            "Tipo/motivo da baixa: 'consumo' (uso habitual/alimentação), 'descarte' ou 'vencido' (estragou/expirou), ou 'perda' (avaria/quebra)",
+          ),
+        motivo: z
+          .string()
+          .optional()
+          .describe("Observação ou justificativa detalhada da baixa"),
       }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
@@ -248,10 +259,20 @@ export const registerStockTools = (server: unknown) => {
         }
       }
 
+      const rawTipo = (args as { tipo?: string }).tipo ?? "consumo";
+      const effectiveTipo = rawTipo === "consumo" ? "saida" : rawTipo;
+      const rawMotivo = (args as { motivo?: string }).motivo;
+      const observacao =
+        rawMotivo ??
+        (rawTipo !== "consumo" && rawTipo !== "saida"
+          ? `Baixa por ${rawTipo}`
+          : "Consumo rápido");
+
       const { error } = await supabase.rpc("consume_stock_fifo", {
         p_stock_item_id: (args as { item_id: string }).item_id,
         p_quantidade: (args as { quantidade: number }).quantidade,
-        p_tipo: "saida",
+        p_tipo: effectiveTipo,
+        p_observacao: observacao,
         p_origem: "quick_consume",
         p_criado_por: userId,
       });
@@ -261,7 +282,15 @@ export const registerStockTools = (server: unknown) => {
         const detail = error.message ? `: ${error.message}` : "";
         throw new Error(`Falha ao consumir estoque${detail}`);
       }
-      return { content: [{ type: "text", text: `Consumo registrado com sucesso.` }] };
+
+      const label =
+        rawTipo === "descarte" || rawTipo === "vencido"
+          ? "Descarte registrado com sucesso."
+          : rawTipo === "perda"
+            ? "Perda registrada com sucesso."
+            : "Consumo registrado com sucesso.";
+
+      return { content: [{ type: "text", text: label }] };
     },
   );
 
@@ -481,7 +510,7 @@ export const registerStockTools = (server: unknown) => {
     {
       title: "Add Stock Item",
       description:
-        "Cria um novo item no estoque com nome, categoria, quantidade, quantidade mínima, unidade, validade, nao_aplica e auto_adicionar_lista",
+        "Cria um item no estoque (ex: carga de estoque inicial pré-existente) e registra movimentação auditada",
       inputSchema: z.object({
         group_id: z
           .string()
@@ -499,6 +528,12 @@ export const registerStockTools = (server: unknown) => {
           .string()
           .default("Un")
           .describe("Unidade de medida (Un, Kg, g, L, mL, cx, pct)"),
+        origem: z
+          .enum(["estoque_inicial", "cadastro_manual"])
+          .default("estoque_inicial")
+          .describe(
+            "Origem do item: 'estoque_inicial' (itens já existentes na despensa antes do uso do app) ou 'cadastro_manual'",
+          ),
         data_validade: z
           .string()
           .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD")
@@ -516,7 +551,7 @@ export const registerStockTools = (server: unknown) => {
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extractWriteContext(extra);
-      const { supabase } = context;
+      const { supabase, userId } = context;
 
       const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
       if (resolved.error || !resolved.groupId) {
@@ -554,6 +589,7 @@ export const registerStockTools = (server: unknown) => {
       const categoria =
         String((args as { categoria?: string }).categoria ?? "Outros").trim() || "Outros";
       const unidade = toUnit((args as { unidade?: string }).unidade ?? "Un");
+      const origemCadastro = (args as { origem?: string }).origem ?? "estoque_inicial";
       const autoAdicionarLista = Boolean(
         (args as { auto_adicionar_lista?: boolean }).auto_adicionar_lista,
       );
@@ -592,6 +628,22 @@ export const registerStockTools = (server: unknown) => {
         );
       }
 
+      if (quantidade > 0 && createdItem && (createdItem as { id?: string }).id) {
+        await supabase.from("stock_movements").insert({
+          item_id: (createdItem as { id: string }).id,
+          stock_item_id: (createdItem as { id: string }).id,
+          tipo: origemCadastro === "estoque_inicial" ? "estoque_inicial" : "entrada",
+          quantidade,
+          unidade,
+          observacao:
+            origemCadastro === "estoque_inicial"
+              ? "Carga de estoque inicial pré-existente"
+              : "Cadastro manual de item",
+          origem: origemCadastro === "estoque_inicial" ? "initial_stock" : "manual_entry",
+          criado_por: userId,
+        });
+      }
+
       const itemSummary = createdItem ?? { ...insertPayload };
       return {
         content: [
@@ -609,18 +661,22 @@ export const registerStockTools = (server: unknown) => {
     {
       title: "Set Stock Quantity",
       description:
-        "Ajusta diretamente a quantidade de um item do estoque (balanço de inventário) e registra auditoria em stock_movements com tipo = 'ajuste'",
+        "Realiza a correção auditada de quantidade de um item do estoque (inventário ou erro na nota fiscal) e registra auditoria em stock_movements com tipo = 'ajuste'",
       inputSchema: z.object({
         group_id: z
           .string()
           .optional()
           .describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
         item_id: z.string().uuid().describe("ID do item de estoque"),
-        quantidade: z.number().min(0).describe("Nova quantidade absoluta em estoque (>= 0)"),
+        quantidade: z.number().min(0).describe("Nova quantidade correta em estoque (>= 0)"),
+        motivo: z
+          .string()
+          .optional()
+          .describe("Motivo ou justificativa da correção (ex: 'Erro na nota fiscal', 'Contagem física divergente')"),
         observacao: z
           .string()
           .optional()
-          .describe("Motivo ou observação opcional do balanço de inventário"),
+          .describe("Observação adicional da correção auditada"),
       }),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
@@ -684,9 +740,11 @@ export const registerStockTools = (server: unknown) => {
         );
       }
 
-      const observacao =
+      const justificativa =
+        (args as { motivo?: string }).motivo?.trim() ||
         (args as { observacao?: string }).observacao?.trim() ||
-        `Balanço de inventário (${previousQuantity} -> ${novaQuantidade})`;
+        "Balanço de inventário";
+      const observacao = `[Correção Auditada] ${justificativa} (${previousQuantity} -> ${novaQuantidade})`;
 
       const { error: movementError } = await supabase.from("stock_movements").insert({
         item_id: itemId,
