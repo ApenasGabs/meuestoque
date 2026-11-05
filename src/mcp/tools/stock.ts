@@ -167,4 +167,111 @@ export const registerStockTools = (server: unknown) => {
       return { content: [{ type: "text", text: JSON.stringify(filtered, null, 2) }] };
     },
   );
+
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
+    "update_stock_item_validity",
+    {
+      title: "Update Stock Item Validity",
+      description:
+        "Atualiza a data de validade de um ou mais itens do estoque ou marca como 'Não se aplica' (não perecível)",
+      inputSchema: z.object({
+        group_id: z
+          .string()
+          .optional()
+          .describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+        item_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("ID de um único item do estoque a atualizar"),
+        item_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .optional()
+          .describe("Lista de IDs de itens do estoque para atualização em lote"),
+        data_validade: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD")
+          .optional()
+          .describe("Nova data de validade no formato YYYY-MM-DD (obrigatória quando nao_aplica for false)"),
+        nao_aplica: z
+          .boolean()
+          .default(false)
+          .describe("Se true, marca o(s) item(ns) como 'Não se aplica' (não perecível) e limpa a data de validade"),
+      }),
+    },
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extractWriteContext(extra);
+      const { supabase } = context;
+      const groups = (context as { groups?: { id: string }[] }).groups;
+      const groupId = (args as { group_id?: string }).group_id;
+
+      if (groupId && Array.isArray(groups) && !groups.some((g) => g.id === groupId)) {
+        throw new Error("Acesso negado ao grupo especificado.");
+      }
+
+      const rawItemIds = (args as { item_ids?: string[] }).item_ids;
+      const rawItemId = (args as { item_id?: string }).item_id;
+      const itemIds = Array.from(
+        new Set([
+          ...(Array.isArray(rawItemIds) ? rawItemIds : []),
+          ...(rawItemId ? [rawItemId] : []),
+        ]),
+      );
+
+      if (itemIds.length === 0) {
+        throw new Error("Informe ao menos um item ('item_id' ou 'item_ids') para atualizar a validade.");
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!itemIds.every((id) => uuidRegex.test(id))) {
+        throw new Error("Todos os IDs de itens informados devem ser UUIDs válidos.");
+      }
+
+      const naoAplica = Boolean((args as { nao_aplica?: boolean }).nao_aplica);
+      const dataValidade = (args as { data_validade?: string }).data_validade;
+
+      if (!naoAplica) {
+        if (!dataValidade) {
+          throw new Error(
+            "Informe 'data_validade' (YYYY-MM-DD) ou defina 'nao_aplica' como true para itens não perecíveis.",
+          );
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dataValidade)) {
+          throw new Error("Formato inválido para 'data_validade'. Use YYYY-MM-DD.");
+        }
+        const parsedDate = new Date(`${dataValidade}T00:00:00.000Z`);
+        if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== dataValidade) {
+          throw new Error("Data de validade inválida. Informe uma data real no formato YYYY-MM-DD.");
+        }
+      }
+
+      const { error } = await supabase.rpc("rpc_bulk_update_stock_validity", {
+        p_item_ids: itemIds,
+        p_data_validade: naoAplica ? null : dataValidade,
+        p_nao_aplica: naoAplica,
+      });
+
+      if (error) {
+        console.error("[MCP] rpc_bulk_update_stock_validity:", error.code, error.message);
+        const detail = error.message ? `: ${error.message}` : "";
+        throw new Error(`Falha ao atualizar validade do estoque${detail}`);
+      }
+
+      const count = itemIds.length;
+      const itemLabel = count === 1 ? "1 item atualizado" : `${count} itens atualizados`;
+      const statusDetail = naoAplica
+        ? "marcado(s) como 'Não se aplica' (não perecível)"
+        : `validade definida para ${dataValidade}`;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Validade atualizada com sucesso: ${itemLabel} (${statusDetail}).`,
+          },
+        ],
+      };
+    },
+  );
 };

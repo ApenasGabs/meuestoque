@@ -242,4 +242,151 @@ describe("MCP Tools (Stock)", () => {
       ),
     ).rejects.toThrow("Falha ao consumir estoque: item não encontrado");
   });
+
+  it("blocks update_stock_item_validity for read-only keys", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn();
+    const extra = {
+      authInfo: {
+        userId: "u-readonly",
+        groups: [{ id: "g1" }],
+        scopes: ["read"],
+        supabase: { rpc: rpcMock },
+      },
+    };
+
+    await expect(
+      tools["update_stock_item_validity"](
+        { item_id: "99240b13-7904-4f19-9784-60db8893834c", data_validade: "2026-12-31" },
+        extra,
+      ),
+    ).rejects.toThrow("somente leitura");
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("executes update_stock_item_validity setting expiration date for multiple items", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: { rpc: rpcMock },
+      },
+    };
+
+    const itemIds = [
+      "99240b13-7904-4f19-9784-60db8893834c",
+      "11240b13-7904-4f19-9784-60db8893834d",
+    ];
+    const result = await tools["update_stock_item_validity"](
+      { item_ids: itemIds, data_validade: "2027-03-15", nao_aplica: false },
+      extra,
+    );
+
+    expect(result.content[0].text).toContain("2 itens atualizados");
+    expect(result.content[0].text).toContain("2027-03-15");
+    expect(rpcMock).toHaveBeenCalledWith("rpc_bulk_update_stock_validity", {
+      p_item_ids: itemIds,
+      p_data_validade: "2027-03-15",
+      p_nao_aplica: false,
+    });
+  });
+
+  it("executes update_stock_item_validity with nao_aplica: true clearing expiration date", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: { rpc: rpcMock },
+      },
+    };
+
+    const itemId = "99240b13-7904-4f19-9784-60db8893834c";
+    const result = await tools["update_stock_item_validity"](
+      { item_id: itemId, nao_aplica: true, data_validade: "2027-01-01" },
+      extra,
+    );
+
+    expect(result.content[0].text).toContain("1 item atualizado");
+    expect(result.content[0].text).toContain("Não se aplica");
+    expect(rpcMock).toHaveBeenCalledWith("rpc_bulk_update_stock_validity", {
+      p_item_ids: [itemId],
+      p_data_validade: null,
+      p_nao_aplica: true,
+    });
+  });
+
+  it("validates missing item_ids/data_validade and propagates RPC errors in update_stock_item_validity", async () => {
+    const tools: Record<string, (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>> = {};
+    const mockServer = {
+      registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+        tools[name] = handler as (args: Record<string, unknown>, extra: unknown) => Promise<{ content: { type: string; text: string }[] }>;
+      }),
+    };
+    registerStockTools(mockServer as unknown);
+
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "P0001", message: "Sem permissão para item de estoque" },
+    });
+    const extra = {
+      authInfo: {
+        userId: "u-test-123",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: { rpc: rpcMock },
+      },
+    };
+
+    await expect(
+      tools["update_stock_item_validity"]({ data_validade: "2027-01-01" }, extra),
+    ).rejects.toThrow("Informe ao menos um item");
+
+    await expect(
+      tools["update_stock_item_validity"](
+        { item_id: "99240b13-7904-4f19-9784-60db8893834c", nao_aplica: false },
+        extra,
+      ),
+    ).rejects.toThrow("Informe 'data_validade'");
+
+    await expect(
+      tools["update_stock_item_validity"](
+        { item_id: "99240b13-7904-4f19-9784-60db8893834c", data_validade: "2026-02-31" },
+        extra,
+      ),
+    ).rejects.toThrow("Data de validade inválida");
+
+    await expect(
+      tools["update_stock_item_validity"](
+        { item_id: "99240b13-7904-4f19-9784-60db8893834c", data_validade: "2027-01-01" },
+        extra,
+      ),
+    ).rejects.toThrow("Falha ao atualizar validade do estoque: Sem permissão para item de estoque");
+  });
 });
