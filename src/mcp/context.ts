@@ -1,4 +1,6 @@
-import type { AuthenticatedContext } from "./auth";
+import { resolveGroupId, type AuthenticatedContext } from "./auth";
+
+export { resolveGroupId };
 
 /**
  * Recupera o contexto autenticado injetado pelo handler MCP em `extra`.

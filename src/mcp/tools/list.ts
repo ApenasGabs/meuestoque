@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AuthenticatedContext } from "../auth";
+import { resolveGroupId, type AuthenticatedContext } from "../auth";
 import { extractContext, extractWriteContext } from "../context";
 
 
@@ -10,20 +10,16 @@ export const registerListTools = (server: unknown) => {
     {
       title: "Get Shopping List",
       description: "Retorna todos os itens da lista de compras ativa do grupo",
-      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),}),
     },
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extractContext(extra);
       const { supabase } = context;
-      const groups = (context as { groups: { id: string }[] }).groups;
-      let groupId = (args as { group_id?: string }).group_id;
-      if (!groupId) {
-        if (groups.length === 1) groupId = groups[0].id;
-        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
-        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
-      } else if (!groups.find(g => g.id === groupId)) {
-        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
+      if (resolved.error || !resolved.groupId) {
+        return { content: [{ type: "text", text: resolved.error ?? "Acesso negado ao grupo especificado." }] };
       }
+      const groupId = resolved.groupId;
 
       const { data: activeList } = await supabase
         .from("shopping_lists")
@@ -64,15 +60,11 @@ export const registerListTools = (server: unknown) => {
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extractWriteContext(extra);
       const { supabase, userId } = context;
-      const groups = (context as { groups: { id: string }[] }).groups;
-      let groupId = (args as { group_id?: string }).group_id;
-      if (!groupId) {
-        if (groups.length === 1) groupId = groups[0].id;
-        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
-        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
-      } else if (!groups.find(g => g.id === groupId)) {
-        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
+      if (resolved.error || !resolved.groupId) {
+        return { content: [{ type: "text", text: resolved.error ?? "Acesso negado ao grupo especificado." }] };
       }
+      const groupId = resolved.groupId;
 
       const { data: activeList } = await supabase
         .from("shopping_lists")
