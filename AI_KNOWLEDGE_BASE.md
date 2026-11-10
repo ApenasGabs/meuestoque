@@ -63,31 +63,37 @@ graph TD
 | Arquivo | Mudança / Propósito |
 |---|---|
 | `src/mcp/tools/insights.ts` | Adicionada tool `get_purchase_history` permitindo consultar compras e entradas de lotes com custos, datas, quantidades e unidades, com filtros por produto e dias |
-| `src/mcp/tools/stock.ts` | 1) `get_stock_items`: exposição de `data_compra` e `data_validade`, novos filtros `em_estoque` e `sem_validade`, e exclusão de itens com quantidade <= 0 nos filtros de validade; 2) `get_expiring_items`: ignorar itens esgotados (quantidade <= 0); 3) `update_stock_item_validity`: suporte a `prazo_dias`, `base_calculo` (com fallback para hoje) e Catalog Learning (`product_catalog.validade_padrao_dias`); 4) `consume_stock_item`: suporte a `consumir_tudo: true`, consumo em lote (`item_ids`/`itens`) e limpeza automática de validade de itens zerados; 5) `find_duplicate_stock_items`: penalização de similaridade para especificações de embalagem divergentes (`extractPackageSpec`) e flag `possui_item_zerado` no cluster |
-| `src/mcp/__tests__/mcp.test.ts` | Suíte de testes unitários expandida para 41 testes cobrindo todas as novas ferramentas, filtros e comportamentos de negócio |
+| `src/mcp/tools/stock.ts` | 1) `get_stock_items`: exposição de `data_compra` e `data_validade`, novos filtros `em_estoque` e `sem_validade`, e exclusão de itens com quantidade <= 0 nos filtros de validade; 2) `get_expiring_items`: ignorar itens esgotados (quantidade <= 0); 3) `update_stock_item_validity`: suporte a `prazo_dias`, `base_calculo` (com fallback para hoje) e Catalog Learning com checagem de erros (`product_catalog.validade_padrao_dias`); 4) `consume_stock_item`: suporte a `consumir_tudo: true`, consumo em lote (`item_ids`/`itens`), prevenção de baixa total acidental ao omitir quantidade, consolidação de IDs duplicados e limpeza auditada de validade de itens zerados; 5) `find_duplicate_stock_items`: penalização de similaridade para especificações de embalagem divergentes (`extractPackageSpec`) e flag `possui_item_zerado` no cluster; 6) JSDoc completo com parâmetros e retornos em todos os helpers exportados |
+| `src/mcp/auth.ts` | Detecção e tratamento de ambiguidade em `resolveGroupId` quando múltiplos grupos possuem o mesmo nome normalizado, retornando erro claro com lista de UUIDs conflitantes |
+| `src/mcp/__tests__/mcp.test.ts` | Suíte de testes unitários expandida para 45 testes cobrindo todas as novas ferramentas, filtros, casos de ambiguidade de grupos e tratamento de erro de auditoria |
 | `AI_KNOWLEDGE_BASE.md` | Registro arquitetural e de regras de negócio desta entrega |
 
 #### Lógica de Decisão
 ```text
 REGRA 1: Validade é relevante apenas para itens fisicamente presentes no estoque. Itens com quantidade <= 0 não devem poluir triagens de vencimento (get_expiring_items, filtro vencendo e vencido).
-REGRA 2: Quando um item tem seu saldo completamente esgotado (quantidade restante = 0 ou consumir_tudo = true), seus alertas de validade residuais em stock_items são limpos imediatamente.
-REGRA 3: O cálculo de validade relativa aceita prazo_dias a partir da data de compra (ou lote mais recente), fazendo fallback explícito para hoje quando a compra não estiver registrada, e persiste validade_padrao_dias em product_catalog quando o item estiver associado a um produto.
+REGRA 2: Quando um item tem seu saldo completamente esgotado (quantidade restante = 0 ou consumir_tudo = true), seus alertas de validade residuais em stock_items são limpos imediatamente, propagando erros caso o banco falhe.
+REGRA 3: O cálculo de validade relativa aceita prazo_dias a partir da data de compra (ou lote mais recente), fazendo fallback explícito para hoje quando a compra não estiver registrada, e persiste validade_padrao_dias em product_catalog quando o item estiver associado a um produto (apenas incrementando contador quando não houver erro).
 REGRA 4: Nomes com especificações de medida/embalagem distintas (ex: 20 un vs 5 duzias, 397g vs 1kg) sofrem penalização severa de similaridade (< 0.75) para evitar falso-positivo em duplicatas.
 REGRA 5: Clusters de duplicatas sinalizam possui_item_zerado = true quando contêm tanto item ativo (quantidade > 0) quanto item zerado (quantidade = 0), orientando a sugestão de merge_stock_items.
+REGRA 6: Baixa em lote via item_ids sem quantidade informada não assume consumir_tudo implicitamente, exigindo consumir_tudo: true explícito para evitar zerar saldos acidentalmente.
+REGRA 7: Nomes de grupos duplicados não selecionam arbitrariamente o primeiro encontrado; retornam erro de ambiguidade solicitando o UUID exato.
 ```
 
 #### Comportamento
 - Assistentes de IA conseguem auditar quando e por quanto cada produto foi comprado no estoque via `get_purchase_history`.
 - A triagem de itens sem validade (`filtro: "sem_validade"`) e itens presentes (`filtro: "em_estoque"`) traz apenas itens com saldo positivo, sem ruído de produtos zerados.
 - Usuários e agentes podem definir validades relativas naturalmente (ex: "vence em 14 dias a partir da compra") e o sistema memoriza esse prazo no catálogo para compras futuras.
-- Itens fracionados (ex: pão 0,382 kg) ou múltiplos produtos podem ser baixados de uma só vez com `consumir_tudo: true` ou em lote, sem manter alertas de validade pendurados quando o item acaba.
+- Itens fracionados (ex: pão 0,382 kg) ou múltiplos produtos podem ser baixados de uma só vez com `consumir_tudo: true` ou em lote, sem manter alertas de validade pendurados quando o item acaba e sem risco de zerar estoque sem intenção.
 - O detector de duplicatas não agrupa embalagens muito diferentes e identifica pares de item ativo + item zerado para mesclagem limpa.
+- Resolução de grupo previne seleção ambígua caso existam grupos homônimos.
 
 #### Checklist de Aceite
 - [x] Lint passando (0 erros ESLint)
 - [x] Typecheck passando (0 erros TypeScript)
-- [x] Testes unitários passando (31 suites, 287 testes verdes, sendo 41 testes MCP)
+- [x] Testes unitários passando (31 suites, 291 testes verdes, sendo 45 testes MCP)
 - [x] Build de produção concluído com sucesso
+- [x] Code Review do agent-standards: 30/30 aderência, 0 divergências (APPROVED)
+- [x] Todos os apontamentos do Surmado Code Review resolvidos com testes correspondentes
 
 ### ✨ (05/11/2026) Feat: Expansão de Ferramentas MCP de Estoque e Modelo de Livro-Razão (Issue #64 / PR #65)
 

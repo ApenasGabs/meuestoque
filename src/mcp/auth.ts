@@ -59,19 +59,32 @@ export const resolveGroupId = (
 
   const lower = trimmed.toLowerCase();
   const normalized = normalizeGroupComparison(trimmed);
-  const matched = list.find(
-    (g) =>
-      g.id.toLowerCase() === lower ||
-      (g.nome && g.nome.trim().toLowerCase() === lower) ||
-      (g.nome && normalizeGroupComparison(g.nome) === normalized),
-  );
 
-  if (!matched) {
-    const suffix = list.length > 0 ? ` Grupos disponíveis: ${formatGroupSummary(list)}` : "";
-    return { error: `Acesso negado ao grupo especificado.${suffix}` };
+  // 1. Tentar correspondência exata por ID / UUID
+  const idMatch = list.find((g) => g.id.toLowerCase() === lower);
+  if (idMatch) {
+    return { groupId: idMatch.id };
   }
 
-  return { groupId: matched.id };
+  // 2. Correspondência por nome (case-insensitive ou normalizado)
+  const nameMatches = list.filter(
+    (g) =>
+      g.nome &&
+      (g.nome.trim().toLowerCase() === lower || normalizeGroupComparison(g.nome) === normalized),
+  );
+
+  if (nameMatches.length > 1) {
+    return {
+      error: `Nome de grupo ambíguo ('${trimmed}'). Múltiplos grupos correspondem ao mesmo nome: ${formatGroupSummary(nameMatches)}. Especifique o 'group_id' usando o UUID do grupo desejado.`,
+    };
+  }
+
+  if (nameMatches.length === 1) {
+    return { groupId: nameMatches[0].id };
+  }
+
+  const suffix = list.length > 0 ? ` Grupos disponíveis: ${formatGroupSummary(list)}` : "";
+  return { error: `Acesso negado ao grupo especificado.${suffix}` };
 };
 
 /** Erro de autenticacao cuja mensagem e segura para o cliente. */

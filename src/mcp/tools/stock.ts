@@ -49,6 +49,13 @@ const DUPLICATE_ABBREVIATIONS: Record<string, string> = {
   muss: "mussarela",
 };
 
+/**
+ * Normaliza o nome do item de estoque para comparação aproximada e deduplicação.
+ * Remove acentuação, caracteres especiais e normaliza espaçamentos.
+ *
+ * @param name - Nome original do item de estoque
+ * @returns Nome normalizado em minúsculas sem pontuação
+ */
 export const normalizeStockNameForComparison = (name: string): string =>
   name
     .normalize("NFD")
@@ -78,6 +85,13 @@ const singularizeToken = (token: string): string => {
   return token;
 };
 
+/**
+ * Segmenta o nome de um item em tokens léxicos normalizados, expandindo abreviações
+ * conhecidas (ex: 'desn' -> 'desnatado') e removendo stop-words/unidades comuns.
+ *
+ * @param name - Nome do item de estoque
+ * @returns Lista de tokens normalizados no singular
+ */
 export const tokenizeStockName = (name: string): string[] => {
   const normalized = normalizeStockNameForComparison(name);
   if (!normalized) return [];
@@ -91,6 +105,13 @@ export const tokenizeStockName = (name: string): string[] => {
   return tokens;
 };
 
+/**
+ * Extrai a especificação de embalagem ou grandeza física de um nome de item de estoque
+ * (massa, volume ou contagem/unidades), convertendo para unidades-base para comparação.
+ *
+ * @param name - Nome do item de estoque (ex: "Leite 1L", "Café 500g", "Ovos 1 dz")
+ * @returns Especificação física detectada ou `null` se nenhuma grandeza for identificada
+ */
 export const extractPackageSpec = (
   name: string,
 ): { amount: number; dimension: "mass" | "volume" | "count"; baseUnits: number } | null => {
@@ -124,8 +145,13 @@ export const extractPackageSpec = (
 };
 
 /**
- * Calcula a similaridade entre dois nomes de itens de estoque.
- * Penaliza a similaridade quando ambos os nomes especificarem grandezas numéricas ou unidades incompatíveis (ex: 20 unidades vs 5 duzias, 397g vs 1kg).
+ * Calcula a similaridade entre dois nomes de itens de estoque (0 a 1).
+ * Compara tokens normalizados e penaliza grandezas físicas ou embalagens incompatíveis
+ * (ex: 20 unidades vs 5 dúzias, 397g vs 1kg).
+ *
+ * @param nameA - Primeiro nome de item para comparação
+ * @param nameB - Segundo nome de item para comparação
+ * @returns Coeficiente de similaridade entre 0 e 1
  */
 export const computeStockNameSimilarity = (nameA: string, nameB: string): number => {
   const normA = normalizeStockNameForComparison(nameA);
@@ -372,7 +398,7 @@ export const registerStockTools = (server: unknown) => {
         targets = rawItemIds.map((id) => ({
           item_id: id,
           quantidade: globalQuantidade,
-          consumir_tudo: globalConsumirTudo || !globalQuantidade,
+          consumir_tudo: globalConsumirTudo,
         }));
       } else if (rawItemId) {
         targets = [
@@ -389,6 +415,25 @@ export const registerStockTools = (server: unknown) => {
           "Informe ao menos um item ('item_id', 'item_ids' ou 'itens') para dar baixa no estoque.",
         );
       }
+
+      // Consolidar e deduplicar targets por item_id
+      const consolidatedMap = new Map<string, TargetConsumeItem>();
+      for (const t of targets) {
+        const existing = consolidatedMap.get(t.item_id);
+        if (!existing) {
+          consolidatedMap.set(t.item_id, { ...t });
+        } else {
+          existing.consumir_tudo = existing.consumir_tudo || t.consumir_tudo;
+          if (!existing.consumir_tudo) {
+            const currentQty = existing.quantidade ?? 0;
+            const addedQty = t.quantidade ?? 0;
+            existing.quantidade = currentQty + addedQty > 0 ? currentQty + addedQty : undefined;
+          } else {
+            existing.quantidade = undefined;
+          }
+        }
+      }
+      targets = Array.from(consolidatedMap.values());
 
       for (const t of targets) {
         if (!UUID_REGEX.test(t.item_id)) {
@@ -473,13 +518,20 @@ export const registerStockTools = (server: unknown) => {
         const remaining = target.consumir_tudo ? 0 : Math.max(0, currentQty - qtyToConsume);
         if ((remaining <= 0 || target.consumir_tudo) && typeof supabase.from === "function") {
           // Limpa alerta de validade do item que zerou
-          await supabase
+          const { error: updateError } = await supabase
             .from("stock_items")
             .update({
               data_validade: null,
               data_validade_alerta: null,
             })
             .eq("id", target.item_id);
+
+          if (updateError) {
+            console.error("[MCP] Falha ao limpar alerta de validade de item zerado:", updateError);
+            throw new Error(
+              `Falha ao limpar alertas de validade do item zerado: ${updateError.message || updateError.code || "erro no banco de dados"}`,
+            );
+          }
         }
 
         itemSummaries.push(
@@ -776,25 +828,33 @@ export const registerStockTools = (server: unknown) => {
 
           // Catalog Learning: atualizar product_catalog.validade_padrao_dias
           if (it.product_id) {
-            await supabase
+            const { error: catErr } = await supabase
               .from("product_catalog")
               .update({ validade_padrao_dias: prazoDias, perecivel: true })
               .eq("id", it.product_id);
-            catalogLearningCount += 1;
+            if (!catErr) {
+              catalogLearningCount += 1;
+            } else {
+              console.error("[MCP] Falha ao atualizar catálogo do produto:", catErr);
+            }
           } else if (it.group_id && it.nome) {
-            const { data: catMatch } = await supabase
+            const { data: catMatch, error: matchErr } = await supabase
               .from("product_catalog")
               .select("id")
               .eq("group_id", it.group_id)
               .ilike("nome", it.nome)
               .maybeSingle();
 
-            if (catMatch && (catMatch as { id?: string }).id) {
-              await supabase
+            if (!matchErr && catMatch && (catMatch as { id?: string }).id) {
+              const { error: catErr } = await supabase
                 .from("product_catalog")
                 .update({ validade_padrao_dias: prazoDias, perecivel: true })
                 .eq("id", (catMatch as { id: string }).id);
-              catalogLearningCount += 1;
+              if (!catErr) {
+                catalogLearningCount += 1;
+              } else {
+                console.error("[MCP] Falha ao atualizar catálogo do produto por nome:", catErr);
+              }
             }
           }
         }
@@ -966,7 +1026,7 @@ export const registerStockTools = (server: unknown) => {
       }
 
       if (quantidade > 0 && createdItem && (createdItem as { id?: string }).id) {
-        await supabase.from("stock_movements").insert({
+        const { error: movementError } = await supabase.from("stock_movements").insert({
           item_id: (createdItem as { id: string }).id,
           stock_item_id: (createdItem as { id: string }).id,
           tipo: origemCadastro === "estoque_inicial" ? "estoque_inicial" : "entrada",
@@ -979,6 +1039,13 @@ export const registerStockTools = (server: unknown) => {
           origem: origemCadastro === "estoque_inicial" ? "initial_stock" : "manual_entry",
           criado_por: userId,
         });
+
+        if (movementError) {
+          console.error("[MCP] Falha ao registrar movimentação de estoque inicial:", movementError);
+          throw new Error(
+            `Falha ao registrar movimentação no histórico de estoque: ${movementError.message || movementError.code || "erro no banco de dados"}`,
+          );
+        }
       }
 
       const itemSummary = createdItem ?? { ...insertPayload };

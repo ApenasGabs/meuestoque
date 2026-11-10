@@ -131,6 +131,17 @@ describe("MCP Auth & Friendly Group Resolution", () => {
       "22222222-2222-4222-8222-222222222222",
     );
 
+    // Múltiplos grupos com o mesmo nome (ambiguidade de nome normalizado)
+    const duplicateNamedGroups = [
+      { id: "11111111-1111-4111-8111-111111111111", nome: "Despensa" },
+      { id: "33333333-3333-4333-8333-333333333333", nome: "despensa" },
+    ];
+    const nameAmbiguous = resolveGroupId(duplicateNamedGroups, "despensa");
+    expect(nameAmbiguous.groupId).toBeUndefined();
+    expect(nameAmbiguous.error).toContain("Nome de grupo ambíguo ('despensa')");
+    expect(nameAmbiguous.error).toContain("11111111-1111-4111-8111-111111111111");
+    expect(nameAmbiguous.error).toContain("33333333-3333-4333-8333-333333333333");
+
     // Grupo inexistente
     const denied = resolveGroupId(groups, "Escritório");
     expect(denied.error).toContain("Acesso negado ao grupo especificado.");
@@ -1529,5 +1540,168 @@ describe("MCP Issue #68 Improvements", () => {
     expect(parsed.total_grupos_duplicados).toBe(1);
     expect(parsed.duplicados[0].possui_item_zerado).toBe(true);
     expect(parsed.duplicados[0].sugestao_item_principal_id).toBe("item-active");
+  });
+
+  it("consume_stock_item rejects item_ids without explicit quantidade or consumir_tudo: true", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "99240b13-7904-4f19-9784-60db8893834c";
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: {
+          rpc: vi.fn(),
+          from: vi.fn(),
+        },
+      },
+    };
+
+    await expect(
+      tools["consume_stock_item"](
+        {
+          item_ids: [itemId],
+        },
+        extra,
+      ),
+    ).rejects.toThrow("Informe uma quantidade positiva ou utilize 'consumir_tudo: true' para dar baixa.");
+  });
+
+  it("consume_stock_item consolidates duplicate item IDs summing positive quantities", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "99240b13-7904-4f19-9784-60db8893834c";
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: itemId, group_id: "g1", nome: "Iogurte", quantidade: 10, unidade: "un" }],
+            error: null,
+          }),
+        })),
+        update: vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["consume_stock_item"](
+      {
+        itens: [
+          { item_id: itemId, quantidade: 2 },
+          { item_id: itemId, quantidade: 3 },
+        ],
+      },
+      extra,
+    );
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(rpcMock).toHaveBeenCalledWith(
+      "consume_stock_fifo",
+      expect.objectContaining({ p_stock_item_id: itemId, p_quantidade: 5 }),
+    );
+    expect(result.content[0].text).toContain("5 un baixado(s)");
+  });
+
+  it("consume_stock_item throws error when clearing validity alert on zeroed item fails", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "99240b13-7904-4f19-9784-60db8893834c";
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: itemId, group_id: "g1", nome: "Queijo", quantidade: 1, unidade: "un" }],
+            error: null,
+          }),
+        })),
+        update: vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: "P0001", message: "falha ao atualizar item" },
+          }),
+        })),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    await expect(
+      tools["consume_stock_item"](
+        {
+          item_id: itemId,
+          consumir_tudo: true,
+        },
+        extra,
+      ),
+    ).rejects.toThrow("Falha ao limpar alertas de validade do item zerado: falha ao atualizar item");
+  });
+
+  it("add_stock_item throws error when stock_movements insert fails", async () => {
+    const { tools } = setupStockTools();
+    const fakeSupabase = {
+      from: vi.fn((table: string) => {
+        if (table === "stock_items") {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: "new-item-123", group_id: "g1", nome: "Arroz" },
+                  error: null,
+                }),
+              })),
+            })),
+          };
+        }
+        if (table === "stock_movements") {
+          return {
+            insert: vi.fn().mockResolvedValue({
+              error: { code: "P0002", message: "falha ao auditar movimentacao" },
+            }),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    await expect(
+      tools["add_stock_item"](
+        {
+          nome: "Arroz",
+          quantidade: 2,
+        },
+        extra,
+      ),
+    ).rejects.toThrow("Falha ao registrar movimentação no histórico de estoque: falha ao auditar movimentacao");
   });
 });
