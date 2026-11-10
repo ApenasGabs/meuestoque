@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { authenticateRequest, McpAuthError, resolveGroupId } from "../auth";
 import { extractWriteContext } from "../context";
-import { registerStockTools } from "../tools/stock";
+import { registerStockTools, computeStockNameSimilarity } from "../tools/stock";
+import { registerInsightTools } from "../tools/insights";
 
 const VALID_KEY = `mest_pat_${"a".repeat(43)}`;
 
@@ -253,10 +254,12 @@ describe("MCP Tools (Stock)", () => {
       error: null,
     });
     const eqMock = vi.fn().mockReturnThis();
+    const gtMock = vi.fn().mockReturnThis();
 
     const fakeSupabase = {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
+        gt: gtMock,
         eq: eqMock,
         lt: ltMock,
       })),
@@ -272,6 +275,7 @@ describe("MCP Tools (Stock)", () => {
     };
 
     const result = await tools["get_stock_items"]({ filtro: "vencido" }, extra);
+    expect(gtMock).toHaveBeenCalledWith("quantidade", 0);
     expect(eqMock).toHaveBeenCalledWith("group_id", "g1");
     expect(eqMock).toHaveBeenCalledWith("validade_nao_aplica", false);
     expect(ltMock).toHaveBeenCalledWith(
@@ -288,11 +292,13 @@ describe("MCP Tools (Stock)", () => {
       error: null,
     });
     const ltMock = vi.fn(() => ({ order: orderMock }));
+    const gtMock = vi.fn().mockReturnThis();
 
     const fakeSupabase = {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        gt: gtMock,
         lt: ltMock,
       })),
     };
@@ -307,6 +313,7 @@ describe("MCP Tools (Stock)", () => {
     };
 
     const result = await tools["get_expiring_items"]({ apenas_vencidos: true }, extra);
+    expect(gtMock).toHaveBeenCalledWith("quantidade", 0);
     expect(ltMock).toHaveBeenCalledWith(
       "data_validade_alerta",
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
@@ -345,7 +352,27 @@ describe("MCP Tools (Stock)", () => {
     const { tools } = setupStockTools();
 
     const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
-    const fakeSupabase = { rpc: rpcMock };
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: "99240b13-7904-4f19-9784-60db8893834c",
+              group_id: "g1",
+              nome: "Item Teste",
+              quantidade: 5,
+              unidade: "Un",
+            },
+          ],
+          error: null,
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      })),
+    };
 
     const extra = {
       authInfo: {
@@ -376,7 +403,27 @@ describe("MCP Tools (Stock)", () => {
   it("executes consume_stock_item with tipo 'descarte' and motivo for expired food without inflating consumption", async () => {
     const { tools } = setupStockTools();
     const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
-    const fakeSupabase = { rpc: rpcMock };
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: "99240b13-7904-4f19-9784-60db8893834c",
+              group_id: "g1",
+              nome: "Item Teste",
+              quantidade: 5,
+              unidade: "Un",
+            },
+          ],
+          error: null,
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      })),
+    };
 
     const extra = {
       authInfo: {
@@ -416,7 +463,27 @@ describe("MCP Tools (Stock)", () => {
       data: null,
       error: { code: "P0001", message: "item não encontrado" },
     });
-    const fakeSupabase = { rpc: rpcMock };
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: "99240b13-7904-4f19-9784-60db8893834c",
+              group_id: "g1",
+              nome: "Item Teste",
+              quantidade: 5,
+              unidade: "Un",
+            },
+          ],
+          error: null,
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      })),
+    };
 
     const extra = {
       authInfo: {
@@ -960,5 +1027,507 @@ describe("MCP Tools (Stock)", () => {
     );
     expect(result.content[0].text).toContain("Mesclagem concluída com sucesso");
     expect(result.content[0].text).toContain("8 Kg");
+  });
+});
+
+const setupInsightTools = () => {
+  const tools: Record<
+    string,
+    (
+      args: Record<string, unknown>,
+      extra: unknown,
+    ) => Promise<{ content: { type: string; text: string }[] }>
+  > = {};
+  const mockServer = {
+    registerTool: vi.fn((name: string, _config: unknown, handler: unknown) => {
+      tools[name] = handler as (
+        args: Record<string, unknown>,
+        extra: unknown,
+      ) => Promise<{ content: { type: string; text: string }[] }>;
+    }),
+  };
+  registerInsightTools(mockServer as unknown);
+  return { tools, mockServer };
+};
+
+describe("MCP Issue #68 Improvements", () => {
+  it("get_stock_items returns data_compra and data_validade and supports filtro 'em_estoque'", async () => {
+    const { tools } = setupStockTools();
+    const gtMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "item-1",
+          nome: "Café",
+          categoria: "Bebidas",
+          quantidade: 2,
+          quantidade_minima: 1,
+          unidade: "pct",
+          data_compra: "2026-11-01",
+          data_validade: "2027-05-01",
+          data_validade_alerta: "2027-05-01",
+          auto_adicionar_lista: false,
+          validade_nao_aplica: false,
+        },
+      ],
+      error: null,
+    });
+    const eqMock = vi.fn(() => ({ gt: gtMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    const fakeSupabase = {
+      from: vi.fn(() => ({ select: selectMock })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["get_stock_items"]({ filtro: "em_estoque" }, extra);
+    expect(selectMock).toHaveBeenCalledWith(
+      expect.stringContaining("data_compra, data_validade, data_validade_alerta"),
+    );
+    expect(eqMock).toHaveBeenCalledWith("group_id", "g1");
+    expect(gtMock).toHaveBeenCalledWith("quantidade", 0);
+    expect(result.content[0].text).toContain("Café");
+    expect(result.content[0].text).toContain("2026-11-01");
+  });
+
+  it("get_stock_items supports filtro 'sem_validade' ignoring items without stock", async () => {
+    const { tools } = setupStockTools();
+    const isMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "item-no-val",
+          nome: "Biscoito",
+          quantidade: 3,
+          data_validade_alerta: null,
+          validade_nao_aplica: false,
+        },
+      ],
+      error: null,
+    });
+    const eqValidadeMock = vi.fn(() => ({ is: isMock }));
+    const gtMock = vi.fn(() => ({ eq: eqValidadeMock }));
+    const eqGroupMock = vi.fn(() => ({ gt: gtMock }));
+    const fakeSupabase = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({ eq: eqGroupMock })),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["get_stock_items"]({ filtro: "sem_validade" }, extra);
+    expect(eqGroupMock).toHaveBeenCalledWith("group_id", "g1");
+    expect(gtMock).toHaveBeenCalledWith("quantidade", 0);
+    expect(eqValidadeMock).toHaveBeenCalledWith("validade_nao_aplica", false);
+    expect(isMock).toHaveBeenCalledWith("data_validade_alerta", null);
+    expect(result.content[0].text).toContain("Biscoito");
+  });
+
+  it("get_purchase_history returns purchase lots and filters by product and days", async () => {
+    const { tools } = setupInsightTools();
+    const limitMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "lot-1",
+          data_compra: "2026-10-15",
+          quantidade_inicial: 10,
+          quantidade_restante: 6,
+          unidade: "Kg",
+          custo_unitario: 5.5,
+          custo_total: 55,
+          data_validade: "2027-01-01",
+          stock_items: { id: "item-arroz", nome: "Arroz Tio João", categoria: "Grãos", group_id: "g1" },
+        },
+      ],
+      error: null,
+    });
+    const orderMock = vi.fn(() => ({ limit: limitMock }));
+    const ilikeMock = vi.fn(() => ({ order: orderMock }));
+    const gteMock = vi.fn(() => ({ order: orderMock, ilike: ilikeMock }));
+    const eqMock = vi.fn(() => ({ gte: gteMock }));
+    const fakeSupabase = {
+      from: vi.fn((table: string) => {
+        expect(table).toBe("stock_lots");
+        return {
+          select: vi.fn(() => ({ eq: eqMock })),
+        };
+      }),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["get_purchase_history"](
+      { produto: "Arroz", dias: 60 },
+      extra,
+    );
+
+    expect(eqMock).toHaveBeenCalledWith("stock_items.group_id", "g1");
+    expect(gteMock).toHaveBeenCalledWith("data_compra", expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+    expect(ilikeMock).toHaveBeenCalledWith("stock_items.nome", "%Arroz%");
+    expect(orderMock).toHaveBeenCalledWith("data_compra", { ascending: false });
+
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toEqual({
+      nome: "Arroz Tio João",
+      data_compra: "2026-10-15",
+      quantidade_inicial: 10,
+      quantidade_restante: 6,
+      unidade: "Kg",
+      custo_unitario: 5.5,
+      custo_total: 55,
+      data_validade: "2027-01-01",
+    });
+  });
+
+  it("update_stock_item_validity calculates relative date from data_compra and persists Catalog Learning", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "a1111111-1111-4111-8111-111111111111";
+    const catalogId = "c1111111-1111-4111-8111-111111111111";
+
+    const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const catalogUpdateMock = vi.fn(() => ({
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }));
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn((table: string) => {
+        if (table === "stock_items") {
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: itemId,
+                    group_id: "g1",
+                    nome: "Pão de Forma",
+                    product_id: catalogId,
+                    data_compra: "2026-11-01",
+                  },
+                ],
+                error: null,
+              }),
+            })),
+          };
+        }
+        if (table === "product_catalog") {
+          return {
+            update: catalogUpdateMock,
+          };
+        }
+        return {};
+      }),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["update_stock_item_validity"](
+      {
+        item_id: itemId,
+        prazo_dias: 14,
+        base_calculo: "data_compra",
+      },
+      extra,
+    );
+
+    // 2026-11-01 + 14 dias = 2026-11-15
+    expect(rpcMock).toHaveBeenCalledWith("rpc_bulk_update_stock_validity", {
+      p_item_ids: [itemId],
+      p_data_validade: "2026-11-15",
+      p_nao_aplica: false,
+    });
+    expect(catalogUpdateMock).toHaveBeenCalledWith({
+      validade_padrao_dias: 14,
+      perecivel: true,
+    });
+    expect(result.content[0].text).toContain("2026-11-15");
+    expect(result.content[0].text).toContain("catálogo aprendido: validade padrão de 14 dias");
+  });
+
+  it("update_stock_item_validity falls back to 'hoje' when data_compra is missing", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "b2222222-2222-4222-8222-222222222222";
+    const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn((table: string) => {
+        if (table === "stock_items") {
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: itemId,
+                    group_id: "g1",
+                    nome: "Fruta",
+                    product_id: null,
+                    data_compra: null,
+                  },
+                ],
+                error: null,
+              }),
+            })),
+          };
+        }
+        if (table === "stock_lots") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                not: vi.fn(() => ({
+                  order: vi.fn(() => ({
+                    limit: vi.fn(() => ({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                    })),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        if (table === "product_catalog") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                ilike: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                })),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["update_stock_item_validity"](
+      {
+        item_id: itemId,
+        prazo_dias: 7,
+        base_calculo: "data_compra",
+      },
+      extra,
+    );
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      "rpc_bulk_update_stock_validity",
+      expect.objectContaining({
+        p_item_ids: [itemId],
+        p_nao_aplica: false,
+      }),
+    );
+    expect(result.content[0].text).toContain("fallback para 'hoje'");
+  });
+
+  it("consume_stock_item supports consumir_tudo: true and clears residual expiration date when zeroed", async () => {
+    const { tools } = setupStockTools();
+    const itemId = "c3333333-3333-4333-8333-333333333333";
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const stockUpdateMock = vi.fn(() => ({
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }));
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn((table: string) => {
+        if (table === "stock_items") {
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: itemId,
+                    group_id: "g1",
+                    nome: "Pão Australiano",
+                    quantidade: 0.382,
+                    unidade: "Kg",
+                    data_validade: "2026-11-20",
+                    data_validade_alerta: "2026-11-20",
+                  },
+                ],
+                error: null,
+              }),
+            })),
+            update: stockUpdateMock,
+          };
+        }
+        return {};
+      }),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["consume_stock_item"](
+      {
+        item_id: itemId,
+        consumir_tudo: true,
+      },
+      extra,
+    );
+
+    expect(rpcMock).toHaveBeenCalledWith("consume_stock_fifo", {
+      p_stock_item_id: itemId,
+      p_quantidade: 0.382,
+      p_tipo: "saida",
+      p_observacao: "Consumo rápido",
+      p_origem: "quick_consume",
+      p_criado_por: "u1",
+    });
+
+    expect(stockUpdateMock).toHaveBeenCalledWith({
+      data_validade: null,
+      data_validade_alerta: null,
+    });
+
+    expect(result.content[0].text).toContain("Pão Australiano: 0.382 Kg baixado(s)");
+    expect(result.content[0].text).toContain("saldo zerado, alerta de validade limpo");
+  });
+
+  it("consume_stock_item supports batch consumption via item_ids and itens array", async () => {
+    const { tools } = setupStockTools();
+    const id1 = "d4444444-4444-4444-8444-444444444441";
+    const id2 = "d4444444-4444-4444-8444-444444444442";
+    const rpcMock = vi.fn().mockResolvedValue({ data: 1, error: null });
+
+    const fakeSupabase = {
+      rpc: rpcMock,
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          in: vi.fn().mockResolvedValue({
+            data: [
+              { id: id1, group_id: "g1", nome: "Maçã", quantidade: 5, unidade: "un" },
+              { id: id2, group_id: "g1", nome: "Banana", quantidade: 6, unidade: "un" },
+            ],
+            error: null,
+          }),
+        })),
+        update: vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read", "write"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["consume_stock_item"](
+      {
+        itens: [
+          { item_id: id1, quantidade: 2 },
+          { item_id: id2, consumir_tudo: true },
+        ],
+      },
+      extra,
+    );
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      "consume_stock_fifo",
+      expect.objectContaining({ p_stock_item_id: id1, p_quantidade: 2 }),
+    );
+    expect(rpcMock).toHaveBeenCalledWith(
+      "consume_stock_fifo",
+      expect.objectContaining({ p_stock_item_id: id2, p_quantidade: 6 }),
+    );
+    expect(result.content[0].text).toContain("2 itens em lote");
+  });
+
+  it("find_duplicate_stock_items penalizes divergent package specs and highlights possui_item_zerado", async () => {
+    // 1. Validar que embalagens divergentes não são agrupadas
+    const simOvos = computeStockNameSimilarity("Ovos 20 unidades", "Ovos 5 duzias");
+    expect(simOvos).toBeLessThan(0.75);
+
+    const simLeite = computeStockNameSimilarity("Leite Condensado 397g", "Leite Condensado 1kg");
+    expect(simLeite).toBeLessThan(0.75);
+
+    // 2. Validar sinalização de possui_item_zerado: true no cluster
+    const { tools } = setupStockTools();
+    const fakeSupabase = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-active",
+                nome: "Molho de Tomate Tradicional",
+                quantidade: 2,
+                unidade: "un",
+              },
+              {
+                id: "item-zero",
+                nome: "Molho de Tomate Tradicional",
+                quantidade: 0,
+                unidade: "un",
+              },
+            ],
+            error: null,
+          }),
+        })),
+      })),
+    };
+
+    const extra = {
+      authInfo: {
+        userId: "u1",
+        groups: [{ id: "g1", nome: "Casa" }],
+        scopes: ["read"],
+        supabase: fakeSupabase,
+      },
+    };
+
+    const result = await tools["find_duplicate_stock_items"]({}, extra);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.total_grupos_duplicados).toBe(1);
+    expect(parsed.duplicados[0].possui_item_zerado).toBe(true);
+    expect(parsed.duplicados[0].sugestao_item_principal_id).toBe("item-active");
   });
 });

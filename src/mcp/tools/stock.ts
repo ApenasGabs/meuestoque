@@ -91,11 +91,61 @@ export const tokenizeStockName = (name: string): string[] => {
   return tokens;
 };
 
+export const extractPackageSpec = (
+  name: string,
+): { amount: number; dimension: "mass" | "volume" | "count"; baseUnits: number } | null => {
+  const norm = normalizeStockNameForComparison(name);
+  const regex = /\b(\d+(?:[.,]\d+)?)\s*(kg|quilos?|g|gramas?|l|litros?|ml|un|unidades?|duzias?|dz)\b/i;
+  const match = norm.match(regex);
+  if (!match) return null;
+  const num = parseFloat(match[1].replace(",", "."));
+  if (Number.isNaN(num) || num <= 0) return null;
+  const unitStr = match[2].toLowerCase();
+
+  if (unitStr.startsWith("kg") || unitStr.startsWith("quilo")) {
+    return { amount: num, dimension: "mass", baseUnits: num * 1000 };
+  }
+  if (unitStr === "g" || unitStr.startsWith("grama")) {
+    return { amount: num, dimension: "mass", baseUnits: num };
+  }
+  if (unitStr === "l" || unitStr.startsWith("litro")) {
+    return { amount: num, dimension: "volume", baseUnits: num * 1000 };
+  }
+  if (unitStr === "ml") {
+    return { amount: num, dimension: "volume", baseUnits: num };
+  }
+  if (unitStr.startsWith("duzia") || unitStr === "dz") {
+    return { amount: num, dimension: "count", baseUnits: num * 12 };
+  }
+  if (unitStr.startsWith("un")) {
+    return { amount: num, dimension: "count", baseUnits: num };
+  }
+  return null;
+};
+
+/**
+ * Calcula a similaridade entre dois nomes de itens de estoque.
+ * Penaliza a similaridade quando ambos os nomes especificarem grandezas numéricas ou unidades incompatíveis (ex: 20 unidades vs 5 duzias, 397g vs 1kg).
+ */
 export const computeStockNameSimilarity = (nameA: string, nameB: string): number => {
   const normA = normalizeStockNameForComparison(nameA);
   const normB = normalizeStockNameForComparison(nameB);
   if (!normA || !normB) return 0;
   if (normA === normB) return 1;
+
+  // Penalizar a similaridade quando ambos os nomes especificarem grandezas numéricas ou unidades incompatíveis (ex: 20 unidades vs 5 duzias, 397g vs 1kg)
+  const specA = extractPackageSpec(nameA);
+  const specB = extractPackageSpec(nameB);
+  if (specA && specB) {
+    if (specA.dimension !== specB.dimension) {
+      return 0.2;
+    }
+    const ratio =
+      Math.min(specA.baseUnits, specB.baseUnits) / Math.max(specA.baseUnits, specB.baseUnits);
+    if (ratio < 0.85) {
+      return 0.2;
+    }
+  }
 
   const tokensA = tokenizeStockName(nameA);
   const tokensB = tokenizeStockName(nameB);
@@ -154,13 +204,15 @@ export const registerStockTools = (server: unknown) => {
     {
       title: "Get Stock Items",
       description:
-        "Lista itens do estoque baseados num filtro (todos, baixo, vencendo, vencido, zerado)",
+        "Lista itens do estoque baseados num filtro (todos, em_estoque, baixo, vencendo, vencido, sem_validade, zerado)",
       inputSchema: z.object({
         group_id: z
           .string()
           .optional()
           .describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
-        filtro: z.enum(["todos", "baixo", "vencendo", "vencido", "zerado"]).default("todos"),
+        filtro: z
+          .enum(["todos", "em_estoque", "baixo", "vencendo", "vencido", "sem_validade", "zerado"])
+          .default("todos"),
         dias_vencimento: z.number().int().default(7),
       }),
     },
@@ -181,23 +233,34 @@ export const registerStockTools = (server: unknown) => {
       let query = supabase
         .from("stock_items")
         .select(
-          "id, nome, categoria, quantidade, quantidade_minima, unidade, data_validade_alerta, auto_adicionar_lista, validade_nao_aplica",
+          "id, nome, categoria, quantidade, quantidade_minima, unidade, data_compra, data_validade, data_validade_alerta, auto_adicionar_lista, validade_nao_aplica",
         )
         .eq("group_id", groupId);
 
-      if (filtro === "baixo") {
+      if (filtro === "em_estoque") {
+        query = query.gt("quantidade", 0);
+      } else if (filtro === "baixo") {
         // O filtro "baixo" é refinado em memória abaixo pois PostgREST não compara duas colunas diretamente sem RPC.
       } else if (filtro === "zerado") {
         query = query.lte("quantidade", 0);
+      } else if (filtro === "sem_validade") {
+        query = query
+          .gt("quantidade", 0)
+          .eq("validade_nao_aplica", false)
+          .is("data_validade_alerta", null);
       } else if (filtro === "vencendo") {
         const threshold = new Date();
         threshold.setDate(threshold.getDate() + diasVencimento);
         query = query
+          .gt("quantidade", 0)
           .eq("validade_nao_aplica", false)
           .lte("data_validade_alerta", threshold.toISOString().slice(0, 10));
       } else if (filtro === "vencido") {
         const today = new Date().toISOString().slice(0, 10);
-        query = query.eq("validade_nao_aplica", false).lt("data_validade_alerta", today);
+        query = query
+          .gt("quantidade", 0)
+          .eq("validade_nao_aplica", false)
+          .lt("data_validade_alerta", today);
       }
 
       const { data, error } = await query;
@@ -227,14 +290,41 @@ export const registerStockTools = (server: unknown) => {
     {
       title: "Consume Stock Item",
       description:
-        "Registra a saída ou baixa de um item do estoque por consumo habitual, descarte de vencido ou perda, preservando a rastreabilidade contábil",
+        "Registra a saída ou baixa de um ou mais itens do estoque por consumo habitual, descarte de vencido ou perda, com suporte a baixa total ('consumir_tudo') e operação em lote",
       inputSchema: z.object({
         group_id: z
           .string()
           .optional()
           .describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
-        item_id: z.string().uuid().describe("ID do item de estoque"),
-        quantidade: z.number().positive().describe("Quantidade a dar baixa"),
+        item_id: z.string().uuid().optional().describe("ID de um único item de estoque a dar baixa"),
+        item_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .optional()
+          .describe("Lista de IDs de itens para baixa em lote"),
+        quantidade: z
+          .number()
+          .positive()
+          .optional()
+          .describe("Quantidade a dar baixa (obrigatória se consumir_tudo for false e itens não for informado)"),
+        consumir_tudo: z
+          .boolean()
+          .default(false)
+          .describe("Se true, dá baixa em todo o saldo restante do item sem exigir informar a quantidade decimal"),
+        itens: z
+          .array(
+            z.object({
+              item_id: z.string().uuid().describe("ID do item"),
+              quantidade: z.number().positive().optional().describe("Quantidade a baixar"),
+              consumir_tudo: z
+                .boolean()
+                .optional()
+                .describe("Se true, consome todo o saldo restante deste item"),
+            }),
+          )
+          .min(1)
+          .optional()
+          .describe("Lista detalhada de itens para baixa em lote"),
         tipo: z
           .enum(["consumo", "descarte", "perda", "vencido", "saida"])
           .default("consumo")
@@ -259,6 +349,92 @@ export const registerStockTools = (server: unknown) => {
         }
       }
 
+      type TargetConsumeItem = { item_id: string; quantidade?: number; consumir_tudo: boolean };
+      let targets: TargetConsumeItem[] = [];
+
+      const rawItens = (
+        args as {
+          itens?: Array<{ item_id: string; quantidade?: number; consumir_tudo?: boolean }>;
+        }
+      ).itens;
+      const rawItemIds = (args as { item_ids?: string[] }).item_ids;
+      const rawItemId = (args as { item_id?: string }).item_id;
+      const globalConsumirTudo = Boolean((args as { consumir_tudo?: boolean }).consumir_tudo);
+      const globalQuantidade = (args as { quantidade?: number }).quantidade;
+
+      if (Array.isArray(rawItens) && rawItens.length > 0) {
+        targets = rawItens.map((it) => ({
+          item_id: it.item_id,
+          quantidade: it.quantidade,
+          consumir_tudo: Boolean(it.consumir_tudo ?? globalConsumirTudo),
+        }));
+      } else if (Array.isArray(rawItemIds) && rawItemIds.length > 0) {
+        targets = rawItemIds.map((id) => ({
+          item_id: id,
+          quantidade: globalQuantidade,
+          consumir_tudo: globalConsumirTudo || !globalQuantidade,
+        }));
+      } else if (rawItemId) {
+        targets = [
+          {
+            item_id: rawItemId,
+            quantidade: globalQuantidade,
+            consumir_tudo: globalConsumirTudo,
+          },
+        ];
+      }
+
+      if (targets.length === 0) {
+        throw new Error(
+          "Informe ao menos um item ('item_id', 'item_ids' ou 'itens') para dar baixa no estoque.",
+        );
+      }
+
+      for (const t of targets) {
+        if (!UUID_REGEX.test(t.item_id)) {
+          throw new Error("Todos os IDs de itens informados devem ser UUIDs válidos.");
+        }
+        if (!t.consumir_tudo && (!t.quantidade || t.quantidade <= 0)) {
+          throw new Error(
+            "Informe uma quantidade positiva ou utilize 'consumir_tudo: true' para dar baixa.",
+          );
+        }
+      }
+
+      type StockRow = {
+        id: string;
+        group_id: string;
+        nome: string;
+        quantidade: number;
+        unidade?: string;
+        data_validade?: string | null;
+        data_validade_alerta?: string | null;
+      };
+
+      const targetIds = Array.from(new Set(targets.map((t) => t.item_id)));
+      let foundItems: StockRow[] = [];
+      if (typeof supabase.from === "function") {
+        const { data: dbItems, error: fetchError } = await supabase
+          .from("stock_items")
+          .select("id, group_id, nome, quantidade, unidade, data_validade, data_validade_alerta")
+          .in("id", targetIds);
+
+        if (fetchError) {
+          throw new Error(
+            `Falha ao consultar itens de estoque: ${fetchError.message || fetchError.code || "erro no banco de dados"}`,
+          );
+        }
+
+        foundItems = (Array.isArray(dbItems) ? dbItems : []) as StockRow[];
+        if (foundItems.length !== targetIds.length) {
+          throw new Error("Um ou mais itens de estoque não foram encontrados.");
+        }
+
+        for (const it of foundItems) {
+          verifyItemGroupAccess(it.group_id, context.groups, rawGroupId);
+        }
+      }
+
       const rawTipo = (args as { tipo?: string }).tipo ?? "consumo";
       const effectiveTipo = rawTipo === "consumo" ? "saida" : rawTipo;
       const rawMotivo = (args as { motivo?: string }).motivo;
@@ -268,29 +444,64 @@ export const registerStockTools = (server: unknown) => {
           ? `Baixa por ${rawTipo}`
           : "Consumo rápido");
 
-      const { error } = await supabase.rpc("consume_stock_fifo", {
-        p_stock_item_id: (args as { item_id: string }).item_id,
-        p_quantidade: (args as { quantidade: number }).quantidade,
-        p_tipo: effectiveTipo,
-        p_observacao: observacao,
-        p_origem: "quick_consume",
-        p_criado_por: userId,
-      });
+      const itemSummaries: string[] = [];
 
-      if (error) {
-        console.error("[MCP] consume_stock_fifo:", error.code, error.message);
-        const detail = error.message ? `: ${error.message}` : "";
-        throw new Error(`Falha ao consumir estoque${detail}`);
+      for (const target of targets) {
+        const item = foundItems.find((f) => f.id === target.item_id);
+        const itemNome = item?.nome ?? "Item de estoque";
+        const itemUnidade = item?.unidade ?? "Un";
+        const currentQty = item ? Number(item.quantidade) || 0 : (target.quantidade ?? 0);
+        const qtyToConsume = target.consumir_tudo ? currentQty : Number(target.quantidade);
+
+        if (qtyToConsume > 0) {
+          const { error: rpcErr } = await supabase.rpc("consume_stock_fifo", {
+            p_stock_item_id: target.item_id,
+            p_quantidade: qtyToConsume,
+            p_tipo: effectiveTipo,
+            p_observacao: observacao,
+            p_origem: "quick_consume",
+            p_criado_por: userId,
+          });
+
+          if (rpcErr) {
+            console.error("[MCP] consume_stock_fifo:", rpcErr.code, rpcErr.message);
+            const detail = rpcErr.message ? `: ${rpcErr.message}` : "";
+            throw new Error(`Falha ao consumir estoque${detail}`);
+          }
+        }
+
+        const remaining = target.consumir_tudo ? 0 : Math.max(0, currentQty - qtyToConsume);
+        if ((remaining <= 0 || target.consumir_tudo) && typeof supabase.from === "function") {
+          // Limpa alerta de validade do item que zerou
+          await supabase
+            .from("stock_items")
+            .update({
+              data_validade: null,
+              data_validade_alerta: null,
+            })
+            .eq("id", target.item_id);
+        }
+
+        itemSummaries.push(
+          `${itemNome}: ${qtyToConsume} ${itemUnidade} baixado(s) (${
+            remaining <= 0 ? "saldo zerado, alerta de validade limpo" : `saldo restante: ${remaining}`
+          })`,
+        );
       }
 
-      const label =
+      const actionLabel =
         rawTipo === "descarte" || rawTipo === "vencido"
           ? "Descarte registrado com sucesso."
           : rawTipo === "perda"
             ? "Perda registrada com sucesso."
             : "Consumo registrado com sucesso.";
 
-      return { content: [{ type: "text", text: label }] };
+      const text =
+        targets.length === 1
+          ? `${actionLabel} (${itemSummaries[0]})`
+          : `${actionLabel} (${targets.length} itens em lote):\n- ${itemSummaries.join("\n- ")}`;
+
+      return { content: [{ type: "text", text }] };
     },
   );
 
@@ -330,7 +541,8 @@ export const registerStockTools = (server: unknown) => {
         .from("stock_items")
         .select("id, nome, quantidade, unidade, data_validade_alerta")
         .eq("group_id", groupId)
-        .eq("validade_nao_aplica", false);
+        .eq("validade_nao_aplica", false)
+        .gt("quantidade", 0);
 
       if (apenasVencidos) {
         baseQuery = baseQuery.lt("data_validade_alerta", today);
@@ -402,7 +614,7 @@ export const registerStockTools = (server: unknown) => {
     {
       title: "Update Stock Item Validity",
       description:
-        "Atualiza a data de validade de um ou mais itens do estoque ou marca como 'Não se aplica' (não perecível)",
+        "Atualiza a data de validade de um ou mais itens do estoque, calcula validade relativa por prazo em dias ('prazo_dias') ou marca como 'Não se aplica' (não perecível)",
       inputSchema: z.object({
         group_id: z
           .string()
@@ -422,7 +634,21 @@ export const registerStockTools = (server: unknown) => {
           .string()
           .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD")
           .optional()
-          .describe("Nova data de validade no formato YYYY-MM-DD (obrigatória quando nao_aplica for false)"),
+          .describe(
+            "Nova data de validade no formato YYYY-MM-DD (obrigatória quando nao_aplica for false e prazo_dias não informado)",
+          ),
+        prazo_dias: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Prazo de validade em dias a partir da data de compra ou de hoje (ex: 14 para 2 semanas, 365 para 1 ano)",
+          ),
+        base_calculo: z
+          .enum(["data_compra", "hoje"])
+          .default("data_compra")
+          .describe("Base para o cálculo com prazo_dias: 'data_compra' (padrão) ou 'hoje'"),
         nao_aplica: z
           .boolean()
           .default(false)
@@ -461,38 +687,149 @@ export const registerStockTools = (server: unknown) => {
 
       const naoAplica = Boolean((args as { nao_aplica?: boolean }).nao_aplica);
       const dataValidade = (args as { data_validade?: string }).data_validade;
+      const rawPrazoDias = (args as { prazo_dias?: number }).prazo_dias;
+      const prazoDias =
+        rawPrazoDias !== undefined && !Number.isNaN(Number(rawPrazoDias)) && Number(rawPrazoDias) > 0
+          ? Number(rawPrazoDias)
+          : undefined;
+      const baseCalculo =
+        (args as { base_calculo?: "data_compra" | "hoje" }).base_calculo ?? "data_compra";
 
       if (!naoAplica) {
-        if (!dataValidade) {
+        if (!dataValidade && prazoDias === undefined) {
           throw new Error(
-            "Informe 'data_validade' (YYYY-MM-DD) ou defina 'nao_aplica' como true para itens não perecíveis.",
+            "Informe 'data_validade' (YYYY-MM-DD), 'prazo_dias' (número de dias) ou defina 'nao_aplica' como true para itens não perecíveis.",
           );
         }
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(dataValidade)) {
-          throw new Error("Formato inválido para 'data_validade'. Use YYYY-MM-DD.");
-        }
-        if (!isValidIsoDate(dataValidade)) {
-          throw new Error("Data de validade inválida. Informe uma data real no formato YYYY-MM-DD.");
+        if (dataValidade) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(dataValidade)) {
+            throw new Error("Formato inválido para 'data_validade'. Use YYYY-MM-DD.");
+          }
+          if (!isValidIsoDate(dataValidade)) {
+            throw new Error("Data de validade inválida. Informe uma data real no formato YYYY-MM-DD.");
+          }
         }
       }
 
-      const { error } = await supabase.rpc("rpc_bulk_update_stock_validity", {
-        p_item_ids: itemIds,
-        p_data_validade: naoAplica ? null : dataValidade,
-        p_nao_aplica: naoAplica,
-      });
+      const today = new Date().toISOString().slice(0, 10);
+      let fallbackHojeCount = 0;
+      let catalogLearningCount = 0;
 
-      if (error) {
-        console.error("[MCP] rpc_bulk_update_stock_validity:", error.code, error.message);
-        const detail = error.message ? `: ${error.message}` : "";
-        throw new Error(`Falha ao atualizar validade do estoque${detail}`);
+      // Mapa de data calculada/especificada -> IDs a atualizar
+      const updatesMap = new Map<string | null, string[]>();
+
+      if (naoAplica) {
+        updatesMap.set(null, itemIds);
+      } else if (dataValidade && prazoDias === undefined) {
+        updatesMap.set(dataValidade, itemIds);
+      } else if (prazoDias !== undefined) {
+        const { data: dbItems, error: itemsFetchError } = await supabase
+          .from("stock_items")
+          .select("id, group_id, nome, product_id, data_compra")
+          .in("id", itemIds);
+
+        if (itemsFetchError) {
+          throw new Error(
+            `Falha ao consultar itens para cálculo de validade: ${itemsFetchError.message || itemsFetchError.code || "erro no banco de dados"}`,
+          );
+        }
+
+        type StockValidityRow = {
+          id: string;
+          group_id: string;
+          nome: string;
+          product_id?: string | null;
+          data_compra?: string | null;
+        };
+
+        const fetchedItems = (Array.isArray(dbItems) ? dbItems : []) as StockValidityRow[];
+
+        for (const it of fetchedItems) {
+          let baseDate = it.data_compra;
+          if (baseCalculo === "data_compra" && !baseDate) {
+            const { data: lotData } = await supabase
+              .from("stock_lots")
+              .select("data_compra")
+              .eq("stock_item_id", it.id)
+              .not("data_compra", "is", null)
+              .order("data_compra", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (lotData && (lotData as { data_compra?: string }).data_compra) {
+              baseDate = (lotData as { data_compra: string }).data_compra;
+            } else {
+              baseDate = today;
+              fallbackHojeCount += 1;
+            }
+          } else if (baseCalculo === "hoje" || !baseDate) {
+            baseDate = today;
+          }
+
+          const baseObj = new Date(`${baseDate}T00:00:00.000Z`);
+          baseObj.setUTCDate(baseObj.getUTCDate() + prazoDias);
+          const computedDate = baseObj.toISOString().slice(0, 10);
+
+          const bucket = updatesMap.get(computedDate) ?? [];
+          bucket.push(it.id);
+          updatesMap.set(computedDate, bucket);
+
+          // Catalog Learning: atualizar product_catalog.validade_padrao_dias
+          if (it.product_id) {
+            await supabase
+              .from("product_catalog")
+              .update({ validade_padrao_dias: prazoDias, perecivel: true })
+              .eq("id", it.product_id);
+            catalogLearningCount += 1;
+          } else if (it.group_id && it.nome) {
+            const { data: catMatch } = await supabase
+              .from("product_catalog")
+              .select("id")
+              .eq("group_id", it.group_id)
+              .ilike("nome", it.nome)
+              .maybeSingle();
+
+            if (catMatch && (catMatch as { id?: string }).id) {
+              await supabase
+                .from("product_catalog")
+                .update({ validade_padrao_dias: prazoDias, perecivel: true })
+                .eq("id", (catMatch as { id: string }).id);
+              catalogLearningCount += 1;
+            }
+          }
+        }
+      }
+
+      for (const [targetDate, ids] of updatesMap.entries()) {
+        const { error } = await supabase.rpc("rpc_bulk_update_stock_validity", {
+          p_item_ids: ids,
+          p_data_validade: naoAplica ? null : targetDate,
+          p_nao_aplica: naoAplica,
+        });
+
+        if (error) {
+          console.error("[MCP] rpc_bulk_update_stock_validity:", error.code, error.message);
+          const detail = error.message ? `: ${error.message}` : "";
+          throw new Error(`Falha ao atualizar validade do estoque${detail}`);
+        }
       }
 
       const count = itemIds.length;
       const itemLabel = count === 1 ? "1 item atualizado" : `${count} itens atualizados`;
-      const statusDetail = naoAplica
+      const dateList = Array.from(updatesMap.keys()).filter(Boolean);
+      let statusDetail = naoAplica
         ? "marcado(s) como 'Não se aplica' (não perecível)"
-        : `validade definida para ${dataValidade}`;
+        : `validade definida para ${dateList.join(", ")}`;
+
+      if (prazoDias !== undefined) {
+        statusDetail += ` (+${prazoDias} dias a partir de ${baseCalculo === "data_compra" ? "data de compra" : "hoje"})`;
+      }
+      if (fallbackHojeCount > 0) {
+        statusDetail += ` (fallback para 'hoje' utilizado em ${fallbackHojeCount} item(ns) sem data de compra)`;
+      }
+      if (catalogLearningCount > 0) {
+        statusDetail += ` (catálogo aprendido: validade padrão de ${prazoDias} dias)`;
+      }
 
       return {
         content: [
@@ -1075,11 +1412,18 @@ export const registerStockTools = (server: unknown) => {
           );
           const primary = sorted[0];
           const totalQty = cluster.reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
+          const hasActive = cluster.some((item) => (Number(item.quantidade) || 0) > 0);
+          const hasZero = cluster.some((item) => (Number(item.quantidade) || 0) <= 0);
+          const possui_item_zerado = hasActive && hasZero;
+
           return {
-            chave_normalizada: tokenizeStockName(primary.nome).join(" ") || normalizeStockNameForComparison(primary.nome),
+            chave_normalizada:
+              tokenizeStockName(primary.nome).join(" ") ||
+              normalizeStockNameForComparison(primary.nome),
             sugestao_item_principal_id: primary.id,
             sugestao_item_principal_nome: primary.nome,
             quantidade_total: totalQty,
+            possui_item_zerado,
             itens: cluster,
           };
         });
