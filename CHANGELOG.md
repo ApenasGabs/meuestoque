@@ -5,6 +5,18 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.28.0](https://github.com/ApenasGabs/meuestoque/compare/v1.27.0...v1.28.0) (2026-11-10)
+
+### ✨ Features
+
+* ✨ refinar livro-razão MCP com descarte sem inflar consumo e correções auditadas (Refs [#64](https://github.com/ApenasGabs/meuestoque/issues/64)) ([649c41f](https://github.com/ApenasGabs/meuestoque/commit/649c41ffa7075c2bf436176b12740412e36fc0f2))
+* **mcp:** ✨ aprimorar triagem de validade, histórico de compras, consumo em lote e validade relativa (Refs [#68](https://github.com/ApenasGabs/meuestoque/issues/68)) ([5a5f0af](https://github.com/ApenasGabs/meuestoque/commit/5a5f0af830addaf9fcd5aba33ec08d9495aab2a1))
+* **mcp:** expand stock tools and add friendly group resolution ([#64](https://github.com/ApenasGabs/meuestoque/issues/64)) ([49560cc](https://github.com/ApenasGabs/meuestoque/commit/49560cc6d7eb7b884f88c58d65a05ae3f35fea54))
+
+### 🐛 Bug Fixes
+
+* **mcp:** 🐛 resolver apontamentos do Surmado Code Review no PR [#71](https://github.com/ApenasGabs/meuestoque/issues/71) (Refs [#68](https://github.com/ApenasGabs/meuestoque/issues/68)) ([59d8f75](https://github.com/ApenasGabs/meuestoque/commit/59d8f75db4b8d492d92234c5ea0591ac1d5ac6a6))
+
 ## [1.27.0](https://github.com/ApenasGabs/meuestoque/compare/v1.26.6...v1.27.0) (2026-11-05)
 
 ### ✨ Features
