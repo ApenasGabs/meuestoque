@@ -8,13 +8,84 @@ export const MCP_KEY_PATTERN = /^mest_(pat|oa)_[A-Za-z0-9_-]{43}$/;
 
 export type McpScope = "read" | "write";
 
+export interface McpUserGroup {
+  id: string;
+  nome?: string;
+}
+
 export interface AuthenticatedContext {
   supabase: SupabaseClient;
   userId: string;
-  groups: { id: string }[];
+  groups: McpUserGroup[];
   scopes: McpScope[];
   authMethod: "api_key" | "session";
 }
+
+const normalizeGroupComparison = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+const formatGroupSummary = (groups: McpUserGroup[]): string =>
+  groups.map((g) => (g.nome ? `${g.nome} (${g.id})` : g.id)).join(", ");
+
+/**
+ * Resolve o identificador de grupo a partir de um UUID ou nome amigavel (case-insensitive).
+ *
+ * @param groups - Lista de grupos aos quais o usuario autenticado pertence
+ * @param requestedGroup - UUID ou nome do grupo informado na chamada da tool
+ * @returns Objeto contendo `groupId` resolvido ou mensagem clara de `error`
+ */
+export const resolveGroupId = (
+  groups: McpUserGroup[] | undefined,
+  requestedGroup?: string,
+): { groupId?: string; error?: string } => {
+  const list = Array.isArray(groups) ? groups : [];
+  const trimmed = requestedGroup?.trim();
+
+  if (!trimmed) {
+    if (list.length === 1) {
+      return { groupId: list[0].id };
+    }
+    if (list.length === 0) {
+      return { error: "Usuário não possui grupo ativo." };
+    }
+    return {
+      error: `Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos (UUID ou nome do grupo). Grupos disponíveis: ${formatGroupSummary(list)}`,
+    };
+  }
+
+  const lower = trimmed.toLowerCase();
+  const normalized = normalizeGroupComparison(trimmed);
+
+  // 1. Tentar correspondência exata por ID / UUID
+  const idMatch = list.find((g) => g.id.toLowerCase() === lower);
+  if (idMatch) {
+    return { groupId: idMatch.id };
+  }
+
+  // 2. Correspondência por nome (case-insensitive ou normalizado)
+  const nameMatches = list.filter(
+    (g) =>
+      g.nome &&
+      (g.nome.trim().toLowerCase() === lower || normalizeGroupComparison(g.nome) === normalized),
+  );
+
+  if (nameMatches.length > 1) {
+    return {
+      error: `Nome de grupo ambíguo ('${trimmed}'). Múltiplos grupos correspondem ao mesmo nome: ${formatGroupSummary(nameMatches)}. Especifique o 'group_id' usando o UUID do grupo desejado.`,
+    };
+  }
+
+  if (nameMatches.length === 1) {
+    return { groupId: nameMatches[0].id };
+  }
+
+  const suffix = list.length > 0 ? ` Grupos disponíveis: ${formatGroupSummary(list)}` : "";
+  return { error: `Acesso negado ao grupo especificado.${suffix}` };
+};
 
 /** Erro de autenticacao cuja mensagem e segura para o cliente. */
 export class McpAuthError extends Error {}
@@ -92,7 +163,7 @@ export const authenticateRequest = async (
 
   const { data: memberData, error: memberError } = await supabase
     .from("group_members")
-    .select("group_id")
+    .select("group_id, groups(id, nome)")
     .eq("user_id", userId);
 
   if (memberError) {
@@ -103,7 +174,22 @@ export const authenticateRequest = async (
   return {
     supabase,
     userId,
-    groups: memberData ? memberData.map((m) => ({ id: m.group_id as string })) : [],
+    groups: memberData
+      ? memberData.map((m) => {
+          const rawGroup = (
+            m as {
+              group_id: string;
+              groups?: { id?: string; nome?: string } | { id?: string; nome?: string }[] | null;
+            }
+          ).groups;
+          const groupObj = Array.isArray(rawGroup) ? rawGroup[0] : rawGroup;
+          const nome =
+            typeof groupObj?.nome === "string" && groupObj.nome.trim()
+              ? groupObj.nome.trim()
+              : undefined;
+          return nome ? { id: m.group_id as string, nome } : { id: m.group_id as string };
+        })
+      : [],
     scopes,
     authMethod: isApiKey ? "api_key" : "session",
   };

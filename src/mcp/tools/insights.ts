@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AuthenticatedContext } from "../auth";
+import { resolveGroupId, type AuthenticatedContext } from "../auth";
 import { extractContext } from "../context";
 
 
@@ -10,7 +10,7 @@ export const registerInsightTools = (server: unknown) => {
     {
       title: "Get Consumption History",
       description: "Histórico de consumo de um produto (ou todos) nos últimos N dias",
-      inputSchema: z.object({ group_id: z.string().optional().describe("ID do grupo. Opcional caso o usuário só tenha 1 grupo"),
+      inputSchema: z.object({ group_id: z.string().optional().describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
       produto: z.string().optional(),
       dias: z.number().int().default(30),
     }),
@@ -18,15 +18,11 @@ export const registerInsightTools = (server: unknown) => {
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extractContext(extra);
       const { supabase } = context;
-      const groups = (context as { groups: { id: string }[] }).groups;
-      let groupId = (args as { group_id?: string }).group_id;
-      if (!groupId) {
-        if (groups.length === 1) groupId = groups[0].id;
-        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
-        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
-      } else if (!groups.find(g => g.id === groupId)) {
-        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
+      if (resolved.error || !resolved.groupId) {
+        return { content: [{ type: "text", text: resolved.error ?? "Acesso negado ao grupo especificado." }] };
       }
+      const groupId = resolved.groupId;
 
       const threshold = new Date();
       threshold.setDate(threshold.getDate() - (args as { dias: number }).dias);
@@ -36,7 +32,7 @@ export const registerInsightTools = (server: unknown) => {
         .from("stock_movements")
         .select("criado_em, quantidade, tipo, stock_items!inner(nome, unidade, group_id)")
         .eq("stock_items.group_id", groupId)
-        .eq("tipo", "consumo")
+        .in("tipo", ["consumo", "saida", "consumo_auto"])
         .gte("criado_em", thresholdISO)
         .order("criado_em", { ascending: false })
         .limit(100);
@@ -75,15 +71,11 @@ export const registerInsightTools = (server: unknown) => {
     async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
       const context = extractContext(extra);
       const { supabase } = context;
-      const groups = (context as { groups: { id: string }[] }).groups;
-      let groupId = (args as { group_id?: string }).group_id;
-      if (!groupId) {
-        if (groups.length === 1) groupId = groups[0].id;
-        else if (groups.length === 0) return { content: [{ type: "text", text: "Usuário não possui grupo ativo." }] };
-        else return { content: [{ type: "text", text: "Múltiplos grupos encontrados. Especifique 'group_id' nos argumentos. Grupos: " + JSON.stringify(groups) }] };
-      } else if (!groups.find(g => g.id === groupId)) {
-        return { content: [{ type: "text", text: "Acesso negado ao grupo especificado." }] };
+      const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
+      if (resolved.error || !resolved.groupId) {
+        return { content: [{ type: "text", text: resolved.error ?? "Acesso negado ao grupo especificado." }] };
       }
+      const groupId = resolved.groupId;
 
       const { data, error } = await supabase
         .from("stock_lots")
@@ -141,6 +133,110 @@ export const registerInsightTools = (server: unknown) => {
         throw new Error(`Falha ao consultar tendência de preços: ${error.message || error.code || "erro no banco de dados"}`);
       }
       return { content: [{ type: "text", text: JSON.stringify(data || [], null, 2) }] };
+    },
+  );
+
+  (server as { registerTool: (name: string, config: unknown, handler: unknown) => void }).registerTool(
+    "get_purchase_history",
+    {
+      title: "Get Purchase History",
+      description: "Histórico de compras e entradas de lotes de produtos no estoque por período",
+      inputSchema: z.object({
+        group_id: z
+          .string()
+          .optional()
+          .describe("ID ou nome do grupo. Opcional caso o usuário só tenha 1 grupo"),
+        produto: z
+          .string()
+          .optional()
+          .describe("Filtro por nome do produto (busca parcial case-insensitive)"),
+        dias: z
+          .number()
+          .int()
+          .min(1)
+          .default(90)
+          .describe("Número de dias para buscar compras passadas (padrão 90)"),
+      }),
+    },
+    async (args: Record<string, unknown>, extra: { authInfo?: AuthenticatedContext }) => {
+      const context = extractContext(extra);
+      const { supabase } = context;
+      const resolved = resolveGroupId(context.groups, (args as { group_id?: string }).group_id);
+      if (resolved.error || !resolved.groupId) {
+        return {
+          content: [
+            { type: "text", text: resolved.error ?? "Acesso negado ao grupo especificado." },
+          ],
+        };
+      }
+      const groupId = resolved.groupId;
+
+      const dias = Number((args as { dias?: number }).dias ?? 90);
+      const threshold = new Date();
+      threshold.setDate(threshold.getDate() - dias);
+      const thresholdDate = threshold.toISOString().slice(0, 10);
+
+      let query = supabase
+        .from("stock_lots")
+        .select(`
+          id,
+          data_compra,
+          quantidade_inicial,
+          quantidade_restante,
+          unidade,
+          custo_unitario,
+          custo_total,
+          data_validade,
+          stock_items!inner(id, nome, categoria, group_id)
+        `)
+        .eq("stock_items.group_id", groupId)
+        .gte("data_compra", thresholdDate);
+
+      const produto = (args as { produto?: string }).produto?.trim();
+      if (produto) {
+        query = query.ilike("stock_items.nome", `%${produto}%`);
+      }
+
+      query = query.order("data_compra", { ascending: false }).limit(100);
+
+      const { data, error } = await query;
+      if (error) {
+        console.error(error);
+        throw new Error(
+          `Falha ao carregar histórico de compras: ${error.message || error.code || "erro no banco de dados"}`,
+        );
+      }
+
+      type LotRecord = {
+        id: string;
+        data_compra: string | null;
+        quantidade_inicial: number | null;
+        quantidade_restante: number | null;
+        unidade: string | null;
+        custo_unitario: number | null;
+        custo_total: number | null;
+        data_validade: string | null;
+        stock_items:
+          | { id: string; nome: string; categoria?: string; group_id: string }
+          | { id: string; nome: string; categoria?: string; group_id: string }[];
+      };
+
+      const lots = (data || []) as unknown as LotRecord[];
+      const formatted = lots.map((lot) => {
+        const itemObj = Array.isArray(lot.stock_items) ? lot.stock_items[0] : lot.stock_items;
+        return {
+          nome: itemObj?.nome ?? "Item desconhecido",
+          data_compra: lot.data_compra,
+          quantidade_inicial: lot.quantidade_inicial,
+          quantidade_restante: lot.quantidade_restante,
+          unidade: lot.unidade,
+          custo_unitario: lot.custo_unitario,
+          custo_total: lot.custo_total,
+          data_validade: lot.data_validade,
+        };
+      });
+
+      return { content: [{ type: "text", text: JSON.stringify(formatted, null, 2) }] };
     },
   );
 };

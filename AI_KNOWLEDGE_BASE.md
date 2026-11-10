@@ -43,6 +43,108 @@ Documentação fora de `docs/ai/`:
 
 ## 📜 Log Recente de Modificações por IAs
 
+### 🎯 (10/11/2026) Feat: Triagem de Validade, Histórico de Compras, Consumo em Lote e Validade Relativa no MCP (Issue #68)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Cliente MCP / Assistente de IA"] --> B["Servidor MCP (api/mcp.ts)"]
+    B --> C["get_purchase_history (src/mcp/tools/insights.ts)"]
+    B --> D["get_stock_items (filtros: em_estoque, sem_validade, vencendo, vencido)"]
+    B --> E["update_stock_item_validity (prazo_dias + base_calculo + Catalog Learning)"]
+    B --> F["consume_stock_item (consumir_tudo + lote + limpeza de validade residual)"]
+    B --> G["find_duplicate_stock_items (extractPackageSpec + possui_item_zerado)"]
+    C -->|"Lotes e Custos Históricos"| H["stock_lots & stock_items"]
+    E -->|"Validade Relativa e Vida Útil"| I["rpc_bulk_update_stock_validity & product_catalog"]
+    F -->|"Baixa FIFO e Limpeza de Alertas"| J["consume_stock_fifo & stock_items"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/insights.ts` | Adicionada tool `get_purchase_history` permitindo consultar compras e entradas de lotes com custos, datas, quantidades e unidades, com filtros por produto e dias |
+| `src/mcp/tools/stock.ts` | 1) `get_stock_items`: exposição de `data_compra` e `data_validade`, novos filtros `em_estoque` e `sem_validade`, e exclusão de itens com quantidade <= 0 nos filtros de validade; 2) `get_expiring_items`: ignorar itens esgotados (quantidade <= 0); 3) `update_stock_item_validity`: suporte a `prazo_dias`, `base_calculo` (com fallback para hoje) e Catalog Learning com checagem de erros (`product_catalog.validade_padrao_dias`); 4) `consume_stock_item`: suporte a `consumir_tudo: true`, consumo em lote (`item_ids`/`itens`), prevenção de baixa total acidental ao omitir quantidade, consolidação de IDs duplicados e limpeza auditada de validade de itens zerados; 5) `find_duplicate_stock_items`: penalização de similaridade para especificações de embalagem divergentes (`extractPackageSpec`) e flag `possui_item_zerado` no cluster; 6) JSDoc completo com parâmetros e retornos em todos os helpers exportados |
+| `src/mcp/auth.ts` | Detecção e tratamento de ambiguidade em `resolveGroupId` quando múltiplos grupos possuem o mesmo nome normalizado, retornando erro claro com lista de UUIDs conflitantes |
+| `src/mcp/__tests__/mcp.test.ts` | Suíte de testes unitários expandida para 45 testes cobrindo todas as novas ferramentas, filtros, casos de ambiguidade de grupos e tratamento de erro de auditoria |
+| `AI_KNOWLEDGE_BASE.md` | Registro arquitetural e de regras de negócio desta entrega |
+
+#### Lógica de Decisão
+```text
+REGRA 1: Validade é relevante apenas para itens fisicamente presentes no estoque. Itens com quantidade <= 0 não devem poluir triagens de vencimento (get_expiring_items, filtro vencendo e vencido).
+REGRA 2: Quando um item tem seu saldo completamente esgotado (quantidade restante = 0 ou consumir_tudo = true), seus alertas de validade residuais em stock_items são limpos imediatamente, propagando erros caso o banco falhe.
+REGRA 3: O cálculo de validade relativa aceita prazo_dias a partir da data de compra (ou lote mais recente), fazendo fallback explícito para hoje quando a compra não estiver registrada, e persiste validade_padrao_dias em product_catalog quando o item estiver associado a um produto (apenas incrementando contador quando não houver erro).
+REGRA 4: Nomes com especificações de medida/embalagem distintas (ex: 20 un vs 5 duzias, 397g vs 1kg) sofrem penalização severa de similaridade (< 0.75) para evitar falso-positivo em duplicatas.
+REGRA 5: Clusters de duplicatas sinalizam possui_item_zerado = true quando contêm tanto item ativo (quantidade > 0) quanto item zerado (quantidade = 0), orientando a sugestão de merge_stock_items.
+REGRA 6: Baixa em lote via item_ids sem quantidade informada não assume consumir_tudo implicitamente, exigindo consumir_tudo: true explícito para evitar zerar saldos acidentalmente.
+REGRA 7: Nomes de grupos duplicados não selecionam arbitrariamente o primeiro encontrado; retornam erro de ambiguidade solicitando o UUID exato.
+```
+
+#### Comportamento
+- Assistentes de IA conseguem auditar quando e por quanto cada produto foi comprado no estoque via `get_purchase_history`.
+- A triagem de itens sem validade (`filtro: "sem_validade"`) e itens presentes (`filtro: "em_estoque"`) traz apenas itens com saldo positivo, sem ruído de produtos zerados.
+- Usuários e agentes podem definir validades relativas naturalmente (ex: "vence em 14 dias a partir da compra") e o sistema memoriza esse prazo no catálogo para compras futuras.
+- Itens fracionados (ex: pão 0,382 kg) ou múltiplos produtos podem ser baixados de uma só vez com `consumir_tudo: true` ou em lote, sem manter alertas de validade pendurados quando o item acaba e sem risco de zerar estoque sem intenção.
+- O detector de duplicatas não agrupa embalagens muito diferentes e identifica pares de item ativo + item zerado para mesclagem limpa.
+- Resolução de grupo previne seleção ambígua caso existam grupos homônimos.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Typecheck passando (0 erros TypeScript)
+- [x] Testes unitários passando (31 suites, 291 testes verdes, sendo 45 testes MCP)
+- [x] Build de produção concluído com sucesso
+- [x] Code Review do agent-standards: 30/30 aderência, 0 divergências (APPROVED)
+- [x] Todos os apontamentos do Surmado Code Review resolvidos com testes correspondentes
+
+### ✨ (05/11/2026) Feat: Expansão de Ferramentas MCP de Estoque e Modelo de Livro-Razão (Issue #64 / PR #65)
+
+#### Arquitetura
+```mermaid
+graph TD
+    A["Cliente MCP / Assistente de IA"] -->|"Chamada de Tool MCP"| B["Validação & Resolução Amigável de Grupos (UUID / Nome)"]
+    B --> C["Tools de Estoque & Lista (src/mcp/tools)"]
+    C --> D1["consume_stock_item (Saída por consumo, descarte/vencido ou perda)"]
+    C --> D2["set_stock_quantity (Correção auditada de inventário / erro de nota)"]
+    C --> D3["add_stock_item (Carga de estoque inicial pré-existente)"]
+    C --> D4["update_stock_item & delete_stock_item (Metadados e exclusão segura)"]
+    C --> D5["find_duplicate_stock_items & merge_stock_items (Consolidação de lotes e histórico)"]
+    C --> D6["get_stock_items & get_expiring_items (Filtro 'vencido' e apenas_vencidos)"]
+    D1 & D2 & D3 & D5 -->|"Registro de Movimentações Auditadas"| E["stock_movements (tipo: saida/descarte/perda/ajuste/estoque_inicial/mescla)"]
+    D1 & D5 -->|"Gestão de Lotes FIFO"| F["stock_lots & stock_items"]
+    E -.->|"Exclusão de descartes do histórico de consumo real"| G["get_consumption_history (insights.ts)"]
+```
+
+#### Arquivos Modificados / Criados
+| Arquivo | Mudança / Propósito |
+|---|---|
+| `src/mcp/tools/stock.ts` | Expansão das ferramentas MCP de estoque: `add_stock_item` (carga de estoque inicial), `set_stock_quantity` (correção auditada de contagem), `consume_stock_item` (suporte a descarte/perda sem inflar consumo), `update_stock_item`, `delete_stock_item`, `find_duplicate_stock_items`, `merge_stock_items`, e suporte a filtro `"vencido"` |
+| `src/mcp/tools/insights.ts` | Refinamento de `get_consumption_history` para filtrar por saídas legítimas (`consumo`, `saida`, `consumo_auto`), desacoplando descartes e perdas da taxa de consumo |
+| `src/mcp/auth.ts` | Inclusão de `groups(id, nome)` no contexto autenticado para permitir resolução amigável de grupos |
+| `src/mcp/context.ts` | Tipagem e helpers atualizados com a lista enriquecida de grupos |
+| `src/mcp/__tests__/mcp.test.ts` | Suíte com 30 testes unitários cobrindo todas as ferramentas, validações e cenários de exceção |
+| `AI_KNOWLEDGE_BASE.md` | Registro canônico da arquitetura e das decisões de modelagem de estoque como livro-razão |
+
+#### Lógica de Decisão
+```text
+REGRA 1: O estoque opera como um livro-razão (ledger) onde toda entrada decorre de compra (lista) ou carga de estoque inicial, e toda saída possui motivo rastreável.
+REGRA 2: Baixas por descarte de alimentos vencidos ou avarias/perdas devem dar baixa dos lotes FIFO normalmente, mas registrar tipo = 'descarte' ou 'perda', ficando explicitamente excluídas do histórico de consumo da família.
+REGRA 3: Ajustes manuais de quantidade representam correções auditadas de contagem ou divergências de notas fiscais, exigindo rastreabilidade com tipo = 'ajuste' em stock_movements.
+REGRA 4: Grupos multi-tenant podem ser resolvidos dinamicamente por UUID ou nome amigável (case-insensitive), listando opções legíveis em caso de ambiguidade.
+```
+
+#### Comportamento
+- O assistente de IA agora consegue dar baixa informando se o item foi consumido ou descartado por estar vencido (`tipo: 'descarte'`), sem distorcer as métricas de consumo.
+- Correções de quantidade agora operam como auditoria explícita (`[Correção Auditada]`).
+- Cargas iniciais de despensa são registradas como `estoque_inicial` sem poluir os relatórios de gastos em supermercado.
+- Itens duplicados por divergência de nomes de notas fiscais podem ser identificados e unificados com transferência automática de lotes e histórico.
+- Itens vencidos podem ser consultados diretamente com `filtro: 'vencido'` ou `apenas_vencidos: true`.
+
+#### Checklist de Aceite
+- [x] Lint passando (0 erros ESLint)
+- [x] Typecheck passando (0 erros TypeScript)
+- [x] Testes unitários passando (31 suítes, 279 testes verdes)
+- [x] Build de produção concluído com sucesso
+
+
 ### 🧹 (01/11/2026) Refactor: Remoção de CategorySection.test.tsx Acoplado a Classes CSS (Issue #55)
 
 #### Arquitetura
