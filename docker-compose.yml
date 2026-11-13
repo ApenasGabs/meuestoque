@@ -1,0 +1,48 @@
+name: meuestoque
+
+services:
+  meuestoque:
+    container_name: meuestoque
+    image: node:22-alpine
+    working_dir: /app
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+    env_file:
+      - /DATA/Projetos/meuestoque/.env
+    volumes:
+      - /DATA/Projetos/meuestoque:/app
+    command: ["node", "dist-server/index.mjs"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3007/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: meuestoque
+  description:
+    en_us: Smart household inventory, shopping list, NFC-e scanner and MCP server.
+    pt_br: Gestão inteligente de estoque doméstico, lista de compras, leitor de NFC-e e servidor MCP.
+  tagline:
+    en_us: Household Inventory & Shopping List
+    pt_br: Estoque Doméstico & Lista de Compras
+  developer: Gabriel Rodrigues
+  author: Kraken
+  icon: https://cdn-icons-png.flaticon.com/512/2897/2897785.png
+  thumbnail: https://cdn-icons-png.flaticon.com/512/2897/2897785.png
+  title:
+    en_us: Meu Estoque
+    pt_br: Meu Estoque
+  category: Utilities
+  port_map: "3007"
