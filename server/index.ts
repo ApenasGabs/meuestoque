@@ -34,7 +34,7 @@ const MIME_TYPES: Record<string, string> = {
 
 type FetchHandler = (req: Request) => Promise<Response> | Response;
 
-async function toWebRequest(req: IncomingMessage): Promise<Request> {
+const toWebRequest = async (req: IncomingMessage): Promise<Request> => {
   const proto = (req.headers["x-forwarded-proto"] as string) || "http";
   const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "localhost:3007";
   const url = `${proto}://${host}${req.url || "/"}`;
@@ -65,7 +65,7 @@ async function toWebRequest(req: IncomingMessage): Promise<Request> {
   });
 }
 
-async function sendWebResponse(res: ServerResponse, webRes: Response): Promise<void> {
+const sendWebResponse = async (res: ServerResponse, webRes: Response): Promise<void> => {
   res.statusCode = webRes.status;
   webRes.headers.forEach((value, key) => {
     res.setHeader(key, value);
@@ -80,7 +80,7 @@ async function sendWebResponse(res: ServerResponse, webRes: Response): Promise<v
   res.end(Buffer.from(arrayBuffer));
 }
 
-function matchHandler(pathname: string): FetchHandler | null {
+const matchHandler = (pathname: string): FetchHandler | null => {
   if (
     pathname === "/.well-known/oauth-protected-resource" ||
     pathname === "/api/well-known/oauth-protected-resource"
@@ -112,7 +112,14 @@ const server = http.createServer(async (req, res) => {
   try {
     const rawUrl = req.url || "/";
     const qIdx = rawUrl.indexOf("?");
-    const pathname = decodeURIComponent(qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl);
+    let pathname = "/";
+    try {
+      pathname = decodeURIComponent(qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl);
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Bad request: malformed URI" }));
+      return;
+    }
 
     if (pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -138,7 +145,7 @@ const server = http.createServer(async (req, res) => {
     const candidatePath = path.resolve(distDir, safeRelPath);
     if (
       safeRelPath &&
-      candidatePath.startsWith(distDir) &&
+      candidatePath.startsWith(`${distDir}${path.sep}`) &&
       fs.existsSync(candidatePath) &&
       fs.statSync(candidatePath).isFile()
     ) {
