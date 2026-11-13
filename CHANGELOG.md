@@ -5,6 +5,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.29.0](https://github.com/ApenasGabs/meuestoque/compare/v1.28.0...v1.29.0) (2026-11-13)
+
+### ✨ Features
+
+* **infra:** servidor HTTP unificado e containerização para Homelab (ZimaOS) ([#67](https://github.com/ApenasGabs/meuestoque/issues/67)) ([4508032](https://github.com/ApenasGabs/meuestoque/commit/4508032a2442f2ef7d84ff1ef9806cc4c4009860)), closes [#66](https://github.com/ApenasGabs/meuestoque/issues/66) [#66](https://github.com/ApenasGabs/meuestoque/issues/66)
+
 ## [1.28.0](https://github.com/ApenasGabs/meuestoque/compare/v1.27.0...v1.28.0) (2026-11-10)
 
 ### ✨ Features
